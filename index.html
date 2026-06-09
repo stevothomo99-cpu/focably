@@ -637,7 +637,8 @@ const trustConfig = {
 
 // ── INIT ──
 window.addEventListener('load', async () => {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  // Service worker disabled temporarily
+// if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
   const { data: { session } } = await db.auth.getSession();
   if (session) { currentUser = session.user; await loadProfile(); }
   else showScreen('auth');
@@ -703,13 +704,14 @@ async function signUp() {
 async function signInGoogle() { await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}}); }
 async function signOut() { await db.auth.signOut(); showToast('👋 Signed out'); }
 
-// ── PROFILE ──
 async function loadProfile() {
   showScreen('loading');
-  let {data:profile} = await db.from('profiles').select('*').eq('id',currentUser.id).single();
+  console.log('loadProfile: starting, user id:', currentUser.id);
+  let {data:profile, error:profileError} = await db.from('profiles').select('*').eq('id',currentUser.id).single();
+  console.log('loadProfile: profile result:', profile, 'error:', profileError);
   if(!profile) {
-    // Get role from user metadata — default to parent only if not set
     const role = currentUser.user_metadata?.role || 'parent';
+    console.log('loadProfile: creating profile with role:', role);
     await db.from('profiles').insert({
       id: currentUser.id,
       email: currentUser.email,
@@ -718,20 +720,21 @@ async function loadProfile() {
     });
     const r = await db.from('profiles').select('*').eq('id',currentUser.id).single();
     profile = r.data;
+    console.log('loadProfile: created profile:', profile);
   }
-  // If profile exists but role is wrong (e.g. trigger defaulted to parent), fix it
   if(profile && currentUser.user_metadata?.role && profile.role !== currentUser.user_metadata.role) {
+    console.log('loadProfile: fixing role from', profile.role, 'to', currentUser.user_metadata.role);
     await db.from('profiles').update({role: currentUser.user_metadata.role}).eq('id',currentUser.id);
     profile.role = currentUser.user_metadata.role;
   }
   currentProfile = profile;
+  console.log('loadProfile: routing role:', profile.role);
   if(profile.role==='student') {
     if(!profile.age_group) showScreen('onboarding');
     else await loadStudentApp();
   } else if(profile.role==='parent') await loadParentApp();
   else if(profile.role==='teacher') await loadTeacherApp();
   else {
-    // Fallback — role unclear, show auth again
     showScreen('auth');
     showError('Account role not set. Please sign up again.');
   }
