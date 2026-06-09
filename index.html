@@ -620,7 +620,7 @@ let currentUser = null, currentProfile = null, currentFamily = null;
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
-let isNavigating = false; // Guard against double-loads
+let appReady = false; // True once app is fully loaded — blocks auth interrupts
 
 const themes = {
   fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#92400E,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
@@ -645,11 +645,13 @@ window.addEventListener('load', async () => {
 });
 
 db.auth.onAuthStateChange(async (event, session) => {
-  if (isNavigating) return; // Don't interrupt active navigation
+  // Once app is loaded don't let auth state changes interrupt the UI
+  if (appReady && event === 'SIGNED_IN') return;
   if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
     currentUser = session.user;
     await loadProfile();
   } else if (event === 'SIGNED_OUT') {
+    appReady = false;
     currentUser = null;
     showScreen('auth');
   }
@@ -773,6 +775,7 @@ async function loadStudentApp() {
   await loadStudentAssignments(age);
   requestNotificationPermission();
   isNavigating = false;
+  appReady = true;
 }
 
 async function loadStudentAssignments(ageGroup) {
@@ -1047,6 +1050,7 @@ async function linkToFamily() {
 // ── PARENT APP ──
 async function loadParentApp() {
   showScreen('app');
+  appReady = true;
   document.getElementById('rbTeacher').style.display='none';
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
@@ -1193,6 +1197,7 @@ function copyInviteCode() { navigator.clipboard.writeText(document.getElementByI
 // ── TEACHER APP ──
 async function loadTeacherApp() {
   showScreen('app');
+  appReady = true;
   document.getElementById('rbParent').style.display='none';
   switchRole('teacher');
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
