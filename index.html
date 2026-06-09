@@ -708,37 +708,64 @@ async function signOut() { await db.auth.signOut(); showToast('👋 Signed out')
 
 async function loadProfile() {
   showScreen('loading');
-  console.log('loadProfile: starting, user id:', currentUser.id);
-  let {data:profile, error:profileError} = await db.from('profiles').select('*').eq('id',currentUser.id).single();
-  console.log('loadProfile: profile result:', profile, 'error:', profileError);
-  if(!profile) {
-    const role = currentUser.user_metadata?.role || 'parent';
-    console.log('loadProfile: creating profile with role:', role);
-    await db.from('profiles').insert({
-      id: currentUser.id,
-      email: currentUser.email,
-      full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
-      role: role
+  console.log('loadProfile: starting for', currentUser.email);
+  try {
+    // Add timeout to catch hanging Supabase queries
+    const timeout = new Promise((_,reject) => setTimeout(() => reject(new Error('Supabase timeout after 10s')), 10000));
+    const query = db.from('profiles').select('*').eq('id', currentUser.id).single();
+    let {data:profile, error:profileError} = await Promise.race([query, timeout.then(()=>{throw new Error('timeout')})]).catch(async(e) => {
+      if(e.message === 'timeout') { console.log('loadProfile: query timed out'); return {data:null, error:e}; }
+      return {data:null, error:e};
     });
-    const r = await db.from('profiles').select('*').eq('id',currentUser.id).single();
-    profile = r.data;
-    console.log('loadProfile: created profile:', profile);
-  }
-  if(profile && currentUser.user_metadata?.role && profile.role !== currentUser.user_metadata.role) {
-    console.log('loadProfile: fixing role from', profile.role, 'to', currentUser.user_metadata.role);
-    await db.from('profiles').update({role: currentUser.user_metadata.role}).eq('id',currentUser.id);
-    profile.role = currentUser.user_metadata.role;
-  }
-  currentProfile = profile;
-  console.log('loadProfile: routing role:', profile.role);
-  if(profile.role==='student') {
-    if(!profile.age_group) showScreen('onboarding');
-    else await loadStudentApp();
-  } else if(profile.role==='parent') await loadParentApp();
-  else if(profile.role==='teacher') await loadTeacherApp();
-  else {
+
+    console.log('loadProfile: profile=', profile?.role, 'error=', profileError?.message);
+
+    if(!profile) {
+      const role = currentUser.user_metadata?.role || 'parent';
+      console.log('loadProfile: creating new profile, role=', role);
+      const ins = await db.from('profiles').insert({
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+        role: role
+      });
+      console.log('loadProfile: insert result=', ins.error?.message || 'ok');
+      const r = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+      profile = r.data;
+    }
+
+    if(!profile) {
+      console.log('loadProfile: still no profile — showing auth');
+      showScreen('auth');
+      showError('Could not load your profile. Please try again.');
+      return;
+    }
+
+    // Fix role if metadata says different
+    if(currentUser.user_metadata?.role && profile.role !== currentUser.user_metadata.role) {
+      await db.from('profiles').update({role: currentUser.user_metadata.role}).eq('id', currentUser.id);
+      profile.role = currentUser.user_metadata.role;
+    }
+
+    currentProfile = profile;
+    console.log('loadProfile: routing to', profile.role, 'age_group=', profile.age_group);
+
+    if(profile.role === 'student') {
+      if(!profile.age_group) showScreen('onboarding');
+      else await loadStudentApp();
+    } else if(profile.role === 'parent') {
+      await loadParentApp();
+    } else if(profile.role === 'teacher') {
+      await loadTeacherApp();
+    } else {
+      console.log('loadProfile: unknown role', profile.role);
+      showScreen('auth');
+      showError('Unknown account role. Please sign up again.');
+    }
+  } catch(e) {
+    console.error('loadProfile: fatal error', e.message);
     showScreen('auth');
-    showError('Account role not set. Please sign up again.');
+    showError('Something went wrong loading your profile. Please try again.');
   }
 }
 
