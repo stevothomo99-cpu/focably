@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Focably</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1E1B4B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Focably">
+<meta name="description" content="School done your way — supporting kids with ADHD through every step">
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --indigo: #1E1B4B;
+  --violet: #7C3AED;
+  --violet-light: #A78BFA;
+  --mint: #10B981;
+  --mint-light: #6EE7B7;
+  --amber: #F59E0B;
+  --amber-light: #FCD34D;
+  --rose: #F43F5E;
+  --white: #FAFAFA;
+  --gray-50: #F8F7FF;
+  --gray-100: #EDE9FE;
+  --gray-200: #DDD6FE;
+  --gray-500: #6B7280;
+  --gray-700: #374151;
+  --theme-primary: #7C3AED;
+  --theme-secondary: #A78BFA;
+  --theme-bg: #EDE9FE;
+  --theme-accent: #F59E0B;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--indigo); min-height:100vh; overflow-x:hidden; }
+
+/* ── SCREEN SYSTEM ── */
+.screen { min-height:100vh; }
+#screen-onboarding { display:block; }
+#screen-app { display:none; }
+
+/* ── TOP NAV ── */
+.top-nav {
+  background:var(--indigo); padding:12px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:100;
+}
+.logo { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; color:white; letter-spacing:-0.5px; }
+.logo span { color:var(--violet-light); }
+.role-switcher { display:flex; gap:5px; }
+.role-btn {
+  padding:5px 11px; border-radius:20px; border:2px solid rgba(255,255,255,0.2);
+  background:transparent; color:rgba(255,255,255,0.6); font-size:11px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; font-family:'Inter',sans-serif;
+}
+.role-btn.active { background:var(--violet); border-color:var(--violet); color:white; }
+.role-btn:hover:not(.active) { border-color:rgba(255,255,255,0.5); color:white; }
+
+/* ── SCROLL CONTENT ── */
+.scroll-content { padding:14px 14px 90px; max-width:440px; margin:0 auto; }
+
+/* ── CARDS ── */
+.card { background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(30,27,75,0.07); }
+.card-title { font-size:12px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; background:white;
+  border-top:1px solid #E5E7EB; display:flex; padding:8px 0 14px;
+  box-shadow:0 -4px 16px rgba(30,27,75,0.07); z-index:99;
+}
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+.nav-icon { font-size:20px; }
+.nav-label { font-size:10px; font-weight:600; color:var(--gray-500); }
+.nav-item.active .nav-label { color:var(--violet); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; top:66px; left:50%; transform:translateX(-50%) translateY(-16px);
+  background:var(--indigo); color:white; padding:10px 22px; border-radius:30px;
+  font-family:'Nunito',sans-serif; font-weight:800; font-size:14px;
+  box-shadow:0 8px 24px rgba(30,27,75,0.35); opacity:0;
+  transition:all 0.3s; pointer-events:none; z-index:999; white-space:nowrap;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ════════════════════════════════════
+   ONBOARDING SCREEN
+════════════════════════════════════ */
+#screen-onboarding {
+  background:linear-gradient(160deg, var(--indigo) 0%, #2D1B69 100%);
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:30px 20px; text-align:center;
+}
+.onboard-logo { font-family:'Nunito',sans-serif; font-weight:900; font-size:38px; color:white; margin-bottom:6px; }
+.onboard-logo span { color:var(--violet-light); }
+.onboard-tagline { color:rgba(255,255,255,0.65); font-size:15px; margin-bottom:36px; }
+.onboard-question { color:white; font-family:'Nunito',sans-serif; font-weight:800; font-size:20px; margin-bottom:8px; }
+.onboard-sub { color:rgba(255,255,255,0.6); font-size:13px; margin-bottom:24px; }
+.age-row { display:flex; gap:12px; width:100%; max-width:340px; margin-bottom:32px; }
+.age-btn {
+  flex:1; padding:14px 10px; border-radius:14px; border:2px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.07); color:white; font-family:'Nunito',sans-serif;
+  font-weight:800; font-size:14px; cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.age-btn .age-emoji { font-size:28px; display:block; margin-bottom:6px; }
+.age-btn:hover, .age-btn.selected { background:var(--violet); border-color:var(--violet); transform:translateY(-2px); }
+.theme-section { width:100%; max-width:340px; }
+.theme-label { color:rgba(255,255,255,0.7); font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+.theme-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:24px; }
+.theme-card {
+  border-radius:14px; padding:14px 8px; border:2.5px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07); color:white; cursor:pointer;
+  transition:all 0.25s; text-align:center;
+}
+.theme-card .theme-emoji { font-size:30px; display:block; margin-bottom:6px; }
+.theme-card .theme-name { font-family:'Nunito',sans-serif; font-weight:800; font-size:12px; }
+.theme-card:hover { transform:translateY(-3px); }
+.theme-card.selected { border-color:var(--amber); background:rgba(245,158,11,0.2); }
+.start-btn {
+  width:100%; max-width:340px; padding:16px; border-radius:14px; border:none;
+  background:linear-gradient(135deg, var(--violet), #5B21B6); color:white;
+  font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; cursor:pointer;
+  transition:all 0.2s; display:none;
+}
+.start-btn.visible { display:block; }
+.start-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(124,58,237,0.5); }
+
+/* ════════════════════════════════════
+   STUDENT — PRIMARY (QUEST MODE)
+════════════════════════════════════ */
+.quest-header {
+  border-radius:20px; padding:20px; margin-bottom:12px; color:white;
+  position:relative; overflow:hidden;
+}
+.quest-header::after {
+  content:''; position:absolute; bottom:-20px; right:-20px;
+  width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,0.06);
+}
+.quest-hero-emoji { font-size:48px; margin-bottom:8px; display:block; }
+.quest-hero-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; margin-bottom:2px; }
+.quest-hero-title { font-size:13px; opacity:0.8; margin-bottom:14px; }
+.quest-stars-row { display:flex; align-items:center; gap:10px; }
+.quest-star { font-size:22px; transition:transform 0.3s; }
+.quest-star.earned { filter:drop-shadow(0 0 6px rgba(245,158,11,0.8)); }
+.quest-star.empty { opacity:0.3; }
+.quest-stars-label { font-size:12px; opacity:0.75; margin-left:4px; }
+.quest-streak { display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.15); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:700; margin-top:10px; }
+
+.realm-card { border-radius:16px; padding:16px; margin-bottom:12px; color:white; }
+.realm-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.realm-icon { font-size:28px; }
+.realm-title-wrap {}
+.realm-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; line-height:1; margin-bottom:2px; }
+.realm-teacher { font-size:11px; opacity:0.75; }
+.realm-progress-wrap { margin-bottom:4px; }
+.realm-progress-track { background:rgba(255,255,255,0.2); border-radius:10px; height:8px; margin-bottom:4px; }
+.realm-progress-fill { border-radius:10px; height:8px; background:rgba(255,255,255,0.9); transition:width 0.6s ease; }
+.realm-progress-label { font-size:11px; opacity:0.8; text-align:right; }
+
+.quest-step-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.quest-step {
+  display:flex; align-items:flex-start; gap:10px;
+  background:rgba(255,255,255,0.12); border-radius:12px; padding:10px 12px;
+  cursor:pointer; transition:all 0.2s; border:1.5px solid rgba(255,255,255,0.1);
+}
+.quest-step:hover { background:rgba(255,255,255,0.2); }
+.quest-step.done { background:rgba(255,255,255,0.08); }
+.step-gem {
+  width:26px; height:26px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.4);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  font-size:12px; transition:all 0.2s; background:rgba(255,255,255,0.1);
+}
+.quest-step.done .step-gem { border-color:transparent; }
+.step-text { flex:1; font-size:13px; font-weight:600; line-height:1.4; }
+.quest-step.done .step-text { text-decoration:line-through; opacity:0.5; }
+.step-star { font-size:14px; }
+
+/* ── AI QUEST BREAKDOWN ── */
+.ai-quest-btn {
+  width:100%; padding:13px; border-radius:12px; border:none; color:white;
+  font-size:14px; font-weight:700; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; gap:8px;
+  transition:all 0.2s; font-family:'Inter',sans-serif; margin-top:4px;
+}
+.ai-quest-btn:hover { transform:translateY(-1px); }
+.ai-quest-btn:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
+.ai-result-quest { border-radius:12px; padding:14px; margin-top:10px; display:none; }
+.ai-result-quest.visible { display:block; }
+
+/* ── TREASURE CHEST (REWARDS) ── */
+.chest-header { text-align:center; padding:10px 0 6px; }
+.chest-emoji { font-size:48px; display:block; margin-bottom:6px; }
+.chest-stars { font-size:18px; letter-spacing:2px; margin-bottom:4px; }
+.chest-label { font-size:13px; color:var(--gray-500); }
+.reward-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.reward-tile {
+  border-radius:14px; padding:14px; text-align:center; border:2px solid transparent;
+  background:linear-gradient(135deg, #FFF7ED, #FEF3C7); border-color:var(--amber-light);
+  transition:all 0.2s;
+}
+.reward-tile:hover { transform:translateY(-2px); }
+.reward-tile .r-emoji { font-size:30px; margin-bottom:6px; }
+.reward-tile .r-name { font-weight:700; font-size:12px; color:var(--indigo); margin-bottom:4px; }
+.reward-tile .r-cost { font-size:11px; color:var(--amber); font-weight:700; }
+.reward-tile .r-status { font-size:10px; color:var(--gray-500); margin-top:3px; }
+.reward-tile.unlocked { background:linear-gradient(135deg, #ECFDF5, #D1FAE5); border-color:var(--mint-light); }
+.reward-tile.unlocked .r-status { color:var(--mint); font-weight:700; }
+
+/* ════════════════════════════════════
+   STUDENT — HIGH SCHOOL (XP MODE)
+════════════════════════════════════ */
+.hs-header {
+  background:linear-gradient(135deg, var(--violet) 0%, var(--indigo) 100%);
+  border-radius:20px; padding:20px; margin-bottom:12px; color:white;
+}
+.hs-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; margin-bottom:2px; }
+.hs-subtitle { font-size:13px; opacity:0.75; margin-bottom:14px; }
+.xp-section { display:flex; align-items:center; gap:14px; }
+.xp-ring-wrap { position:relative; width:64px; height:64px; flex-shrink:0; }
+.xp-ring-wrap svg { transform:rotate(-90deg); }
+.xp-ring-bg { fill:none; stroke:rgba(255,255,255,0.15); stroke-width:5; }
+.xp-ring-fill { fill:none; stroke:var(--amber); stroke-width:5; stroke-linecap:round; stroke-dasharray:163; stroke-dashoffset:49; transition:stroke-dashoffset 1s ease; }
+.xp-level-num { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; color:white; }
+.xp-info {}
+.xp-lbl { font-size:11px; opacity:0.7; margin-bottom:3px; }
+.xp-bar-track { background:rgba(255,255,255,0.15); border-radius:10px; height:8px; margin-bottom:5px; }
+.xp-bar-fill { background:linear-gradient(90deg, var(--amber), var(--amber-light)); border-radius:10px; height:8px; width:70%; transition:width 1s ease; }
+.xp-pts { font-family:'Nunito',sans-serif; font-size:12px; font-weight:700; }
+.hs-streak { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.12); border-radius:20px; padding:5px 10px; font-size:12px; margin-top:10px; }
+
+.hs-subject-card { background:white; border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:0 2px 8px rgba(30,27,75,0.07); }
+.hs-subj-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.hs-subj-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.hs-subj-name { font-weight:700; font-size:15px; }
+.hs-subj-due { font-size:12px; color:var(--gray-500); }
+.hs-prog-track { background:var(--gray-100); border-radius:10px; height:6px; margin-bottom:3px; }
+.hs-prog-fill { border-radius:10px; height:6px; transition:width 0.6s; }
+.hs-prog-lbl { font-size:11px; color:var(--gray-500); text-align:right; margin-bottom:10px; }
+.hs-task { display:flex; align-items:flex-start; gap:10px; padding:9px 11px; border-radius:10px; background:var(--gray-50); border:1.5px solid transparent; transition:all 0.2s; cursor:pointer; margin-bottom:7px; }
+.hs-task:hover { border-color:var(--violet-light); }
+.hs-task.done { background:#F0FDF4; border-color:var(--mint-light); }
+.hs-check { width:22px; height:22px; border-radius:50%; border:2.5px solid var(--gray-200); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all 0.2s; background:white; font-size:11px; }
+.hs-task.done .hs-check { background:var(--mint); border-color:var(--mint); color:white; }
+.hs-task-text { font-size:13px; font-weight:500; line-height:1.4; flex:1; }
+.hs-task.done .hs-task-text { text-decoration:line-through; color:var(--gray-500); }
+.hs-task-xp { font-size:11px; font-weight:700; color:var(--amber); white-space:nowrap; }
+
+/* ════════════════════════════════════
+   PARENT VIEW
+════════════════════════════════════ */
+.parent-header {
+  background:linear-gradient(135deg, #0F172A, var(--indigo));
+  border-radius:20px; padding:20px; margin-bottom:12px; color:white;
+}
+.parent-greeting { font-size:13px; opacity:0.7; margin-bottom:3px; }
+.parent-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; margin-bottom:14px; }
+.child-tabs { display:flex; gap:8px; }
+.child-tab { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); border:1.5px solid transparent; cursor:pointer; transition:all 0.2s; }
+.child-tab.active { background:var(--violet); color:white; border-color:var(--violet); }
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.stat-card { background:white; border-radius:14px; padding:14px; box-shadow:0 2px 8px rgba(30,27,75,0.07); }
+.stat-lbl { font-size:11px; color:var(--gray-500); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:5px; }
+.stat-val { font-family:'Nunito',sans-serif; font-size:28px; font-weight:900; color:var(--indigo); line-height:1; }
+.stat-sub { font-size:11px; color:var(--gray-500); margin-top:3px; }
+.subj-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--gray-100); }
+.subj-row:last-child { border-bottom:none; }
+.subj-row-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+.subj-row-info { flex:1; }
+.subj-row-name { font-weight:600; font-size:13px; margin-bottom:4px; }
+.subj-row-track { background:var(--gray-100); border-radius:10px; height:5px; }
+.subj-row-fill { border-radius:10px; height:5px; }
+.subj-row-pct { font-size:12px; font-weight:700; }
+.alert-item { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:10px; margin-bottom:8px; }
+.alert-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.alert-text { font-size:13px; line-height:1.4; }
+.alert-time { font-size:11px; color:var(--gray-500); margin-top:2px; }
+
+/* ════════════════════════════════════
+   TEACHER VIEW
+════════════════════════════════════ */
+.teacher-header {
+  background:linear-gradient(135deg, #064E3B, #065F46);
+  border-radius:20px; padding:20px; margin-bottom:12px; color:white;
+}
+.teacher-greeting { font-size:13px; opacity:0.7; margin-bottom:3px; }
+.teacher-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; margin-bottom:3px; }
+.teacher-subline { font-size:13px; opacity:0.75; }
+.upload-zone { border:2px dashed var(--gray-200); border-radius:14px; padding:22px; text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:12px; background:white; }
+.upload-zone:hover { border-color:var(--mint); background:#F0FDF4; }
+.upload-zone .u-icon { font-size:30px; margin-bottom:6px; }
+.upload-zone .u-title { font-weight:700; font-size:14px; margin-bottom:3px; }
+.upload-zone .u-sub { font-size:12px; color:var(--gray-500); }
+.form-grp { margin-bottom:11px; }
+.form-lbl { font-size:11px; font-weight:700; color:var(--gray-700); margin-bottom:4px; display:block; text-transform:uppercase; letter-spacing:0.4px; }
+.form-input { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--gray-200); font-size:13px; font-family:'Inter',sans-serif; color:var(--indigo); transition:border-color 0.2s; outline:none; background:white; }
+.form-input:focus { border-color:var(--mint); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.publish-btn { width:100%; padding:13px; border-radius:12px; background:linear-gradient(135deg, var(--mint), #059669); border:none; color:white; font-size:15px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
+.publish-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(16,185,129,0.4); }
+.student-prog-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--gray-100); }
+.student-prog-row:last-child { border-bottom:none; }
+.s-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Nunito',sans-serif; font-weight:900; font-size:15px; flex-shrink:0; }
+.s-prog-info { flex:1; }
+.s-prog-name { font-weight:600; font-size:13px; margin-bottom:3px; }
+.s-prog-track { background:var(--gray-100); border-radius:10px; height:5px; }
+.s-prog-fill { border-radius:10px; height:5px; }
+.s-prog-pct { font-size:12px; font-weight:700; }
+.nudge-btn { padding:5px 10px; border-radius:20px; border:1.5px solid var(--amber-light); background:#FFF7ED; color:var(--amber); font-size:11px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; }
+
+/* ── THEME VARIABLES applied via JS ── */
+.theme-fantasy  { --th1:#7C3AED; --th2:#A78BFA; --th3:#EDE9FE; --th4:#F59E0B; }
+.theme-space    { --th1:#1D4ED8; --th2:#60A5FA; --th3:#DBEAFE; --th4:#06B6D4; }
+.theme-adventure{ --th1:#065F46; --th2:#34D399; --th3:#D1FAE5; --th4:#F59E0B; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════ ONBOARDING ════════════ -->
+<div class="screen" id="screen-onboarding">
+  <div style="background:linear-gradient(160deg,#1E1B4B 0%,#2D1B69 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;text-align:center;">
+    <div class="onboard-logo">Foc<span>ably</span></div>
+    <div class="onboard-tagline">School done your way 🚀</div>
+
+    <div class="onboard-question">How old are you?</div>
+    <div class="onboard-sub">We'll set Focably up just right for you</div>
+    <div class="age-row">
+      <div class="age-btn" id="age-primary" onclick="selectAge('primary')">
+        <span class="age-emoji">🎒</span>Primary<br><span style="font-size:11px;opacity:0.7">Ages 6–12</span>
+      </div>
+      <div class="age-btn" id="age-highschool" onclick="selectAge('highschool')">
+        <span class="age-emoji">🎓</span>High School<br><span style="font-size:11px;opacity:0.7">Ages 13–17</span>
+      </div>
+    </div>
+
+    <div class="theme-section" id="themeSection" style="display:none;">
+      <div class="theme-label">Choose your Quest World ✨</div>
+      <div class="theme-grid">
+        <div class="theme-card" id="theme-fantasy" onclick="selectTheme('fantasy')">
+          <span class="theme-emoji">🐉</span>
+          <span class="theme-name">Fantasy</span>
+        </div>
+        <div class="theme-card" id="theme-space" onclick="selectTheme('space')">
+          <span class="theme-emoji">🚀</span>
+          <span class="theme-name">Space</span>
+        </div>
+        <div class="theme-card" id="theme-adventure" onclick="selectTheme('adventure')">
+          <span class="theme-emoji">🗺️</span>
+          <span class="theme-name">Adventure</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="start-btn" id="startBtn" onclick="startApp()">Let's Go! 🎉</button>
+  </div>
+</div>
+
+<!-- ════════════ MAIN APP ════════════ -->
+<div class="screen" id="screen-app">
+
+  <div class="top-nav">
+    <div class="logo">Foc<span>ably</span></div>
+    <div class="role-switcher">
+      <button class="role-btn active" id="rbStudent" onclick="switchRole('student')">🎒 Me</button>
+      <button class="role-btn" id="rbParent" onclick="switchRole('parent')">👨‍👩‍👧 Parent</button>
+      <button class="role-btn" id="rbTeacher" onclick="switchRole('teacher')">📚 Teacher</button>
+    </div>
+  </div>
+
+  <!-- ─── STUDENT VIEW ─── -->
+  <div id="view-student" class="scroll-content" style="display:block;">
+
+    <!-- PRIMARY QUEST MODE -->
+    <div id="primary-mode">
+
+      <div class="quest-header" id="questHeader">
+        <span class="quest-hero-emoji" id="heroEmoji">🧙</span>
+        <div class="quest-hero-name" id="heroName">The Apprentice Wizard</div>
+        <div class="quest-hero-title" id="heroTitle">Keeper of Knowledge · Dragon's Keep Academy</div>
+        <div class="quest-stars-row" id="questStars">
+          <span class="quest-star earned">⭐</span>
+          <span class="quest-star earned">⭐</span>
+          <span class="quest-star earned">⭐</span>
+          <span class="quest-star empty">⭐</span>
+          <span class="quest-star empty">⭐</span>
+          <span class="quest-stars-label" id="questStarsLabel">3 of 5 Quest Stars</span>
+        </div>
+        <div class="quest-streak" id="questStreak">🔥 4-day streak &nbsp;·&nbsp; ⚔️ Warrior rank</div>
+      </div>
+
+      <!-- REALM 1 -->
+      <div class="realm-card" id="realm1" style="background:linear-gradient(135deg,#4C1D95,#6D28D9);">
+        <div class="realm-header">
+          <div class="realm-icon" id="realm1Icon">📐</div>
+          <div class="realm-title-wrap">
+            <div class="realm-name" id="realm1Name">The Numbers Dungeon</div>
+            <div class="realm-teacher">Sir Henderson · Due Friday</div>
+          </div>
+        </div>
+        <div class="realm-progress-wrap">
+          <div class="realm-progress-track"><div class="realm-progress-fill" id="r1fill" style="width:60%"></div></div>
+          <div class="realm-progress-label" id="r1lbl">3 of 5 steps complete ⚔️</div>
+        </div>
+        <div class="quest-step-list" id="realm1Steps">
+          <div class="quest-step done" onclick="toggleQuestStep(this,1)">
+            <div class="step-gem">✓</div>
+            <div class="step-text">Read the ancient scroll (pg 42–45)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step done" onclick="toggleQuestStep(this,1)">
+            <div class="step-gem">✓</div>
+            <div class="step-text">Solve the dungeon riddles (Q1–10)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step done" onclick="toggleQuestStep(this,1)">
+            <div class="step-gem">✓</div>
+            <div class="step-text">Watch the wizard's vision (video)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step" onclick="toggleQuestStep(this,1)">
+            <div class="step-gem"></div>
+            <div class="step-text">Defeat the second challenge (Q1–5)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step" onclick="toggleQuestStep(this,1)">
+            <div class="step-gem"></div>
+            <div class="step-text">Claim the bonus treasure!</div>
+            <div class="step-star">🌟</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REALM 2 -->
+      <div class="realm-card" id="realm2" style="background:linear-gradient(135deg,#92400E,#B45309);">
+        <div class="realm-header">
+          <div class="realm-icon" id="realm2Icon">📖</div>
+          <div class="realm-title-wrap">
+            <div class="realm-name" id="realm2Name">The Storyteller's Tower</div>
+            <div class="realm-teacher">Lady Clarke · Due Monday</div>
+          </div>
+        </div>
+        <div class="realm-progress-wrap">
+          <div class="realm-progress-track"><div class="realm-progress-fill" style="width:25%"></div></div>
+          <div class="realm-progress-label">1 of 4 steps complete 🗡️</div>
+        </div>
+        <div class="quest-step-list">
+          <div class="quest-step done" onclick="toggleQuestStep(this,2)">
+            <div class="step-gem">✓</div>
+            <div class="step-text">Receive the quest scroll (Ch. 3)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step" onclick="toggleQuestStep(this,2)">
+            <div class="step-gem"></div>
+            <div class="step-text">Write the opening spell (intro)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step" onclick="toggleQuestStep(this,2)">
+            <div class="step-gem"></div>
+            <div class="step-text">Cast the body enchantments (para 2&3)</div>
+            <div class="step-star">⭐</div>
+          </div>
+          <div class="quest-step" onclick="toggleQuestStep(this,2)">
+            <div class="step-gem"></div>
+            <div class="step-text">Seal the spell (conclusion)</div>
+            <div class="step-star">🌟</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI QUEST BREAKDOWN -->
+      <div class="card">
+        <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into steps you can conquer!</p>
+        <textarea class="form-input" id="questInput" rows="3" placeholder="e.g. Write a book report about Charlotte's Web, due next week..."></textarea>
+        <button class="ai-quest-btn" id="aiQuestBtn" onclick="breakdownQuest()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">
+          <span>✨</span> <span id="aiBtnText">Get My Quest Steps</span>
+        </button>
+        <div class="ai-result-quest" id="aiQuestResult" style="background:var(--gray-50);border-left:3px solid var(--violet);">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Quest Steps</div>
+          <div id="aiQuestSteps"></div>
+        </div>
+      </div>
+
+      <!-- TREASURE CHEST -->
+      <div class="card">
+        <div class="card-title">🏆 Treasure Chest</div>
+        <div class="chest-header">
+          <span class="chest-emoji" id="chestEmoji">📦</span>
+          <div class="chest-stars" id="chestStars">⭐⭐⭐⭐⭐</div>
+          <div class="chest-label" id="chestStarsLabel">Collect stars to unlock treasure!</div>
+        </div>
+        <div class="reward-grid">
+          <div class="reward-tile unlocked">
+            <div class="r-emoji">🎮</div>
+            <div class="r-name">30 min Screen Time</div>
+            <div class="r-cost">⭐ 10 stars</div>
+            <div class="r-status">✓ Unlocked!</div>
+          </div>
+          <div class="reward-tile">
+            <div class="r-emoji">🍕</div>
+            <div class="r-name">Choose Friday Dinner</div>
+            <div class="r-cost">⭐ 25 stars</div>
+            <div class="r-status">5 more to go</div>
+          </div>
+          <div class="reward-tile">
+            <div class="r-emoji">🎬</div>
+            <div class="r-name">Movie Night Pick</div>
+            <div class="r-cost">⭐ 40 stars</div>
+            <div class="r-status">20 more to go</div>
+          </div>
+          <div class="reward-tile">
+            <div class="r-emoji">🏖️</div>
+            <div class="r-name">Day Trip Adventure</div>
+            <div class="r-cost">⭐ 100 stars</div>
+            <div class="r-status">80 more to go</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end primary-mode -->
+
+    <!-- HIGH SCHOOL XP MODE -->
+    <div id="hs-mode" style="display:none;">
+      <div class="hs-header">
+        <div class="hs-name">Hey, Georgie! 👋</div>
+        <div class="hs-subtitle">4-day streak 🔥 — you're crushing it</div>
+        <div class="xp-section">
+          <div class="xp-ring-wrap">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="xp-ring-bg" cx="32" cy="32" r="26"/>
+              <circle class="xp-ring-fill" id="xpRing" cx="32" cy="32" r="26"/>
+            </svg>
+            <div class="xp-level-num">7</div>
+          </div>
+          <div class="xp-info">
+            <div class="xp-lbl">Level 7 — Focus Cadet</div>
+            <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBarFill"></div></div>
+            <div class="xp-pts" id="xpPts">⚡ 350 / 500 XP to Level 8</div>
+          </div>
+        </div>
+        <div class="hs-streak">🔥 4-day streak &nbsp;·&nbsp; 🏆 3 badges earned</div>
+      </div>
+
+      <div class="hs-subject-card">
+        <div class="hs-subj-header">
+          <div class="hs-subj-icon" style="background:#EDE9FE;">📐</div>
+          <div><div class="hs-subj-name">Mathematics</div><div class="hs-subj-due">Due Friday · Mr Henderson</div></div>
+        </div>
+        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--violet);width:60%"></div></div>
+        <div class="hs-prog-lbl">3 of 5 tasks done</div>
+        <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Read pages 42–45 on fractions</div><div class="hs-task-xp">+10 XP</div></div>
+        <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Complete exercise 3A (Q1–10)</div><div class="hs-task-xp">+15 XP</div></div>
+        <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Watch Khan Academy video</div><div class="hs-task-xp">+10 XP</div></div>
+        <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Complete exercise 3B (Q1–5)</div><div class="hs-task-xp">+15 XP</div></div>
+        <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Attempt bonus question</div><div class="hs-task-xp">+20 XP</div></div>
+      </div>
+
+      <div class="hs-subject-card">
+        <div class="hs-subj-header">
+          <div class="hs-subj-icon" style="background:#FEF3C7;">📖</div>
+          <div><div class="hs-subj-name">English</div><div class="hs-subj-due">Due Monday · Ms Clarke</div></div>
+        </div>
+        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--amber);width:25%"></div></div>
+        <div class="hs-prog-lbl">1 of 4 tasks done</div>
+        <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Read Chapter 3 of set text</div><div class="hs-task-xp">+10 XP</div></div>
+        <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Write introduction paragraph</div><div class="hs-task-xp">+20 XP</div></div>
+        <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Write body paragraphs 2 & 3</div><div class="hs-task-xp">+20 XP</div></div>
+        <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Write conclusion & proofread</div><div class="hs-task-xp">+15 XP</div></div>
+      </div>
+
+      <!-- AI HS Breakdown -->
+      <div class="card">
+        <div class="card-title">🤖 AI Task Breakdown</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Paste any assignment and Focably will break it into steps.</p>
+        <textarea class="form-input" id="hsInput" rows="3" placeholder="e.g. Write a 500-word essay on climate change, due next Thursday..."></textarea>
+        <button class="ai-quest-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">
+          <span>✨</span> <span id="hsAiBtnText">Break into Steps</span>
+        </button>
+        <div class="ai-result-quest" id="hsAiResult" style="background:var(--gray-50);border-left:3px solid var(--violet);">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
+          <div id="hsAiSteps"></div>
+        </div>
+      </div>
+    </div><!-- end hs-mode -->
+
+  </div><!-- end view-student -->
+
+  <!-- ─── PARENT VIEW ─── -->
+  <div id="view-parent" class="scroll-content" style="display:none;">
+    <div class="parent-header">
+      <div class="parent-greeting">Good morning,</div>
+      <div class="parent-name">Steve 👋</div>
+      <div class="child-tabs">
+        <div class="child-tab active">Georgie</div>
+        <div class="child-tab">+ Add Child</div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-lbl">Tasks This Week</div>
+        <div class="stat-val" style="color:var(--mint)">7<span style="font-size:16px;color:var(--gray-500)">/12</span></div>
+        <div class="stat-sub">58% complete</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Streak</div>
+        <div class="stat-val" style="color:var(--amber)">🔥 4</div>
+        <div class="stat-sub">days in a row</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Stars / XP</div>
+        <div class="stat-val" style="color:var(--violet)">⭐ 20</div>
+        <div class="stat-sub">Quest mode active</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Overdue</div>
+        <div class="stat-val" style="color:var(--rose)">1</div>
+        <div class="stat-sub" style="color:var(--rose)">needs attention</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Subject Progress</div>
+      <div class="subj-row">
+        <div class="subj-row-icon" style="background:#EDE9FE;">📐</div>
+        <div class="subj-row-info">
+          <div class="subj-row-name">Mathematics</div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--violet);width:60%"></div></div>
+        </div>
+        <div class="subj-row-pct" style="color:var(--violet)">60%</div>
+      </div>
+      <div class="subj-row">
+        <div class="subj-row-icon" style="background:#FEF3C7;">📖</div>
+        <div class="subj-row-info">
+          <div class="subj-row-name">English</div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--amber);width:25%"></div></div>
+        </div>
+        <div class="subj-row-pct" style="color:var(--amber)">25%</div>
+      </div>
+      <div class="subj-row">
+        <div class="subj-row-icon" style="background:#ECFDF5;">🔬</div>
+        <div class="subj-row-info">
+          <div class="subj-row-name">Science</div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--mint);width:80%"></div></div>
+        </div>
+        <div class="subj-row-pct" style="color:var(--mint)">80%</div>
+      </div>
+      <div class="subj-row">
+        <div class="subj-row-icon" style="background:#FFF1F2;">🌏</div>
+        <div class="subj-row-info">
+          <div class="subj-row-name">Geography</div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--rose);width:10%"></div></div>
+        </div>
+        <div class="subj-row-pct" style="color:var(--rose)">10% ⚠️</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔔 Alerts</div>
+      <div class="alert-item" style="background:#FFF1F2;border-radius:10px;margin-bottom:8px;">
+        <div class="alert-dot" style="background:var(--rose)"></div>
+        <div><div class="alert-text"><strong>Geography overdue</strong> — 2 days late, 10% done</div><div class="alert-time">Mr Peterson · 2 days ago</div></div>
+      </div>
+      <div class="alert-item" style="background:#F0FDF4;border-radius:10px;margin-bottom:8px;">
+        <div class="alert-dot" style="background:var(--mint)"></div>
+        <div><div class="alert-text">Georgie completed 3 Maths steps today 🎉</div><div class="alert-time">Today, 4:22pm</div></div>
+      </div>
+      <div class="alert-item" style="background:var(--gray-100);border-radius:10px;">
+        <div class="alert-dot" style="background:var(--violet)"></div>
+        <div><div class="alert-text">New Science quest uploaded by Ms Rivera</div><div class="alert-time">Yesterday, 9:15am</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏆 Reward Approvals</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Georgie has unlocked a reward — waiting for your go-ahead.</p>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--gray-50);border-radius:12px;padding:12px;">
+        <div style="font-size:28px;">🎮</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:14px;">30 min Screen Time</div><div style="font-size:12px;color:var(--gray-500);">10 stars redeemed · earned today</div></div>
+        <button onclick="approveReward(this)" style="padding:7px 14px;border-radius:20px;border:none;background:var(--mint);color:white;font-weight:700;font-size:12px;cursor:pointer;">Approve ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TEACHER VIEW ─── -->
+  <div id="view-teacher" class="scroll-content" style="display:none;">
+    <div class="teacher-header">
+      <div class="teacher-greeting">Welcome back,</div>
+      <div class="teacher-name">Ms Clarke 👩‍🏫</div>
+      <div class="teacher-subline">English · Year 9 · 24 students</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📤 Upload Assignment</div>
+      <div class="upload-zone" onclick="showToast('📎 File attached!')">
+        <div class="u-icon">📎</div>
+        <div class="u-title">Tap to attach file</div>
+        <div class="u-sub">PDF, Word, images supported</div>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Assignment Title</label>
+        <input class="form-input" type="text" placeholder="e.g. Climate Change Essay" id="aTitle">
+      </div>
+      <div class="form-row">
+        <div class="form-grp">
+          <label class="form-lbl">Due Date</label>
+          <input class="form-input" type="date" id="aDue">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Est. Hours</label>
+          <input class="form-input" type="number" placeholder="2" min="0.5" step="0.5">
+        </div>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Overview / Instructions</label>
+        <textarea class="form-input" rows="3" placeholder="What do students need to do?"></textarea>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Assign To</label>
+        <select class="form-input">
+          <option>All students — Year 9 English</option>
+          <option>Selected students only</option>
+          <option>ADHD support group</option>
+        </select>
+      </div>
+      <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Progress — Climate Change Essay</div>
+      <p style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:12px;">Due Monday · 4 students shown</p>
+      <div class="student-prog-row">
+        <div class="s-avatar" style="background:#EDE9FE;color:var(--violet)">G</div>
+        <div class="s-prog-info"><div class="s-prog-name">Georgie S.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--amber);width:25%"></div></div></div>
+        <div class="s-prog-pct" style="color:var(--amber)">25%</div>
+        <button class="nudge-btn" onclick="showToast('👋 Nudge sent to Georgie\'s parent!')">Nudge 👋</button>
+      </div>
+      <div class="student-prog-row">
+        <div class="s-avatar" style="background:#ECFDF5;color:var(--mint)">A</div>
+        <div class="s-prog-info"><div class="s-prog-name">Alex M.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--mint);width:75%"></div></div></div>
+        <div class="s-prog-pct" style="color:var(--mint)">75%</div>
+        <button class="nudge-btn" style="opacity:0.4;cursor:default;">On track</button>
+      </div>
+      <div class="student-prog-row">
+        <div class="s-avatar" style="background:#FFF1F2;color:var(--rose)">J</div>
+        <div class="s-prog-info"><div class="s-prog-name">Jamie T.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--rose);width:5%"></div></div></div>
+        <div class="s-prog-pct" style="color:var(--rose)">5%</div>
+        <button class="nudge-btn" onclick="showToast('👋 Nudge sent to Jamie\'s parent!')">Nudge 👋</button>
+      </div>
+      <div class="student-prog-row">
+        <div class="s-avatar" style="background:#FEF3C7;color:var(--amber)">S</div>
+        <div class="s-prog-info"><div class="s-prog-name">Sam K.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--violet);width:100%"></div></div></div>
+        <div class="s-prog-pct" style="color:var(--violet)">100% ✓</div>
+        <button class="nudge-btn" style="background:#F3F4F6;border-color:#E5E7EB;color:var(--gray-500);cursor:default;">Done!</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+    <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
+    <div class="nav-item"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
+    <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Messages</div></div>
+    <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+  </div>
+
+</div><!-- end screen-app -->
+
+<script>
+// ── STATE ──
+let selectedAge = null;
+let selectedTheme = null;
+let questStars = 20;
+let xp = 350;
+const xpMax = 500;
+
+// ── THEME CONFIG ──
+const themes = {
+  fantasy: {
+    headerGrad: 'linear-gradient(135deg,#4C1D95,#7C3AED)',
+    heroEmoji: '🧙',
+    heroName: 'The Apprentice Wizard',
+    heroTitle: 'Keeper of Knowledge · Dragon\'s Keep Academy',
+    streakText: '🔥 4-day streak · ⚔️ Warrior rank',
+    realm1Grad: 'linear-gradient(135deg,#4C1D95,#6D28D9)',
+    realm1Icon: '📐', realm1Name: 'The Numbers Dungeon',
+    realm2Grad: 'linear-gradient(135deg,#92400E,#B45309)',
+    realm2Icon: '📖', realm2Name: 'The Storyteller\'s Tower',
+    chestEmoji: '🏰',
+    aiTitle: '🧙 Quest Wizard — Break Any Task',
+    aiSub: 'Tell the wizard your quest and it will split it into steps you can conquer!',
+    aiBtnText: 'Get My Quest Steps',
+    aiPromptStyle: 'fantasy quest steps like dungeon challenges',
+  },
+  space: {
+    headerGrad: 'linear-gradient(135deg,#1E3A8A,#2563EB)',
+    heroEmoji: '👨‍🚀',
+    heroName: 'Cadet Explorer',
+    heroTitle: 'Navigator · Focably Space Academy',
+    streakText: '🔥 4-day streak · 🚀 Lieutenant rank',
+    realm1Grad: 'linear-gradient(135deg,#1E3A8A,#1D4ED8)',
+    realm1Icon: '📐', realm1Name: 'The Maths Nebula',
+    realm2Grad: 'linear-gradient(135deg,#065F46,#059669)',
+    realm2Icon: '📖', realm2Name: 'Planet Story',
+    chestEmoji: '🛸',
+    aiTitle: '🤖 Mission Control — Break Any Task',
+    aiSub: 'Mission Control will divide your assignment into launchable missions!',
+    aiBtnText: 'Plan My Missions',
+    aiPromptStyle: 'space mission objectives for a student',
+  },
+  adventure: {
+    headerGrad: 'linear-gradient(135deg,#064E3B,#065F46)',
+    heroEmoji: '🧭',
+    heroName: 'The Young Explorer',
+    heroTitle: 'Trailblazer · Focably Exploration Corps',
+    streakText: '🔥 4-day streak · 🗺️ Pathfinder rank',
+    realm1Grad: 'linear-gradient(135deg,#064E3B,#047857)',
+    realm1Icon: '📐', realm1Name: 'The Number Jungle',
+    realm2Grad: 'linear-gradient(135deg,#7C2D12,#9A3412)',
+    realm2Icon: '📖', realm2Name: 'The Story Canyon',
+    chestEmoji: '🗺️',
+    aiTitle: '🧭 Trail Guide — Break Any Task',
+    aiSub: 'Your guide will map out every step of the trail ahead!',
+    aiBtnText: 'Map My Trail',
+    aiPromptStyle: 'adventure trail waypoints for a young explorer',
+  }
+};
+
+// ── ONBOARDING ──
+function selectAge(age) {
+  selectedAge = age;
+  document.getElementById('age-primary').classList.toggle('selected', age==='primary');
+  document.getElementById('age-highschool').classList.toggle('selected', age==='highschool');
+  if (age === 'primary') {
+    document.getElementById('themeSection').style.display = 'block';
+    document.getElementById('startBtn').classList.remove('visible');
+  } else {
+    document.getElementById('themeSection').style.display = 'none';
+    selectedTheme = null;
+    document.getElementById('startBtn').classList.add('visible');
+  }
+}
+
+function selectTheme(theme) {
+  selectedTheme = theme;
+  ['fantasy','space','adventure'].forEach(t => {
+    document.getElementById('theme-'+t).classList.toggle('selected', t===theme);
+  });
+  document.getElementById('startBtn').classList.add('visible');
+}
+
+function startApp() {
+  // Hide onboarding, show app — use explicit style overrides
+  const onboard = document.getElementById('screen-onboarding');
+  const app = document.getElementById('screen-app');
+  onboard.style.cssText = 'display:none !important';
+  app.style.cssText = 'display:block !important; min-height:100vh;';
+
+  if (selectedAge === 'primary' && selectedTheme) {
+    document.getElementById('primary-mode').style.display = 'block';
+    document.getElementById('hs-mode').style.display = 'none';
+    applyTheme(selectedTheme);
+  } else if (selectedAge === 'highschool') {
+    document.getElementById('primary-mode').style.display = 'none';
+    document.getElementById('hs-mode').style.display = 'block';
+  } else {
+    // Fallback — show HS mode if nothing selected
+    document.getElementById('primary-mode').style.display = 'none';
+    document.getElementById('hs-mode').style.display = 'block';
+  }
+  // Request notification permission after onboarding
+  requestNotificationPermission();
+}
+
+function applyTheme(t) {
+  const cfg = themes[t];
+  document.getElementById('questHeader').style.background = cfg.headerGrad;
+  document.getElementById('heroEmoji').textContent = cfg.heroEmoji;
+  document.getElementById('heroName').textContent = cfg.heroName;
+  document.getElementById('heroTitle').textContent = cfg.heroTitle;
+  document.getElementById('questStreak').textContent = cfg.streakText;
+  document.getElementById('realm1').style.background = cfg.realm1Grad;
+  document.getElementById('realm1Icon').textContent = cfg.realm1Icon;
+  document.getElementById('realm1Name').textContent = cfg.realm1Name;
+  document.getElementById('realm2').style.background = cfg.realm2Grad;
+  document.getElementById('realm2Icon').textContent = cfg.realm2Icon;
+  document.getElementById('realm2Name').textContent = cfg.realm2Name;
+  document.getElementById('chestEmoji').textContent = cfg.chestEmoji;
+  document.getElementById('aiCardTitle').textContent = cfg.aiTitle;
+  document.getElementById('aiCardSub').textContent = cfg.aiSub;
+  document.getElementById('aiBtnText').textContent = cfg.aiBtnText;
+}
+
+// ── ROLE SWITCHER ──
+function switchRole(role) {
+  ['student','parent','teacher'].forEach(r => {
+    document.getElementById('view-'+r).style.display = r===role ? 'block' : 'none';
+    document.getElementById('rb'+r.charAt(0).toUpperCase()+r.slice(1)).classList.toggle('active', r===role);
+  });
+}
+
+// ── QUEST STEPS ──
+function toggleQuestStep(el, realm) {
+  const wasDone = el.classList.contains('done');
+  el.classList.toggle('done');
+  const gem = el.querySelector('.step-gem');
+  if (!wasDone) {
+    gem.textContent = '✓';
+    questStars++;
+    updateChest();
+    showToast('⭐ Quest step complete! +1 Star!');
+  } else {
+    gem.textContent = '';
+    if (questStars > 0) questStars--;
+    updateChest();
+  }
+  updateRealmProgress(realm);
+}
+
+function updateRealmProgress(realm) {
+  if (realm !== 1) return;
+  const steps = document.querySelectorAll('#realm1Steps .quest-step');
+  const done = document.querySelectorAll('#realm1Steps .quest-step.done').length;
+  const pct = Math.round((done/steps.length)*100);
+  document.getElementById('r1fill').style.width = pct + '%';
+  document.getElementById('r1lbl').textContent = `${done} of ${steps.length} steps complete ${done===steps.length?'🏆':'⚔️'}`;
+  if (done === steps.length) showToast('🏆 Realm Complete! Legendary!');
+}
+
+function updateChest() {
+  const s = document.getElementById('chestStars');
+  const l = document.getElementById('chestStarsLabel');
+  s.textContent = '⭐'.repeat(Math.min(questStars,5)) + (questStars > 5 ? ` x${questStars}` : '');
+  l.textContent = `${questStars} stars collected — keep going!`;
+}
+
+// ── HS TASKS ──
+function toggleHSTask(el) {
+  const wasDone = el.classList.contains('done');
+  el.classList.toggle('done');
+  const check = el.querySelector('.hs-check');
+  if (!wasDone) {
+    check.textContent = '✓';
+    const xpAmt = parseInt(el.querySelector('.hs-task-xp').textContent) || 15;
+    addXP(xpAmt);
+  } else {
+    check.textContent = '';
+  }
+}
+
+function addXP(amount) {
+  xp = Math.min(xp + amount, xpMax);
+  document.getElementById('xpPts').textContent = `⚡ ${xp} / ${xpMax} XP to Level 8`;
+  document.getElementById('xpBarFill').style.width = (xp/xpMax*100) + '%';
+  const offset = 163 - (163*(xp/xpMax));
+  document.getElementById('xpRing').style.strokeDashoffset = offset;
+  showToast(`⚡ +${amount} XP!`);
+}
+
+// ── AI BREAKDOWN (QUEST MODE) ──
+async function breakdownQuest() {
+  const input = document.getElementById('questInput').value.trim();
+  if (!input) { showToast('✏️ Describe your quest first!'); return; }
+  const btn = document.getElementById('aiQuestBtn');
+  const resultDiv = document.getElementById('aiQuestResult');
+  const stepsDiv = document.getElementById('aiQuestSteps');
+  const t = themes[selectedTheme] || themes.fantasy;
+  btn.disabled = true;
+  document.getElementById('aiBtnText').textContent = '✨ Casting spell...';
+  stepsDiv.innerHTML = '';
+  resultDiv.classList.remove('visible');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`You help primary school kids with ADHD break assignments into fun, manageable steps styled as ${t.aiPromptStyle}. 
+Return ONLY a raw JSON array of 4-6 steps. Each object must have "step" (fun, thematic, max 8 words) and "stars" (1 or 2). 
+No markdown, no backticks, no explanation. Just the JSON array.`,
+        messages:[{role:'user',content:`Break this into steps: ${input}`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const steps = JSON.parse(text);
+    steps.forEach((s,i) => {
+      const d = document.createElement('div');
+      d.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #EDE9FE;font-size:13px;';
+      d.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div><div style="flex:1">${s.step}</div><div>${'⭐'.repeat(s.stars||1)}</div>`;
+      if (i === steps.length-1) d.style.borderBottom = 'none';
+      stepsDiv.appendChild(d);
+    });
+    resultDiv.classList.add('visible');
+  } catch(e) {
+    stepsDiv.innerHTML = '<div style="font-size:13px;color:var(--rose)">Couldn\'t reach the wizard. Check your connection!</div>';
+    resultDiv.classList.add('visible');
+  }
+  btn.disabled = false;
+  document.getElementById('aiBtnText').textContent = t.aiBtnText;
+}
+
+// ── AI BREAKDOWN (HS MODE) ──
+async function breakdownHS() {
+  const input = document.getElementById('hsInput').value.trim();
+  if (!input) { showToast('✏️ Describe your assignment first!'); return; }
+  const btn = document.getElementById('hsAiBtn');
+  const resultDiv = document.getElementById('hsAiResult');
+  const stepsDiv = document.getElementById('hsAiSteps');
+  btn.disabled = true;
+  document.getElementById('hsAiBtnText').textContent = '⏳ Breaking it down...';
+  stepsDiv.innerHTML = '';
+  resultDiv.classList.remove('visible');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`You help high school students with ADHD break assignments into clear, achievable steps.
+Return ONLY a raw JSON array of 4-6 steps. Each object: "step" (clear action, max 9 words) and "xp" (10, 15, or 20).
+No markdown, no backticks, no preamble. Just the raw JSON array.`,
+        messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const steps = JSON.parse(text);
+    steps.forEach((s,i) => {
+      const d = document.createElement('div');
+      d.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #EDE9FE;font-size:13px;';
+      d.innerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div>`;
+      if (i === steps.length-1) d.style.borderBottom = 'none';
+      stepsDiv.appendChild(d);
+    });
+    resultDiv.classList.add('visible');
+  } catch(e) {
+    stepsDiv.innerHTML = '<div style="font-size:13px;color:var(--rose)">Connection error. Please try again.</div>';
+    resultDiv.classList.add('visible');
+  }
+  btn.disabled = false;
+  document.getElementById('hsAiBtnText').textContent = 'Break into Steps';
+}
+
+// ── MISC ──
+function publishAssignment() {
+  const t = document.getElementById('aTitle').value.trim();
+  if (!t) { showToast('✏️ Add a title first!'); return; }
+  showToast('✅ Assignment published to students!');
+  document.getElementById('aTitle').value = '';
+}
+
+function approveReward(btn) {
+  btn.textContent = '✓ Approved!';
+  btn.style.background = 'var(--indigo)';
+  btn.disabled = true;
+  showToast('🎮 Reward approved for Georgie!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2300);
+}
+
+// ── SERVICE WORKER + PWA ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      console.log('Focably SW registered:', reg.scope);
+      window._swReg = reg;
+    } catch(e) {
+      console.log('SW registration failed:', e);
+    }
+  });
+}
+
+// ── PUSH NOTIFICATION PERMISSION ──
+// Called after user completes onboarding so it feels contextual
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') return;
+  // Small delay so it doesn't fire the moment the app opens
+  setTimeout(async () => {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      showToast('🔔 Notifications on! We\'ll keep you updated.');
+      subscribeUserToPush();
+    }
+  }, 3000);
+}
+
+async function subscribeUserToPush() {
+  if (!window._swReg) return;
+  try {
+    // VAPID public key placeholder — replace with real key when backend is set up
+    const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+    const sub = await window._swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    console.log('Push subscription:', JSON.stringify(sub));
+    // TODO: send sub to backend to store against this user
+  } catch(e) {
+    console.log('Push subscription failed:', e);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// ── INSTALL PROMPT (Add to Home Screen) ──
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button after a few seconds on the main app
+  setTimeout(() => {
+    if (document.getElementById('screen-app').style.display !== 'none') {
+      showInstallBanner();
+    }
+  }, 10000);
+});
+
+function showInstallBanner() {
+  if (!deferredPrompt) return;
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';
+  banner.innerHTML = `
+    <div style="font-size:28px;">📱</div>
+    <div style="flex:1"><div style="font-weight:700;font-size:14px;">Install Focably</div><div style="font-size:12px;opacity:0.75;">Add to your home screen</div></div>
+    <button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button>
+    <button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner')?.remove();
+  if (result.outcome === 'accepted') showToast('🎉 Focably installed!');
+}
+</script>
+</body>
+</html>

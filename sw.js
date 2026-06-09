@@ -1,0 +1,95 @@
+const CACHE_NAME = 'focably-v1';
+const OFFLINE_URLS = [
+  '/',
+  '/index.html'
+];
+
+// ── INSTALL: cache core files ──
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(OFFLINE_URLS);
+    }).then(() => self.skipWaiting())
+  );
+});
+
+// ── ACTIVATE: clean old caches ──
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+// ── FETCH: serve from cache, fallback to network ──
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      return cached || fetch(event.request).then(response => {
+        // Cache successful GET requests
+        if (event.request.method === 'GET' && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => {
+        // Offline fallback
+        return caches.match('/');
+      });
+    })
+  );
+});
+
+// ── PUSH NOTIFICATIONS ──
+self.addEventListener('push', event => {
+  let data = { title: 'Focably', body: 'You have a new update!', icon: '/icon-192.png' };
+  try {
+    data = event.data.json();
+  } catch(e) {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [200, 100, 200],
+      tag: data.tag || 'focably-notification',
+      renotify: true,
+      data: { url: data.url || '/' },
+      actions: data.actions || []
+    })
+  );
+});
+
+// ── NOTIFICATION CLICK: open app ──
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // If app already open, focus it
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open new window
+      return clients.openWindow(url);
+    })
+  );
+});
+
+// ── BACKGROUND SYNC (for offline task completions) ──
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-tasks') {
+    event.waitUntil(syncTasks());
+  }
+});
+
+async function syncTasks() {
+  // Placeholder — will sync queued task completions when back online
+  console.log('Focably: syncing offline tasks...');
+}
