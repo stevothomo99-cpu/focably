@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Focably">
-<meta name="description" content="School done your way — supporting kids with ADHD through every step">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -22,23 +21,20 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;}
-
-/* SCREENS */
 .screen{min-height:100vh;}
 #screen-loading{display:flex;align-items:center;justify-content:center;background:var(--indigo);}
-#screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;}
+#screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;}
 #screen-onboarding{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;text-align:center;flex-direction:column;}
 #screen-app{display:none;}
-
+ 
 /* LOADING */
 .loading-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:42px;color:white;}
 .loading-logo span{color:var(--violet-light);}
-.loading-dots{display:flex;gap:8px;margin-top:20px;}
+.loading-dots{display:flex;gap:8px;margin-top:20px;justify-content:center;}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--violet-light);animation:bounce 1.2s infinite;}
-.dot:nth-child(2){animation-delay:0.2s;}
-.dot:nth-child(3){animation-delay:0.4s;}
+.dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,80%,100%{transform:scale(0.8);opacity:0.5;}40%{transform:scale(1.2);opacity:1;}}
-
+ 
 /* AUTH */
 .auth-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;}
 .auth-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:32px;color:white;text-align:center;margin-bottom:4px;}
@@ -61,12 +57,10 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .auth-role-btn{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.2s;}
 .auth-role-btn.active{background:var(--violet);border-color:var(--violet);color:white;}
 .auth-error{background:rgba(244,63,94,0.2);border:1px solid rgba(244,63,94,0.4);border-radius:10px;padding:10px 12px;color:#FDA4AF;font-size:13px;margin-bottom:10px;display:none;}
-
+ 
 /* ONBOARDING */
 .onboard-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:36px;color:white;margin-bottom:4px;}
 .onboard-logo span{color:var(--violet-light);}
-.onboard-q{color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;}
-.onboard-sub{color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:22px;}
 .age-row{display:flex;gap:12px;width:100%;max-width:320px;margin-bottom:28px;}
 .age-btn{flex:1;padding:14px 8px;border-radius:14px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.07);color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all 0.2s;text-align:center;}
 .age-btn .age-emoji{font-size:26px;display:block;margin-bottom:5px;}
@@ -80,8 +74,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .theme-card:hover,.theme-card.selected{border-color:var(--amber);background:rgba(245,158,11,0.2);}
 .start-btn{width:100%;max-width:320px;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--violet),#5B21B6);color:white;font-family:'Nunito',sans-serif;font-weight:900;font-size:17px;cursor:pointer;transition:all 0.2s;display:none;margin-top:4px;}
 .start-btn.visible{display:block;}
-.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,0.5);}
-
+ 
 /* TOP NAV */
 .top-nav{background:var(--indigo);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:white;letter-spacing:-0.5px;}
@@ -89,34 +82,36 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .role-switcher{display:flex;gap:5px;}
 .role-btn{padding:5px 11px;border-radius:20px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
 .role-btn.active{background:var(--violet);border-color:var(--violet);color:white;}
-
-/* SCROLL + CARDS */
+ 
+/* LAYOUT */
 .scroll-content{padding:14px 14px 90px;max-width:440px;margin:0 auto;}
 .card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);}
 .card-title{font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;}
-
-/* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #E5E7EB;display:flex;padding:8px 0 14px;box-shadow:0 -4px 16px rgba(30,27,75,0.07);z-index:99;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;}
 .nav-icon{font-size:20px;}
 .nav-label{font-size:10px;font-weight:600;color:var(--gray-500);}
 .nav-item.active .nav-label{color:var(--violet);}
-
-/* TOAST */
 .toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--indigo);color:white;padding:10px 22px;border-radius:30px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(30,27,75,0.35);opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
-/* QUEST HEADER */
+ 
+/* TRUST BADGE */
+.trust-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+.trust-verify{background:#FFF1F2;color:var(--rose);}
+.trust-check{background:#FFF7ED;color:var(--amber);}
+.trust-trust{background:#ECFDF5;color:var(--mint);}
+.trust-champion{background:var(--gray-100);color:var(--violet);}
+.trust-bar-wrap{background:var(--gray-100);border-radius:10px;height:8px;margin:8px 0 4px;}
+.trust-bar-fill{border-radius:10px;height:8px;transition:width 0.8s ease;}
+ 
+/* QUEST STYLES */
 .quest-header{border-radius:20px;padding:20px;margin-bottom:12px;color:white;position:relative;overflow:hidden;}
 .quest-hero-emoji{font-size:46px;margin-bottom:8px;display:block;}
 .quest-hero-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:2px;}
 .quest-hero-title{font-size:13px;opacity:0.8;margin-bottom:14px;}
 .quest-stars-row{display:flex;align-items:center;gap:8px;}
-.quest-star{font-size:20px;}
-.quest-star.empty{opacity:0.3;}
+.quest-star{font-size:20px;}.quest-star.empty{opacity:0.3;}
 .quest-streak{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;margin-top:10px;}
-
-/* REALM CARDS */
 .realm-card{border-radius:16px;padding:16px;margin-bottom:12px;color:white;}
 .realm-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .realm-icon{font-size:26px;}
@@ -126,15 +121,29 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .realm-progress-fill{border-radius:10px;height:8px;background:rgba(255,255,255,0.9);transition:width 0.6s;}
 .realm-progress-label{font-size:11px;opacity:0.8;text-align:right;}
 .quest-step-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
-.quest-step{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,0.12);border-radius:12px;padding:10px 12px;cursor:pointer;transition:all 0.2s;border:1.5px solid rgba(255,255,255,0.1);}
-.quest-step:hover{background:rgba(255,255,255,0.2);}
+.quest-step{border-radius:12px;padding:10px 12px;transition:all 0.2s;border:1.5px solid rgba(255,255,255,0.1);}
 .quest-step.done{background:rgba(255,255,255,0.06);}
+.quest-step.pending{background:rgba(245,158,11,0.2);border-color:rgba(245,158,11,0.4);}
+.quest-step.rejected{background:rgba(244,63,94,0.2);border-color:rgba(244,63,94,0.4);}
+.quest-step:not(.done):not(.pending):not(.rejected){background:rgba(255,255,255,0.12);}
+.step-row{display:flex;align-items:center;gap:10px;}
 .step-gem{width:24px;height:24px;border-radius:50%;border:2.5px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;background:rgba(255,255,255,0.1);}
 .quest-step.done .step-gem{border-color:transparent;background:rgba(255,255,255,0.3);}
+.quest-step.pending .step-gem{border-color:var(--amber);background:rgba(245,158,11,0.3);}
 .step-text{flex:1;font-size:13px;font-weight:600;line-height:1.4;}
 .quest-step.done .step-text{text-decoration:line-through;opacity:0.5;}
-
-/* HS MODE */
+.step-verify-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.15);white-space:nowrap;}
+.proof-upload-area{margin-top:10px;display:none;}
+.proof-upload-area.visible{display:block;}
+.proof-upload-btn{width:100%;padding:10px;border-radius:10px;border:2px dashed rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.2s;}
+.proof-upload-btn:hover{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.5);}
+.proof-preview{margin-top:8px;border-radius:10px;overflow:hidden;max-height:160px;display:none;}
+.proof-preview img{width:100%;object-fit:cover;}
+.submit-proof-btn{width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--amber);color:white;font-weight:700;font-size:13px;cursor:pointer;display:none;}
+.submit-proof-btn.visible{display:block;}
+.rejection-msg{margin-top:8px;background:rgba(244,63,94,0.2);border-radius:8px;padding:8px 10px;font-size:12px;color:#FCA5A5;}
+ 
+/* HS STYLES */
 .hs-header{background:linear-gradient(135deg,var(--violet) 0%,var(--indigo) 100%);border-radius:20px;padding:20px;margin-bottom:12px;color:white;}
 .hs-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:2px;}
 .xp-section{display:flex;align-items:center;gap:14px;}
@@ -146,15 +155,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .xp-bar-track{background:rgba(255,255,255,0.15);border-radius:10px;height:8px;margin-bottom:5px;}
 .xp-bar-fill{background:linear-gradient(90deg,var(--amber),var(--amber-light));border-radius:10px;height:8px;transition:width 1s ease;}
 .hs-streak{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;font-size:12px;margin-top:10px;}
-.hs-task{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;background:var(--gray-50);border:1.5px solid transparent;transition:all 0.2s;cursor:pointer;margin-bottom:7px;}
-.hs-task:hover{border-color:var(--violet-light);}
-.hs-task.done{background:#F0FDF4;border-color:var(--mint-light);}
+.hs-task{border-radius:10px;margin-bottom:7px;overflow:hidden;}
+.hs-task-row{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--gray-50);border:1.5px solid transparent;transition:all 0.2s;cursor:pointer;}
+.hs-task-row:hover{border-color:var(--violet-light);}
+.hs-task.done .hs-task-row{background:#F0FDF4;border-color:var(--mint-light);}
+.hs-task.pending .hs-task-row{background:#FFF7ED;border-color:var(--amber-light);cursor:default;}
+.hs-task.rejected .hs-task-row{background:#FFF1F2;border-color:#FECDD3;cursor:default;}
 .hs-check{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--gray-200);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;background:white;font-size:11px;}
 .hs-task.done .hs-check{background:var(--mint);border-color:var(--mint);color:white;}
+.hs-task.pending .hs-check{background:var(--amber);border-color:var(--amber);color:white;}
+.hs-task.rejected .hs-check{background:var(--rose);border-color:var(--rose);color:white;}
 .hs-task-text{font-size:13px;font-weight:500;line-height:1.4;flex:1;}
 .hs-task.done .hs-task-text{text-decoration:line-through;color:var(--gray-500);}
 .hs-task-xp{font-size:11px;font-weight:700;color:var(--amber);white-space:nowrap;}
-
+.hs-proof-area{padding:10px 11px;background:#FFFBEB;border-top:1px solid var(--amber-light);display:none;}
+.hs-proof-area.visible{display:block;}
+.hs-rejection-area{padding:10px 11px;background:#FFF1F2;border-top:1px solid #FECDD3;display:none;}
+.hs-rejection-area.visible{display:block;font-size:12px;color:var(--rose);}
+ 
 /* PARENT */
 .parent-header{background:linear-gradient(135deg,#0F172A,var(--indigo));border-radius:20px;padding:20px;margin-bottom:12px;color:white;}
 .parent-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:14px;}
@@ -173,11 +191,22 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .subj-row-name{font-weight:600;font-size:13px;margin-bottom:4px;}
 .subj-row-track{background:var(--gray-100);border-radius:10px;height:5px;}
 .subj-row-fill{border-radius:10px;height:5px;}
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:8px;}
-.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
-.alert-text{font-size:13px;line-height:1.4;}
-.alert-time{font-size:11px;color:var(--gray-500);margin-top:2px;}
-
+ 
+/* VERIFICATION QUEUE */
+.verify-item{border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);}
+.verify-header{padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.verify-task-name{font-weight:700;font-size:14px;flex:1;}
+.verify-child-name{font-size:12px;margin-top:2px;opacity:0.8;}
+.verify-proof{width:100%;max-height:200px;object-fit:cover;display:block;}
+.verify-doc{padding:12px 14px;display:flex;align-items:center;gap:10px;background:var(--gray-50);font-size:13px;font-weight:600;}
+.verify-actions{display:flex;gap:8px;padding:10px 14px;background:white;}
+.verify-approve-btn{flex:1;padding:10px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;}
+.verify-reject-btn{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--rose);background:white;color:var(--rose);font-weight:700;font-size:13px;cursor:pointer;}
+.reject-reason-input{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;margin-top:8px;display:none;}
+.reject-reason-input.visible{display:block;}
+.confirm-reject-btn{width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--rose);color:white;font-weight:700;font-size:13px;cursor:pointer;display:none;}
+.confirm-reject-btn.visible{display:block;}
+ 
 /* TEACHER */
 .teacher-header{background:linear-gradient(135deg,#064E3B,#065F46);border-radius:20px;padding:20px;margin-bottom:12px;color:white;}
 .teacher-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:3px;}
@@ -189,17 +218,22 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .form-input:focus{border-color:var(--mint);}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .publish-btn{width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--mint),#059669);border:none;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;}
-.publish-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(16,185,129,0.4);}
-.student-prog-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);}
-.student-prog-row:last-child{border-bottom:none;}
-.s-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;}
-.s-prog-info{flex:1;}
-.s-prog-name{font-weight:600;font-size:13px;margin-bottom:3px;}
-.s-prog-track{background:var(--gray-100);border-radius:10px;height:5px;}
-.s-prog-fill{border-radius:10px;height:5px;}
-.nudge-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--amber-light);background:#FFF7ED;color:var(--amber);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
-
-/* REWARD GRID */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+.toggle-lbl{font-size:13px;font-weight:600;color:var(--gray-700);}
+.toggle-sub{font-size:11px;color:var(--gray-500);margin-top:2px;}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--gray-200);border-radius:24px;transition:0.3s;}
+.toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;}
+.toggle input:checked + .toggle-slider{background:var(--mint);}
+.toggle input:checked + .toggle-slider:before{transform:translateX(20px);}
+ 
+/* INVITE */
+.invite-box{background:linear-gradient(135deg,var(--gray-100),white);border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--gray-200);}
+.invite-code{font-family:'Nunito',sans-serif;font-weight:900;font-size:32px;letter-spacing:6px;color:var(--violet);margin:10px 0;}
+.copy-btn{padding:8px 20px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
+ 
+/* REWARD */
 .reward-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
 .reward-tile{border-radius:14px;padding:14px;text-align:center;border:2px solid var(--amber-light);background:linear-gradient(135deg,#FFF7ED,#FEF3C7);}
 .reward-tile .r-emoji{font-size:28px;margin-bottom:6px;}
@@ -208,27 +242,38 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .reward-tile .r-status{font-size:10px;color:var(--gray-500);margin-top:3px;}
 .reward-tile.unlocked{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border-color:var(--mint-light);}
 .reward-tile.unlocked .r-status{color:var(--mint);font-weight:700;}
-
-/* INVITE */
-.invite-box{background:linear-gradient(135deg,var(--gray-100),white);border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--gray-200);}
-.invite-code{font-family:'Nunito',sans-serif;font-weight:900;font-size:32px;letter-spacing:6px;color:var(--violet);margin:10px 0;}
-.copy-btn{padding:8px 20px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
-
+ 
 /* AI */
 .ai-btn{width:100%;padding:13px;border-radius:12px;border:none;color:white;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;font-family:'Inter',sans-serif;margin-top:6px;}
-.ai-btn:hover{transform:translateY(-1px);}
-.ai-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;}
+.ai-btn:disabled{opacity:0.55;cursor:not-allowed;}
 .ai-result{border-radius:12px;padding:14px;margin-top:10px;display:none;background:var(--gray-50);border-left:3px solid var(--violet);}
 .ai-result.visible{display:block;}
 .ai-step{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:13px;}
 .ai-step:last-child{border-bottom:none;}
 .ai-num{width:22px;height:22px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+ 
+/* STUDENT PROGRESS ROW */
+.student-prog-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);}
+.student-prog-row:last-child{border-bottom:none;}
+.s-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;}
+.s-prog-info{flex:1;}
+.s-prog-name{font-weight:600;font-size:13px;margin-bottom:3px;}
+.s-prog-track{background:var(--gray-100);border-radius:10px;height:5px;}
+.s-prog-fill{border-radius:10px;height:5px;}
+.nudge-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--amber-light);background:#FFF7ED;color:var(--amber);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+ 
+/* LINK ACCOUNT */
+.link-box{background:linear-gradient(135deg,var(--gray-100),white);border-radius:14px;padding:16px;border:1.5px solid var(--gray-200);}
+.link-input-row{display:flex;gap:8px;margin-top:10px;}
+.link-input{flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:14px;font-family:'Inter',sans-serif;outline:none;text-transform:uppercase;letter-spacing:3px;font-weight:700;}
+.link-input:focus{border-color:var(--violet);}
+.link-btn{padding:10px 16px;border-radius:10px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
 </style>
 </head>
 <body>
-
 <div class="toast" id="toast"></div>
-
+<input type="file" id="proofFileInput" accept="image/*,application/pdf,.doc,.docx" style="display:none;" capture="environment">
+ 
 <!-- LOADING -->
 <div class="screen" id="screen-loading" style="display:flex;">
   <div style="text-align:center;">
@@ -236,15 +281,13 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
   </div>
 </div>
-
+ 
 <!-- AUTH -->
 <div class="screen" id="screen-auth" style="display:none;flex-direction:column;">
   <div class="auth-box" style="margin:auto;">
     <div class="auth-logo">Foc<span>ably</span></div>
     <div class="auth-tagline">School done your way 🚀</div>
     <div id="authError" class="auth-error"></div>
-
-    <!-- SIGN IN -->
     <div id="authSignIn">
       <div class="auth-title">Welcome back</div>
       <input class="auth-input" type="email" id="siEmail" placeholder="Email address">
@@ -257,8 +300,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </button>
       <div class="auth-switch">No account? <a onclick="showSignUp()">Sign up free</a></div>
     </div>
-
-    <!-- SIGN UP -->
     <div id="authSignUp" style="display:none;">
       <div class="auth-title">Create account</div>
       <div class="auth-role-row">
@@ -279,21 +320,17 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
   </div>
 </div>
-
+ 
 <!-- ONBOARDING -->
 <div class="screen" id="screen-onboarding" style="display:none;flex-direction:column;">
   <div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:380px;margin:auto;">
     <div class="onboard-logo">Foc<span>ably</span></div>
     <div style="color:rgba(255,255,255,0.6);font-size:14px;margin-bottom:28px;">Let's set up your experience</div>
-    <div class="onboard-q">How old are you?</div>
-    <div class="onboard-sub">We'll set Focably up just right</div>
+    <div style="color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">How old are you?</div>
+    <div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:22px;">We'll set Focably up just right</div>
     <div class="age-row">
-      <div class="age-btn" id="age-primary" onclick="selectAge('primary')">
-        <span class="age-emoji">🎒</span>Primary<br><span style="font-size:11px;opacity:0.7">Ages 6–12</span>
-      </div>
-      <div class="age-btn" id="age-highschool" onclick="selectAge('highschool')">
-        <span class="age-emoji">🎓</span>High School<br><span style="font-size:11px;opacity:0.7">Ages 13–17</span>
-      </div>
+      <div class="age-btn" id="age-primary" onclick="selectAge('primary')"><span class="age-emoji">🎒</span>Primary<br><span style="font-size:11px;opacity:0.7">Ages 6–12</span></div>
+      <div class="age-btn" id="age-highschool" onclick="selectAge('highschool')"><span class="age-emoji">🎓</span>High School<br><span style="font-size:11px;opacity:0.7">Ages 13–17</span></div>
     </div>
     <div class="theme-section" id="themeSection" style="display:none;">
       <div class="theme-label">Choose your Quest World ✨</div>
@@ -306,7 +343,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <button class="start-btn" id="startBtn" onclick="completeOnboarding()">Let's Go! 🎉</button>
   </div>
 </div>
-
+ 
 <!-- MAIN APP -->
 <div class="screen" id="screen-app" style="display:none;">
   <div class="top-nav">
@@ -317,28 +354,50 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <button class="role-btn" id="rbTeacher" onclick="switchRole('teacher')">📚 Teacher</button>
     </div>
   </div>
-
-  <!-- STUDENT -->
+ 
+  <!-- STUDENT VIEW -->
   <div id="view-student" class="scroll-content">
-
+ 
+    <!-- LINK ACCOUNT CARD (shown when not linked) -->
+    <div id="linkAccountCard" class="card" style="display:none;">
+      <div class="card-title">🔗 Link to Your Family</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">Ask your parent for their family invite code and enter it below to get started.</p>
+      <div class="link-box">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);">Enter Family Invite Code</div>
+        <div class="link-input-row">
+          <input class="link-input" type="text" id="inviteCodeInput" placeholder="ABC123" maxlength="6">
+          <button class="link-btn" onclick="linkToFamily()">Link ✓</button>
+        </div>
+      </div>
+    </div>
+ 
     <!-- PRIMARY MODE -->
-    <div id="primary-mode">
+    <div id="primary-mode" style="display:none;">
       <div class="quest-header" id="questHeader" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);">
         <span class="quest-hero-emoji" id="heroEmoji">🧙</span>
         <div class="quest-hero-name" id="heroName">The Apprentice Wizard</div>
         <div class="quest-hero-title" id="heroTitle">Keeper of Knowledge</div>
-        <div class="quest-stars-row" id="questStarsRow">
+        <div class="quest-stars-row">
           <span class="quest-star">⭐</span><span class="quest-star">⭐</span><span class="quest-star">⭐</span>
           <span class="quest-star empty">⭐</span><span class="quest-star empty">⭐</span>
-          <span style="font-size:12px;opacity:0.75;margin-left:4px;" id="starsLabel">3 Quest Stars</span>
+          <span style="font-size:12px;opacity:0.75;margin-left:4px;" id="starsLabel">0 Quest Stars</span>
         </div>
-        <div class="quest-streak">🔥 <span id="streakCount">4</span>-day streak</div>
+        <div class="quest-streak">🔥 <span id="streakCount">0</span>-day streak</div>
       </div>
-
-      <div id="assignmentsContainer">
-        <!-- Loaded from Supabase or demo data -->
+ 
+      <!-- TRUST SCORE -->
+      <div class="card" id="trustCard">
+        <div class="card-title">🛡️ Trust Score</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="trust-badge trust-verify" id="trustBadge">🔴 Verify Mode</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--indigo);" id="trustScoreNum">0</div>
+        </div>
+        <div class="trust-bar-wrap"><div class="trust-bar-fill" id="trustBarFill" style="width:0%;background:var(--rose);"></div></div>
+        <div style="font-size:11px;color:var(--gray-500);" id="trustScoreLabel">Complete verified tasks to build your trust score</div>
       </div>
-
+ 
+      <div id="assignmentsContainer"></div>
+ 
       <div class="card">
         <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
         <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into manageable steps!</p>
@@ -351,43 +410,56 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <div id="aiSteps"></div>
         </div>
       </div>
-
+ 
       <div class="card">
         <div class="card-title">🏆 Treasure Chest</div>
         <div style="text-align:center;padding:8px 0 4px;">
           <div style="font-size:46px;" id="chestEmoji">📦</div>
-          <div style="font-size:18px;margin:6px 0;" id="chestStarsDisplay">⭐⭐⭐</div>
-          <div style="font-size:13px;color:var(--gray-500);" id="chestCount">3 stars collected</div>
+          <div style="font-size:18px;margin:6px 0;" id="chestStarsDisplay">—</div>
+          <div style="font-size:13px;color:var(--gray-500);" id="chestCount">0 stars collected</div>
         </div>
         <div class="reward-grid" id="rewardsContainer">
-          <div class="reward-tile unlocked"><div class="r-emoji">🎮</div><div class="r-name">30 min Screen Time</div><div class="r-cost">⭐ 10 stars</div><div class="r-status">✓ Unlocked!</div></div>
-          <div class="reward-tile"><div class="r-emoji">🍕</div><div class="r-name">Choose Friday Dinner</div><div class="r-cost">⭐ 25 stars</div><div class="r-status">Loading...</div></div>
+          <div class="reward-tile"><div class="r-emoji">🎮</div><div class="r-name">30 min Screen Time</div><div class="r-cost">⭐ 10 stars</div><div class="r-status">Keep going!</div></div>
+          <div class="reward-tile"><div class="r-emoji">🍕</div><div class="r-name">Choose Friday Dinner</div><div class="r-cost">⭐ 25 stars</div><div class="r-status">Keep going!</div></div>
         </div>
       </div>
     </div>
-
+ 
     <!-- HS MODE -->
     <div id="hs-mode" style="display:none;">
       <div class="hs-header">
         <div class="hs-name" id="hsName">Hey there! 👋</div>
-        <div style="font-size:13px;opacity:0.75;margin-bottom:14px;" id="hsSubtitle">Keep up the great work</div>
+        <div style="font-size:13px;opacity:0.75;margin-bottom:14px;">Keep up the great work</div>
         <div class="xp-section">
           <div class="xp-ring-wrap">
             <svg width="64" height="64" viewBox="0 0 64 64">
               <circle class="xp-ring-bg" cx="32" cy="32" r="26"/>
               <circle class="xp-ring-fill" id="xpRing" cx="32" cy="32" r="26"/>
             </svg>
-            <div class="xp-level-num" id="xpLevel">7</div>
+            <div class="xp-level-num" id="xpLevel">1</div>
           </div>
           <div>
-            <div style="font-size:11px;opacity:0.7;margin-bottom:3px;">Level <span id="xpLevelLabel">7</span> — Focus Cadet</div>
-            <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBarFill" style="width:70%"></div></div>
-            <div style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;" id="xpPts">⚡ 350 / 500 XP</div>
+            <div style="font-size:11px;opacity:0.7;margin-bottom:3px;">Level <span id="xpLevelLabel">1</span> — Focus Cadet</div>
+            <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+            <div style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;" id="xpPts">⚡ 0 XP</div>
           </div>
         </div>
-        <div class="hs-streak">🔥 <span id="hsStreakCount">4</span>-day streak</div>
+        <div class="hs-streak">🔥 <span id="hsStreakCount">0</span>-day streak</div>
       </div>
+ 
+      <!-- TRUST SCORE HS -->
+      <div class="card">
+        <div class="card-title">🛡️ Trust Score</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="trust-badge trust-verify" id="hsTrustBadge">🔴 Verify Mode</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--indigo);" id="hsTrustScoreNum">0</div>
+        </div>
+        <div class="trust-bar-wrap"><div class="trust-bar-fill" id="hsTrustBarFill" style="width:0%;background:var(--rose);"></div></div>
+        <div style="font-size:11px;color:var(--gray-500);" id="hsTrustScoreLabel">Complete verified tasks to build your trust score</div>
+      </div>
+ 
       <div id="hsAssignmentsContainer"></div>
+ 
       <div class="card">
         <div class="card-title">🤖 AI Task Breakdown</div>
         <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Paste any assignment and Focably will break it into steps.</p>
@@ -402,64 +474,72 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
     </div>
   </div>
-
-  <!-- PARENT -->
+ 
+  <!-- PARENT VIEW -->
   <div id="view-parent" class="scroll-content" style="display:none;">
     <div class="parent-header">
       <div style="font-size:13px;opacity:0.7;margin-bottom:3px;">Good to see you,</div>
       <div class="parent-name" id="parentName">Loading...</div>
-      <div class="child-tabs" id="childTabs">
-        <div class="child-tab active" id="noChildrenMsg">No children yet</div>
-      </div>
+      <div class="child-tabs" id="childTabs"><div class="child-tab active">Loading...</div></div>
     </div>
-
+ 
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-lbl">Tasks This Week</div><div class="stat-val" id="pTasksDone" style="color:var(--mint)">—</div><div class="stat-sub" id="pTasksSub">loading...</div></div>
       <div class="stat-card"><div class="stat-lbl">Streak</div><div class="stat-val" id="pStreak" style="color:var(--amber)">—</div><div class="stat-sub">days in a row</div></div>
       <div class="stat-card"><div class="stat-lbl">Stars / XP</div><div class="stat-val" id="pStars" style="color:var(--violet)">—</div><div class="stat-sub" id="pStarsSub">loading...</div></div>
-      <div class="stat-card"><div class="stat-lbl">Overdue</div><div class="stat-val" id="pOverdue" style="color:var(--rose)">—</div><div class="stat-sub" style="color:var(--rose)">assignments</div></div>
+      <div class="stat-card">
+        <div class="stat-lbl">Trust Score</div>
+        <div class="stat-val" id="pTrustScore" style="color:var(--mint)">—</div>
+        <div class="stat-sub" id="pTrustLevel">loading...</div>
+      </div>
     </div>
-
+ 
+    <!-- VERIFICATION QUEUE -->
     <div class="card">
-      <div class="card-title">📬 Invite Your Child</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Share this code with your child to connect their account to yours.</p>
+      <div class="card-title">📋 Proof Verification Queue</div>
+      <div id="parentVerifyQueue">
+        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications</div>
+      </div>
+    </div>
+ 
+    <div class="card">
+      <div class="card-title">📬 Family Invite Code</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Share this with your child to link their account.</p>
       <div class="invite-box">
         <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Family Invite Code</div>
         <div class="invite-code" id="familyInviteCode">——</div>
         <button class="copy-btn" onclick="copyInviteCode()">Copy Code</button>
       </div>
     </div>
-
+ 
     <div class="card">
       <div class="card-title">📊 Subject Progress</div>
-      <div id="parentSubjectProgress">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above to see progress</div>
-      </div>
+      <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
     </div>
-
-    <div class="card">
-      <div class="card-title">🔔 Recent Activity</div>
-      <div id="parentAlerts">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No recent activity</div>
-      </div>
-    </div>
-
+ 
     <div class="card">
       <div class="card-title">🏆 Reward Approvals</div>
-      <div id="rewardApprovals">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending approvals</div>
-      </div>
+      <div id="rewardApprovals"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending approvals</div></div>
     </div>
   </div>
-
-  <!-- TEACHER -->
+ 
+  <!-- TEACHER VIEW -->
   <div id="view-teacher" class="scroll-content" style="display:none;">
     <div class="teacher-header">
       <div style="font-size:13px;opacity:0.7;margin-bottom:3px;">Welcome back,</div>
       <div class="teacher-name" id="teacherName">Loading...</div>
       <div style="font-size:13px;opacity:0.75;" id="teacherSubline">Setting up your class...</div>
     </div>
-
+ 
+    <!-- TEACHER VERIFICATION QUEUE -->
+    <div class="card">
+      <div class="card-title">📋 Proof Verification Queue</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Only tasks you created appear here.</p>
+      <div id="teacherVerifyQueue">
+        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications</div>
+      </div>
+    </div>
+ 
     <div class="card">
       <div class="card-title">🏫 Your Class</div>
       <div id="classSetup">
@@ -474,10 +554,10 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <div class="invite-code" id="classInviteCode">——</div>
           <button class="copy-btn" onclick="copyClassCode()">Copy Code</button>
         </div>
-        <p style="font-size:12px;color:var(--gray-500);text-align:center;margin-top:10px;">Share this with students/parents to join your class</p>
+        <p style="font-size:12px;color:var(--gray-500);text-align:center;margin-top:10px;">Share with parents/students to join your class</p>
       </div>
     </div>
-
+ 
     <div class="card">
       <div class="card-title">📤 Upload Assignment</div>
       <div class="upload-zone" onclick="showToast('📎 File upload coming soon!')">
@@ -491,17 +571,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div class="form-grp"><label class="form-lbl">Est. Hours</label><input class="form-input" type="number" placeholder="2" min="0.5" step="0.5" id="aHours"></div>
       </div>
       <div class="form-grp"><label class="form-lbl">Instructions</label><textarea class="form-input" rows="3" id="aDesc" placeholder="What do students need to do?"></textarea></div>
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-lbl">📸 Require Proof of Completion</div>
+            <div class="toggle-sub">Students must upload photo or document before task is marked complete</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="requireProofToggle"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
     </div>
-
+ 
     <div class="card">
       <div class="card-title">📊 Student Progress</div>
-      <div id="teacherStudentProgress">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Create a class to see student progress</div>
-      </div>
+      <div id="teacherStudentProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Create a class to see student progress</div></div>
     </div>
   </div>
-
+ 
   <div class="bottom-nav">
     <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
     <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
@@ -510,766 +597,692 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="nav-item" onclick="signOut()"><div class="nav-icon">⚙️</div><div class="nav-label">Sign Out</div></div>
   </div>
 </div>
-
+ 
 <script>
-// ══════════════════════════════════════
-// SUPABASE INIT
-// ══════════════════════════════════════
 const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
-
-// ══════════════════════════════════════
-// STATE
-// ══════════════════════════════════════
-let currentUser = null;
-let currentProfile = null;
-let currentFamily = null;
-let currentChildren = [];
-let selectedChildId = null;
-let selectedAge = null;
-let selectedTheme = null;
-let selectedRole = 'parent';
-
+ 
+let currentUser = null, currentProfile = null, currentFamily = null;
+let currentChildren = [], selectedChildId = null;
+let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
+let currentProofFile = null, currentProofTaskId = null;
+ 
 const themes = {
-  fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'🔥 streak · ⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#92400E,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard — Break Any Task', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
-  space:     { grad:'linear-gradient(135deg,#1E3A8A,#2563EB)', emoji:'👨‍🚀', name:'Cadet Explorer', title:'Navigator · Space Academy', streak:'🔥 streak · 🚀 Lieutenant', realm1Grad:'linear-gradient(135deg,#1E3A8A,#1D4ED8)', realm2Grad:'linear-gradient(135deg,#065F46,#059669)', chest:'🛸', aiTitle:'🤖 Mission Control — Break Any Task', aiSub:'Mission Control divides your assignment into missions!', aiBtnText:'Plan My Missions', aiStyle:'space mission objectives' },
-  adventure: { grad:'linear-gradient(135deg,#064E3B,#065F46)', emoji:'🧭', name:'The Young Explorer', title:'Trailblazer · Exploration Corps', streak:'🔥 streak · 🗺️ Pathfinder', realm1Grad:'linear-gradient(135deg,#064E3B,#047857)', realm2Grad:'linear-gradient(135deg,#7C2D12,#9A3412)', chest:'🗺️', aiTitle:'🧭 Trail Guide — Break Any Task', aiSub:'Your guide will map every step of the trail!', aiBtnText:'Map My Trail', aiStyle:'adventure trail waypoints' }
+  fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#92400E,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
+  space:     { grad:'linear-gradient(135deg,#1E3A8A,#2563EB)', emoji:'👨‍🚀', name:'Cadet Explorer', title:'Navigator · Space Academy', streak:'🚀 Lieutenant', realm1Grad:'linear-gradient(135deg,#1E3A8A,#1D4ED8)', realm2Grad:'linear-gradient(135deg,#065F46,#059669)', chest:'🛸', aiTitle:'🤖 Mission Control', aiSub:'Divide your assignment into missions!', aiBtnText:'Plan My Missions', aiStyle:'space mission objectives' },
+  adventure: { grad:'linear-gradient(135deg,#064E3B,#065F46)', emoji:'🧭', name:'The Young Explorer', title:'Trailblazer · Exploration Corps', streak:'🗺️ Pathfinder', realm1Grad:'linear-gradient(135deg,#064E3B,#047857)', realm2Grad:'linear-gradient(135deg,#7C2D12,#9A3412)', chest:'🗺️', aiTitle:'🧭 Trail Guide', aiSub:'Map every step of the trail!', aiBtnText:'Map My Trail', aiStyle:'adventure trail waypoints' }
 };
-
-// ══════════════════════════════════════
-// INIT — Check auth state on load
-// ══════════════════════════════════════
+ 
+const trustConfig = {
+  verify:   { label:'🔴 Verify Mode', cls:'trust-verify', color:'var(--rose)', next:'21 points to Check mode' },
+  check:    { label:'🟡 Check Mode', cls:'trust-check', color:'var(--amber)', next:'51 points to Trust mode' },
+  trust:    { label:'🟢 Trust Mode', cls:'trust-trust', color:'var(--mint)', next:'81 points to Champion!' },
+  champion: { label:'⭐ Champion!', cls:'trust-champion', color:'var(--violet)', next:'Maximum trust achieved!' }
+};
+ 
+// ── INIT ──
 window.addEventListener('load', async () => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
   const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    await loadProfile();
-  } else {
-    showScreen('auth');
-  }
+  if (session) { currentUser = session.user; await loadProfile(); }
+  else showScreen('auth');
 });
-
+ 
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    currentUser = session.user;
-    await loadProfile();
-  } else if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    currentProfile = null;
-    showScreen('auth');
-  }
+  if (event === 'SIGNED_IN' && session) { currentUser = session.user; await loadProfile(); }
+  else if (event === 'SIGNED_OUT') { currentUser = null; showScreen('auth'); }
 });
-
-// ══════════════════════════════════════
-// SCREEN MANAGEMENT
-// ══════════════════════════════════════
+ 
 function showScreen(name) {
   ['loading','auth','onboarding','app'].forEach(s => {
     const el = document.getElementById('screen-' + s);
     el.style.display = 'none';
   });
-  const target = document.getElementById('screen-' + name);
-  if (name === 'auth' || name === 'onboarding') {
-    target.style.display = 'flex';
-  } else {
-    target.style.display = 'block';
-  }
+  const t = document.getElementById('screen-' + name);
+  t.style.display = ['auth','onboarding'].includes(name) ? 'flex' : 'block';
 }
-
-// ══════════════════════════════════════
-// AUTH FUNCTIONS
-// ══════════════════════════════════════
-function showSignUp() {
-  document.getElementById('authSignIn').style.display = 'none';
-  document.getElementById('authSignUp').style.display = 'block';
-  clearError();
-}
-function showSignIn() {
-  document.getElementById('authSignUp').style.display = 'none';
-  document.getElementById('authSignIn').style.display = 'block';
-  clearError();
-}
-function selectRole(role) {
-  selectedRole = role;
-  ['parent','teacher','student'].forEach(r => {
-    document.getElementById('role-' + r).classList.toggle('active', r === role);
-  });
-}
-function showError(msg) {
-  const el = document.getElementById('authError');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-function clearError() {
-  document.getElementById('authError').style.display = 'none';
-}
-
+ 
+// ── AUTH ──
+function showSignUp() { document.getElementById('authSignIn').style.display='none'; document.getElementById('authSignUp').style.display='block'; clearError(); }
+function showSignIn() { document.getElementById('authSignUp').style.display='none'; document.getElementById('authSignIn').style.display='block'; clearError(); }
+function selectRole(r) { selectedRole=r; ['parent','teacher','student'].forEach(x => document.getElementById('role-'+x).classList.toggle('active',x===r)); }
+function showError(m) { const e=document.getElementById('authError'); e.textContent=m; e.style.display='block'; }
+function clearError() { document.getElementById('authError').style.display='none'; }
+ 
 async function signIn() {
-  const email = document.getElementById('siEmail').value.trim();
-  const password = document.getElementById('siPassword').value;
-  if (!email || !password) { showError('Please enter your email and password'); return; }
-  const btn = document.getElementById('siBtn');
-  btn.disabled = true; btn.textContent = 'Signing in...';
-  const { error } = await db.auth.signInWithPassword({ email, password });
-  btn.disabled = false; btn.textContent = 'Sign In';
-  if (error) showError(error.message);
+  const email=document.getElementById('siEmail').value.trim(), pw=document.getElementById('siPassword').value;
+  if(!email||!pw){showError('Enter email and password');return;}
+  const btn=document.getElementById('siBtn'); btn.disabled=true; btn.textContent='Signing in...';
+  const {error}=await db.auth.signInWithPassword({email,password:pw});
+  btn.disabled=false; btn.textContent='Sign In';
+  if(error) showError(error.message);
 }
-
 async function signUp() {
-  const name = document.getElementById('suName').value.trim();
-  const email = document.getElementById('suEmail').value.trim();
-  const password = document.getElementById('suPassword').value;
-  if (!name || !email || !password) { showError('Please fill in all fields'); return; }
-  if (password.length < 6) { showError('Password must be at least 6 characters'); return; }
-  const btn = document.getElementById('suBtn');
-  btn.disabled = true; btn.textContent = 'Creating account...';
-  const { error } = await db.auth.signUp({
-    email, password,
-    options: { data: { full_name: name, role: selectedRole } }
-  });
-  btn.disabled = false; btn.textContent = 'Create Account';
-  if (error) { showError(error.message); return; }
-  showToast('✅ Account created! Check your email to confirm.');
+  const name=document.getElementById('suName').value.trim(), email=document.getElementById('suEmail').value.trim(), pw=document.getElementById('suPassword').value;
+  if(!name||!email||!pw){showError('Fill in all fields');return;}
+  if(pw.length<6){showError('Password needs 6+ characters');return;}
+  const btn=document.getElementById('suBtn'); btn.disabled=true; btn.textContent='Creating...';
+  const {error}=await db.auth.signUp({email,password:pw,options:{data:{full_name:name,role:selectedRole}}});
+  btn.disabled=false; btn.textContent='Create Account';
+  if(error){showError(error.message);return;}
+  showToast('✅ Account created! Signing you in...');
 }
-
-async function signInGoogle() {
-  await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin }
-  });
-}
-
-async function signOut() {
-  await db.auth.signOut();
-  showToast('👋 Signed out');
-}
-
-// ══════════════════════════════════════
-// PROFILE LOADING
-// ══════════════════════════════════════
+async function signInGoogle() { await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}}); }
+async function signOut() { await db.auth.signOut(); showToast('👋 Signed out'); }
+ 
+// ── PROFILE ──
 async function loadProfile() {
   showScreen('loading');
-  const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
-
-  if (!profile) {
-    // Profile not created yet (trigger may have failed) — create it
-    await db.from('profiles').insert({
-      id: currentUser.id,
-      email: currentUser.email,
-      full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
-      role: currentUser.user_metadata?.role || 'parent'
-    });
-    const { data: newProfile } = await db.from('profiles').select('*').eq('id', currentUser.id).single();
-    currentProfile = newProfile;
-  } else {
-    currentProfile = profile;
+  let {data:profile} = await db.from('profiles').select('*').eq('id',currentUser.id).single();
+  if(!profile) {
+    await db.from('profiles').insert({id:currentUser.id,email:currentUser.email,full_name:currentUser.user_metadata?.full_name||currentUser.email.split('@')[0],role:currentUser.user_metadata?.role||'parent'});
+    const r = await db.from('profiles').select('*').eq('id',currentUser.id).single();
+    profile = r.data;
   }
-
-  // Route by role
-  if (currentProfile.role === 'student') {
-    if (!currentProfile.age_group) {
-      showScreen('onboarding');
-    } else {
-      await loadStudentApp();
-    }
-  } else if (currentProfile.role === 'parent') {
-    await loadParentApp();
-  } else if (currentProfile.role === 'teacher') {
-    await loadTeacherApp();
-  }
+  currentProfile = profile;
+  if(profile.role==='student') {
+    if(!profile.age_group) showScreen('onboarding');
+    else await loadStudentApp();
+  } else if(profile.role==='parent') await loadParentApp();
+  else if(profile.role==='teacher') await loadTeacherApp();
 }
-
-// ══════════════════════════════════════
-// ONBOARDING (students only)
-// ══════════════════════════════════════
+ 
+// ── ONBOARDING ──
 function selectAge(age) {
-  selectedAge = age;
-  document.getElementById('age-primary').classList.toggle('selected', age === 'primary');
-  document.getElementById('age-highschool').classList.toggle('selected', age === 'highschool');
-  if (age === 'primary') {
-    document.getElementById('themeSection').style.display = 'block';
-    document.getElementById('startBtn').classList.remove('visible');
-  } else {
-    document.getElementById('themeSection').style.display = 'none';
-    selectedTheme = null;
-    document.getElementById('startBtn').classList.add('visible');
-  }
+  selectedAge=age;
+  document.getElementById('age-primary').classList.toggle('selected',age==='primary');
+  document.getElementById('age-highschool').classList.toggle('selected',age==='highschool');
+  if(age==='primary'){document.getElementById('themeSection').style.display='block';document.getElementById('startBtn').classList.remove('visible');}
+  else{document.getElementById('themeSection').style.display='none';selectedTheme=null;document.getElementById('startBtn').classList.add('visible');}
 }
 function selectTheme(t) {
-  selectedTheme = t;
-  ['fantasy','space','adventure'].forEach(x => document.getElementById('theme-'+x).classList.toggle('selected', x===t));
+  selectedTheme=t;
+  ['fantasy','space','adventure'].forEach(x=>document.getElementById('theme-'+x).classList.toggle('selected',x===t));
   document.getElementById('startBtn').classList.add('visible');
 }
 async function completeOnboarding() {
-  if (!selectedAge) { showToast('Pick your age group first!'); return; }
-  if (selectedAge === 'primary' && !selectedTheme) { showToast('Pick a quest world!'); return; }
-  await db.from('profiles').update({ age_group: selectedAge, theme: selectedTheme }).eq('id', currentUser.id);
-  currentProfile.age_group = selectedAge;
-  currentProfile.theme = selectedTheme;
+  if(!selectedAge){showToast('Pick your age group!');return;}
+  if(selectedAge==='primary'&&!selectedTheme){showToast('Pick a quest world!');return;}
+  await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme}).eq('id',currentUser.id);
+  currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme;
   await loadStudentApp();
 }
-
-// ══════════════════════════════════════
-// STUDENT APP
-// ══════════════════════════════════════
+ 
+// ── STUDENT APP ──
 async function loadStudentApp() {
   showScreen('app');
-  // Show only student role button
-  document.getElementById('rbParent').style.display = 'none';
-  document.getElementById('rbTeacher').style.display = 'none';
-  document.getElementById('rbStudent').textContent = '🎒 Me';
+  document.getElementById('rbParent').style.display='none';
+  document.getElementById('rbTeacher').style.display='none';
   switchRole('student');
-
-  const age = currentProfile.age_group;
-  const theme = currentProfile.theme || 'fantasy';
-
-  if (age === 'primary') {
-    document.getElementById('primary-mode').style.display = 'block';
-    document.getElementById('hs-mode').style.display = 'none';
-    applyTheme(theme);
-  } else {
-    document.getElementById('primary-mode').style.display = 'none';
-    document.getElementById('hs-mode').style.display = 'block';
-    document.getElementById('hsName').textContent = `Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;
-  }
-
-  // Load assignments
+  const age=currentProfile.age_group, theme=currentProfile.theme||'fantasy';
+  if(age==='primary'){document.getElementById('primary-mode').style.display='block';document.getElementById('hs-mode').style.display='none';applyTheme(theme);}
+  else{document.getElementById('primary-mode').style.display='none';document.getElementById('hs-mode').style.display='block';document.getElementById('hsName').textContent=`Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;}
   await loadStudentAssignments(age);
   requestNotificationPermission();
 }
-
+ 
 async function loadStudentAssignments(ageGroup) {
-  // Find child record
-  const { data: child } = await db.from('children').select('*').eq('profile_id', currentUser.id).single();
-
-  if (!child) {
-    // Show empty state
-    const container = ageGroup === 'primary' ? 'assignmentsContainer' : 'hsAssignmentsContainer';
-    document.getElementById(container).innerHTML = `
-      <div class="card" style="text-align:center;padding:24px;">
-        <div style="font-size:36px;margin-bottom:10px;">🔗</div>
-        <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Not linked yet</div>
-        <div style="font-size:13px;color:var(--gray-500);">Ask your parent to share their family invite code, then enter it in Settings.</div>
-      </div>`;
+  const {data:child} = await db.from('children').select('*').eq('profile_id',currentUser.id).single();
+  if(!child) {
+    document.getElementById('linkAccountCard').style.display='block';
+    document.getElementById('primary-mode').style.display='none';
+    document.getElementById('hs-mode').style.display='none';
     return;
   }
-
-  const { data: assignments } = await db.from('assignments')
-    .select('*, tasks(*)')
-    .eq('child_id', child.id)
-    .eq('status', 'active')
-    .order('due_date', { ascending: true });
-
-  if (ageGroup === 'primary') {
-    renderPrimaryAssignments(assignments || [], child);
-  } else {
-    renderHSAssignments(assignments || [], child);
-  }
+  document.getElementById('linkAccountCard').style.display='none';
+  updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
+  if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
+  else{document.getElementById('hs-mode').style.display='block';}
+  const {data:assignments} = await db.from('assignments').select('*, tasks(*)').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true});
+  if(ageGroup==='primary') renderPrimaryAssignments(assignments||[],child);
+  else renderHSAssignments(assignments||[],child);
 }
-
+ 
+function updateTrustDisplay(child, prefix='') {
+  const score = child.trust_score || 0;
+  const level = child.trust_level || 'verify';
+  const cfg = trustConfig[level];
+  const pEl = document.getElementById(prefix+'trustBadge');
+  const sEl = document.getElementById(prefix+'trustScoreNum');
+  const bEl = document.getElementById(prefix+'trustBarFill');
+  const lEl = document.getElementById(prefix+'trustScoreLabel');
+  if(pEl){pEl.className='trust-badge '+cfg.cls;pEl.textContent=cfg.label;}
+  if(sEl) sEl.textContent=score;
+  if(bEl){bEl.style.width=score+'%';bEl.style.background=cfg.color;}
+  if(lEl) lEl.textContent=cfg.next;
+}
+ 
 function renderPrimaryAssignments(assignments, child) {
-  const t = themes[currentProfile.theme || 'fantasy'];
-  const container = document.getElementById('assignmentsContainer');
-  if (!assignments.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:20px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:700;">No quests right now!</div><div style="font-size:13px;color:var(--gray-500);margin-top:4px;">Check back when your teacher adds work.</div></div>`;
-    return;
-  }
-  container.innerHTML = assignments.map((a, i) => {
-    const tasks = a.tasks || [];
-    const done = tasks.filter(t => t.completed).length;
-    const pct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
-    const grad = i === 0 ? t.realm1Grad : t.realm2Grad;
-    const icons = ['📐','📖','🔬','🌏','🎨','🏃'];
-    return `
-      <div class="realm-card" style="background:${grad};">
-        <div class="realm-header">
-          <div class="realm-icon">${icons[i % icons.length]}</div>
-          <div><div class="realm-name">${a.title}</div><div class="realm-teacher">Due ${a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No date'}</div></div>
-        </div>
-        <div class="realm-progress-track"><div class="realm-progress-fill" style="width:${pct}%"></div></div>
-        <div class="realm-progress-label">${done} of ${tasks.length} steps complete</div>
-        <div class="quest-step-list">
-          ${tasks.map(task => `
-            <div class="quest-step ${task.completed ? 'done' : ''}" onclick="toggleTask('${task.id}', '${a.id}', this)">
-              <div class="step-gem">${task.completed ? '✓' : ''}</div>
-              <div class="step-text">${task.title}</div>
-              <div style="font-size:14px;">⭐</div>
-            </div>`).join('')}
-        </div>
-      </div>`;
+  const t = themes[currentProfile.theme||'fantasy'];
+  document.getElementById('streakCount').textContent=child.streak||0;
+  document.getElementById('starsLabel').textContent=`${child.stars||0} Quest Stars`;
+  document.getElementById('chestStarsDisplay').textContent=child.stars>0?'⭐'.repeat(Math.min(child.stars,5))+(child.stars>5?` ×${child.stars}`:''):'No stars yet';
+  document.getElementById('chestCount').textContent=`${child.stars||0} stars collected`;
+  document.getElementById('chestEmoji').textContent=t.chest;
+  const container=document.getElementById('assignmentsContainer');
+  if(!assignments.length){container.innerHTML=`<div class="card" style="text-align:center;padding:20px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:700;">No quests yet!</div><div style="font-size:13px;color:var(--gray-500);margin-top:4px;">Check back when your teacher adds work.</div></div>`;return;}
+  const icons=['📐','📖','🔬','🌏','🎨','🏃'];
+  container.innerHTML=assignments.map((a,i)=>{
+    const tasks=a.tasks||[];
+    const done=tasks.filter(t=>t.completed).length;
+    const pct=tasks.length?Math.round((done/tasks.length)*100):0;
+    const grad=i===0?t.realm1Grad:t.realm2Grad;
+    return `<div class="realm-card" style="background:${grad};">
+      <div class="realm-header"><div class="realm-icon">${icons[i%icons.length]}</div>
+      <div><div class="realm-name">${a.title}</div><div class="realm-teacher">Due ${a.due_date?new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}):'No date'}</div></div></div>
+      <div class="realm-progress-track"><div class="realm-progress-fill" style="width:${pct}%"></div></div>
+      <div class="realm-progress-label">${done} of ${tasks.length} steps complete</div>
+      <div class="quest-step-list">${tasks.map(task=>renderQuestStep(task)).join('')}</div>
+    </div>`;
   }).join('');
-
-  // Update stars display
-  document.getElementById('starsLabel').textContent = `${child.stars} Quest Stars`;
-  document.getElementById('chestStarsDisplay').textContent = '⭐'.repeat(Math.min(child.stars, 5)) + (child.stars > 5 ? ` ×${child.stars}` : '');
-  document.getElementById('chestCount').textContent = `${child.stars} stars collected`;
-  document.getElementById('streakCount').textContent = child.streak || 0;
-  document.getElementById('chestEmoji').textContent = t.chest;
 }
-
+ 
+function renderQuestStep(task) {
+  const isPending = task.verification_status==='pending';
+  const isRejected = task.verification_status==='rejected';
+  const isDone = task.completed && task.verification_status==='approved';
+  const isNoVerify = task.completed && !task.verification_required;
+  const cls = isDone||isNoVerify?'done':isPending?'pending':isRejected?'rejected':'';
+  const gemContent = isDone||isNoVerify?'✓':isPending?'⏳':isRejected?'✗':'';
+  const proofArea = task.verification_required && !isDone && !isNoVerify ? `
+    <div class="proof-upload-area ${isPending?'':'visible'}" id="proof-${task.id}" style="${isPending?'display:none':''}">
+      <div class="proof-upload-btn" onclick="triggerProofUpload('${task.id}')">📸 Upload Proof (photo or document)</div>
+      <div class="proof-preview" id="preview-${task.id}"><img id="previewImg-${task.id}" src="" alt="proof"></div>
+      <button class="submit-proof-btn" id="submitProof-${task.id}" onclick="submitProof('${task.id}')">✓ Submit Proof</button>
+    </div>` : '';
+  const rejectionMsg = isRejected ? `<div class="rejection-msg">❌ Proof rejected: ${task.rejection_reason||'Try again with better proof'}</div>` : '';
+  const pendingMsg = isPending ? `<div style="font-size:11px;color:rgba(245,158,11,0.9);margin-top:6px;">⏳ Waiting for approval...</div>` : '';
+  const verifyBadge = task.verification_required ? `<span class="step-verify-badge">📸</span>` : '';
+  const clickHandler = !task.verification_required&&!isDone ? `onclick="toggleQuestStep('${task.id}',this)"` : '';
+  return `<div class="quest-step ${cls}" id="step-${task.id}" ${clickHandler}>
+    <div class="step-row"><div class="step-gem">${gemContent}</div><div class="step-text">${task.title}</div>${verifyBadge}<div style="font-size:14px;">⭐</div></div>
+    ${proofArea}${rejectionMsg}${pendingMsg}
+  </div>`;
+}
+ 
 function renderHSAssignments(assignments, child) {
-  const container = document.getElementById('hsAssignmentsContainer');
-  if (!assignments.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:20px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:700;">No assignments right now!</div><div style="font-size:13px;color:var(--gray-500);margin-top:4px;">Check back when your teacher adds work.</div></div>`;
-    return;
-  }
-  const colors = [['#EDE9FE',var_violet='var(--violet)'],['#FEF3C7','var(--amber)'],['#ECFDF5','var(--mint)'],['#FFF1F2','var(--rose)']];
-  const icons = ['📐','📖','🔬','🌏'];
-  container.innerHTML = assignments.map((a, i) => {
-    const tasks = a.tasks || [];
-    const done = tasks.filter(t => t.completed).length;
-    const pct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
-    const [bg, col] = colors[i % colors.length];
-    return `
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:18px;">${icons[i%icons.length]}</div>
-          <div><div style="font-weight:700;font-size:15px;">${a.title}</div><div style="font-size:12px;color:var(--gray-500);">Due ${a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No date'}</div></div>
-        </div>
-        <div style="background:var(--gray-100);border-radius:10px;height:6px;margin-bottom:3px;"><div style="background:${col};border-radius:10px;height:6px;width:${pct}%;"></div></div>
-        <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-bottom:10px;">${done} of ${tasks.length} tasks done</div>
-        ${tasks.map(task => `
-          <div class="hs-task ${task.completed ? 'done' : ''}" onclick="toggleTask('${task.id}', '${a.id}', this)">
-            <div class="hs-check">${task.completed ? '✓' : ''}</div>
-            <div class="hs-task-text">${task.title}</div>
-            <div class="hs-task-xp">+${task.xp_value} XP</div>
-          </div>`).join('')}
-      </div>`;
+  document.getElementById('hsStreakCount').textContent=child.streak||0;
+  const xp=child.xp||0;
+  document.getElementById('xpPts').textContent=`⚡ ${xp} XP`;
+  const level=Math.floor(xp/500)+1;
+  document.getElementById('xpLevel').textContent=level;
+  document.getElementById('xpLevelLabel').textContent=level;
+  document.getElementById('xpBarFill').style.width=((xp%500)/500*100)+'%';
+  document.getElementById('xpRing').style.strokeDashoffset=163-(163*((xp%500)/500));
+  const container=document.getElementById('hsAssignmentsContainer');
+  if(!assignments.length){container.innerHTML=`<div class="card" style="text-align:center;padding:20px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:700;">No assignments yet!</div></div>`;return;}
+  const colors=[['#EDE9FE','var(--violet)'],['#FEF3C7','var(--amber)'],['#ECFDF5','var(--mint)'],['#FFF1F2','var(--rose)']];
+  const icons=['📐','📖','🔬','🌏'];
+  container.innerHTML=assignments.map((a,i)=>{
+    const tasks=a.tasks||[];
+    const done=tasks.filter(t=>t.completed).length;
+    const pct=tasks.length?Math.round((done/tasks.length)*100):0;
+    const [bg,col]=colors[i%colors.length];
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:18px;">${icons[i%icons.length]}</div>
+        <div><div style="font-weight:700;font-size:15px;">${a.title}</div><div style="font-size:12px;color:var(--gray-500);">Due ${a.due_date?new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}):'No date'}</div></div>
+      </div>
+      <div style="background:var(--gray-100);border-radius:10px;height:6px;margin-bottom:3px;"><div style="background:${col};border-radius:10px;height:6px;width:${pct}%;transition:width 0.6s;"></div></div>
+      <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-bottom:10px;">${done} of ${tasks.length} tasks done</div>
+      ${tasks.map(task=>renderHSTask(task)).join('')}
+    </div>`;
   }).join('');
-
-  document.getElementById('hsStreakCount').textContent = child.streak || 0;
-  const xp = child.xp || 0;
-  document.getElementById('xpPts').textContent = `⚡ ${xp} XP`;
 }
-
-async function toggleTask(taskId, assignmentId, el) {
-  const wasDone = el.classList.contains('done');
-  const newState = !wasDone;
-  el.classList.toggle('done', newState);
-
-  // Update check indicator
-  const check = el.querySelector('.step-gem') || el.querySelector('.hs-check');
-  if (check) check.textContent = newState ? '✓' : '';
-
-  const { error } = await db.from('tasks').update({
-    completed: newState,
-    completed_at: newState ? new Date().toISOString() : null
-  }).eq('id', taskId);
-
-  if (error) {
-    el.classList.toggle('done', wasDone);
-    if (check) check.textContent = wasDone ? '✓' : '';
-    showToast('❌ Could not save — try again');
-  } else {
-    showToast(newState ? '⭐ Step complete!' : '↩️ Step unchecked');
+ 
+function renderHSTask(task) {
+  const isPending=task.verification_status==='pending';
+  const isRejected=task.verification_status==='rejected';
+  const isDone=task.completed&&(task.verification_status==='approved'||!task.verification_required);
+  const cls=isDone?'done':isPending?'pending':isRejected?'rejected':'';
+  const checkContent=isDone?'✓':isPending?'⏳':isRejected?'✗':'';
+  const verifyBadge=task.verification_required?`<span style="font-size:10px;color:var(--amber);font-weight:700;margin-left:4px;">📸</span>`:'';
+  const clickHandler=!task.verification_required&&!isDone?`onclick="toggleHSTask('${task.id}',this)"`:'';
+  const proofArea=task.verification_required&&!isDone?`
+    <div class="hs-proof-area ${isPending?'':'visible'}" id="hsproof-${task.id}" style="${isPending?'display:none':''}">
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px;">📸 Upload proof to complete this task</div>
+      <div style="border:2px dashed var(--amber-light);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--amber);" onclick="triggerProofUpload('${task.id}')">Tap to upload photo or document</div>
+      <button style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:none;background:var(--amber);color:white;font-weight:700;font-size:13px;cursor:pointer;display:none;" id="hsSubmitProof-${task.id}" onclick="submitProof('${task.id}')">✓ Submit Proof</button>
+    </div>`:'';
+  const rejectionArea=isRejected?`<div class="hs-rejection-area visible">❌ Rejected: ${task.rejection_reason||'Try again with clearer proof'}</div>`:'';
+  const pendingArea=isPending?`<div class="hs-proof-area visible" style="background:#FFFBEB;"><div style="font-size:12px;color:var(--amber);font-weight:600;">⏳ Proof submitted — waiting for approval</div></div>`:'';
+  return `<div class="hs-task ${cls}" id="hstask-${task.id}">
+    <div class="hs-task-row" ${clickHandler}>
+      <div class="hs-check">${checkContent}</div>
+      <div class="hs-task-text">${task.title}${verifyBadge}</div>
+      <div class="hs-task-xp">+${task.xp_value} XP</div>
+    </div>
+    ${proofArea}${rejectionArea}${pendingArea}
+  </div>`;
+}
+ 
+// ── TASK COMPLETION ──
+async function toggleQuestStep(taskId, el) {
+  const wasDone=el.classList.contains('done');
+  if(wasDone) return;
+  el.classList.add('done');
+  el.querySelector('.step-gem').textContent='✓';
+  const {error}=await db.from('tasks').update({completed:true,completed_at:new Date().toISOString(),verification_status:'none'}).eq('id',taskId);
+  if(error){el.classList.remove('done');el.querySelector('.step-gem').textContent='';showToast('❌ Could not save');return;}
+  showToast('⭐ Step complete!');
+}
+ 
+async function toggleHSTask(taskId, el) {
+  const row=el.closest('.hs-task');
+  if(!row||row.classList.contains('done')) return;
+  row.classList.add('done');
+  row.querySelector('.hs-check').textContent='✓';
+  const {error}=await db.from('tasks').update({completed:true,completed_at:new Date().toISOString(),verification_status:'none'}).eq('id',taskId);
+  if(error){row.classList.remove('done');row.querySelector('.hs-check').textContent='';showToast('❌ Could not save');return;}
+  showToast('⚡ Task complete!');
+}
+ 
+// ── PROOF UPLOAD ──
+function triggerProofUpload(taskId) {
+  currentProofTaskId = taskId;
+  document.getElementById('proofFileInput').click();
+}
+ 
+document.getElementById('proofFileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  currentProofFile = file;
+  const taskId = currentProofTaskId;
+  // Show preview for images
+  if(file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const prev = document.getElementById('preview-'+taskId);
+      const img = document.getElementById('previewImg-'+taskId);
+      if(prev&&img) { img.src=ev.target.result; prev.style.display='block'; }
+    };
+    reader.readAsDataURL(file);
+  }
+  // Show submit button
+  const submitBtn = document.getElementById('submitProof-'+taskId) || document.getElementById('hsSubmitProof-'+taskId);
+  if(submitBtn) submitBtn.style.display='block';
+  showToast(`📎 ${file.name} ready to submit`);
+  this.value = '';
+});
+ 
+async function submitProof(taskId) {
+  if(!currentProofFile) { showToast('Select a file first!'); return; }
+  const btn = document.getElementById('submitProof-'+taskId) || document.getElementById('hsSubmitProof-'+taskId);
+  if(btn) { btn.disabled=true; btn.textContent='Uploading...'; }
+  try {
+    const fileExt = currentProofFile.name.split('.').pop();
+    const fileName = `${currentUser.id}/${taskId}-${Date.now()}.${fileExt}`;
+    const { data: uploadData, error: uploadError } = await db.storage
+      .from('task-proofs')
+      .upload(fileName, currentProofFile);
+    if(uploadError) throw uploadError;
+    const { data: { publicUrl } } = db.storage.from('task-proofs').getPublicUrl(fileName);
+    await db.from('tasks').update({
+      verification_status:'pending',
+      proof_url: publicUrl,
+      proof_filename: currentProofFile.name,
+      proof_submitted_at: new Date().toISOString(),
+      completed: false
+    }).eq('id', taskId);
+    // Notify parent
+    const {data:task} = await db.from('tasks').select('child_id,title').eq('id',taskId).single();
+    if(task) {
+      const {data:child} = await db.from('children').select('*, families(parent_id)').eq('id',task.child_id).single();
+      if(child?.families?.parent_id) {
+        await db.from('notifications').insert({
+          recipient_id: child.families.parent_id,
+          sender_id: currentUser.id,
+          child_id: task.child_id,
+          type: 'task_complete',
+          title: '📸 Proof submitted!',
+          body: `${currentProfile.full_name} submitted proof for: "${task.title}"`
+        });
+      }
+    }
+    currentProofFile = null;
+    showToast('✅ Proof submitted! Waiting for approval.');
+    // Reload assignments
+    await loadStudentAssignments(currentProfile.age_group);
+  } catch(e) {
+    if(btn){btn.disabled=false;btn.textContent='✓ Submit Proof';}
+    showToast('❌ Upload failed. Try again.');
+    console.error(e);
   }
 }
-
+ 
 function applyTheme(t) {
-  const cfg = themes[t] || themes.fantasy;
-  document.getElementById('questHeader').style.background = cfg.grad;
-  document.getElementById('heroEmoji').textContent = cfg.emoji;
-  document.getElementById('heroName').textContent = cfg.name;
-  document.getElementById('heroTitle').textContent = cfg.title;
-  document.getElementById('chestEmoji').textContent = cfg.chest;
-  document.getElementById('aiCardTitle').textContent = cfg.aiTitle;
-  document.getElementById('aiCardSub').textContent = cfg.aiSub;
-  document.getElementById('aiBtnText').textContent = cfg.aiBtnText;
+  const cfg=themes[t]||themes.fantasy;
+  document.getElementById('questHeader').style.background=cfg.grad;
+  document.getElementById('heroEmoji').textContent=cfg.emoji;
+  document.getElementById('heroName').textContent=cfg.name;
+  document.getElementById('heroTitle').textContent=cfg.title;
+  document.getElementById('chestEmoji').textContent=cfg.chest;
+  document.getElementById('aiCardTitle').textContent=cfg.aiTitle;
+  document.getElementById('aiCardSub').textContent=cfg.aiSub;
+  document.getElementById('aiBtnText').textContent=cfg.aiBtnText;
 }
-
-// ══════════════════════════════════════
-// PARENT APP
-// ══════════════════════════════════════
+ 
+// ── LINK TO FAMILY ──
+async function linkToFamily() {
+  const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
+  if(code.length!==6){showToast('Enter the 6-character code');return;}
+  const {data:family} = await db.from('families').select('*').eq('invite_code',code).single();
+  if(!family){showToast('❌ Code not found — check with your parent');return;}
+  // Create child record linked to this family and profile
+  const {data:existing} = await db.from('children').select('id').eq('profile_id',currentUser.id).single();
+  if(existing){showToast('Already linked!');return;}
+  const {error} = await db.from('children').insert({
+    profile_id: currentUser.id,
+    family_id: family.id,
+    name: currentProfile.full_name,
+    age_group: currentProfile.age_group,
+    theme: currentProfile.theme
+  });
+  if(error){showToast('❌ Could not link account');return;}
+  showToast('✅ Linked to family! Loading your quests...');
+  await loadStudentAssignments(currentProfile.age_group);
+}
+ 
+// ── PARENT APP ──
 async function loadParentApp() {
   showScreen('app');
-  document.getElementById('rbTeacher').style.display = 'none';
+  document.getElementById('rbTeacher').style.display='none';
   switchRole('parent');
-  document.getElementById('parentName').textContent = currentProfile.full_name + ' 👋';
-
-  // Load or create family
-  const { data: family } = await db.from('families').select('*').eq('parent_id', currentUser.id).single();
-  if (family) {
-    currentFamily = family;
-  } else {
-    const { data: newFamily } = await db.from('families').insert({
-      parent_id: currentUser.id,
-      family_name: currentProfile.full_name + "'s Family"
-    }).select().single();
-    currentFamily = newFamily;
+  document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
+  let {data:family} = await db.from('families').select('*').eq('parent_id',currentUser.id).single();
+  if(!family) {
+    const {data:nf} = await db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().single();
+    family=nf;
   }
-
-  document.getElementById('familyInviteCode').textContent = currentFamily?.invite_code || '——';
-
-  // Load children
-  const { data: children } = await db.from('children').select('*').eq('family_id', currentFamily.id);
-  currentChildren = children || [];
+  currentFamily=family;
+  document.getElementById('familyInviteCode').textContent=family?.invite_code||'——';
+  const {data:children} = await db.from('children').select('*').eq('family_id',family.id);
+  currentChildren=children||[];
   renderChildTabs();
-  if (currentChildren.length) {
-    selectedChildId = currentChildren[0].id;
-    await loadChildStats(selectedChildId);
-  }
+  if(currentChildren.length){selectedChildId=currentChildren[0].id;await loadChildStats(selectedChildId);}
+  await loadParentVerifyQueue();
 }
-
+ 
 function renderChildTabs() {
-  const tabs = document.getElementById('childTabs');
-  if (!currentChildren.length) {
-    tabs.innerHTML = '<div class="child-tab active">No children yet — share invite code!</div>';
-    return;
-  }
-  tabs.innerHTML = currentChildren.map((c, i) => `
-    <div class="child-tab ${i===0?'active':''}" onclick="selectChild('${c.id}', this)">${c.name}</div>
-  `).join('') + '<div class="child-tab" onclick="">+ Add</div>';
+  const tabs=document.getElementById('childTabs');
+  if(!currentChildren.length){tabs.innerHTML='<div class="child-tab active">No children yet</div>';return;}
+  tabs.innerHTML=currentChildren.map((c,i)=>`<div class="child-tab ${i===0?'active':''}" onclick="selectChild('${c.id}',this)">${c.name}</div>`).join('')+'<div class="child-tab">+ Add</div>';
 }
-
-async function selectChild(childId, el) {
-  document.querySelectorAll('.child-tab').forEach(t => t.classList.remove('active'));
+ 
+async function selectChild(childId,el) {
+  document.querySelectorAll('.child-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  selectedChildId = childId;
+  selectedChildId=childId;
   await loadChildStats(childId);
 }
-
+ 
 async function loadChildStats(childId) {
-  const child = currentChildren.find(c => c.id === childId);
-  if (!child) return;
-
-  document.getElementById('pStreak').textContent = `🔥 ${child.streak || 0}`;
-  document.getElementById('pStars').textContent = child.age_group === 'primary' ? `⭐ ${child.stars || 0}` : `⚡ ${child.xp || 0}`;
-  document.getElementById('pStarsSub').textContent = child.age_group === 'primary' ? 'Quest stars' : 'XP earned';
-
-  const { data: assignments } = await db.from('assignments')
-    .select('*, tasks(*)')
-    .eq('child_id', childId)
-    .eq('status', 'active');
-
-  const allTasks = (assignments || []).flatMap(a => a.tasks || []);
-  const doneTasks = allTasks.filter(t => t.completed).length;
-  const today = new Date().toISOString().split('T')[0];
-  const overdue = (assignments || []).filter(a => a.due_date && a.due_date < today).length;
-
-  document.getElementById('pTasksDone').textContent = `${doneTasks}/${allTasks.length}`;
-  document.getElementById('pTasksSub').textContent = `${allTasks.length ? Math.round(doneTasks/allTasks.length*100) : 0}% complete`;
-  document.getElementById('pOverdue').textContent = overdue;
-
+  const child=currentChildren.find(c=>c.id===childId);
+  if(!child) return;
+  // Trust score display
+  document.getElementById('pTrustScore').textContent=child.trust_score||0;
+  const lvl=trustConfig[child.trust_level||'verify'];
+  document.getElementById('pTrustLevel').textContent=lvl.label;
+  document.getElementById('pTrustScore').style.color=lvl.color;
+  document.getElementById('pStreak').textContent=`🔥 ${child.streak||0}`;
+  document.getElementById('pStars').textContent=child.age_group==='primary'?`⭐ ${child.stars||0}`:`⚡ ${child.xp||0}`;
+  document.getElementById('pStarsSub').textContent=child.age_group==='primary'?'Quest stars':'XP earned';
+  const {data:assignments} = await db.from('assignments').select('*, tasks(*)').eq('child_id',childId).eq('status','active');
+  const allTasks=(assignments||[]).flatMap(a=>a.tasks||[]);
+  const doneTasks=allTasks.filter(t=>t.completed).length;
+  const today=new Date().toISOString().split('T')[0];
+  const overdue=(assignments||[]).filter(a=>a.due_date&&a.due_date<today).length;
+  document.getElementById('pTasksDone').textContent=`${doneTasks}/${allTasks.length}`;
+  document.getElementById('pTasksSub').textContent=`${allTasks.length?Math.round(doneTasks/allTasks.length*100):0}% complete`;
   // Subject progress
-  const subjectEl = document.getElementById('parentSubjectProgress');
-  if (!assignments?.length) {
-    subjectEl.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet</div>';
-  } else {
-    const icons = ['📐','📖','🔬','🌏','🎨'];
-    const colors = ['var(--violet)','var(--amber)','var(--mint)','var(--rose)','var(--indigo)'];
-    subjectEl.innerHTML = assignments.map((a, i) => {
-      const tasks = a.tasks || [];
-      const done = tasks.filter(t => t.completed).length;
-      const pct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
-      return `
-        <div class="subj-row">
-          <div class="subj-row-icon" style="background:var(--gray-100);">${icons[i%icons.length]}</div>
-          <div class="subj-row-info">
-            <div class="subj-row-name">${a.title}</div>
-            <div class="subj-row-track"><div class="subj-row-fill" style="background:${colors[i%colors.length]};width:${pct}%"></div></div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:${colors[i%colors.length]}">${pct}%</div>
-        </div>`;
-    }).join('');
-  }
-
-  // Recent activity
-  const { data: notifs } = await db.from('notifications')
-    .select('*')
-    .eq('child_id', childId)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  const alertEl = document.getElementById('parentAlerts');
-  if (!notifs?.length) {
-    alertEl.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No recent activity</div>';
-  } else {
-    alertEl.innerHTML = notifs.map(n => `
-      <div class="alert-item" style="background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
-        <div class="alert-dot" style="background:var(--violet)"></div>
-        <div><div class="alert-text">${n.body}</div><div class="alert-time">${new Date(n.created_at).toLocaleDateString('en-AU')}</div></div>
-      </div>`).join('');
-  }
-
-  // Reward approvals
-  const { data: rewards } = await db.from('rewards')
-    .select('*')
-    .eq('child_id', childId)
-    .eq('status', 'pending_approval');
-
-  const rewardEl = document.getElementById('rewardApprovals');
-  if (!rewards?.length) {
-    rewardEl.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending approvals</div>';
-  } else {
-    rewardEl.innerHTML = rewards.map(r => `
-      <div style="display:flex;align-items:center;gap:12px;background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:8px;">
-        <div style="font-size:28px;">${r.emoji}</div>
-        <div style="flex:1"><div style="font-weight:700;font-size:14px;">${r.title}</div><div style="font-size:12px;color:var(--gray-500);">Requested by child</div></div>
-        <button onclick="approveReward('${r.id}', this)" style="padding:7px 14px;border-radius:20px;border:none;background:var(--mint);color:white;font-weight:700;font-size:12px;cursor:pointer;">Approve ✓</button>
-      </div>`).join('');
-  }
-}
-
-async function approveReward(rewardId, btn) {
-  await db.from('rewards').update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', rewardId);
-  btn.textContent = '✓ Approved!';
-  btn.style.background = 'var(--indigo)';
-  btn.disabled = true;
-  showToast('🎉 Reward approved!');
-}
-
-function copyInviteCode() {
-  const code = document.getElementById('familyInviteCode').textContent;
-  navigator.clipboard.writeText(code).then(() => showToast('📋 Invite code copied!'));
-}
-
-// ══════════════════════════════════════
-// TEACHER APP
-// ══════════════════════════════════════
-async function loadTeacherApp() {
-  showScreen('app');
-  document.getElementById('rbParent').style.display = 'none';
-  switchRole('teacher');
-  document.getElementById('teacherName').textContent = currentProfile.full_name + ' 👩‍🏫';
-
-  // Check for existing class
-  const { data: classes } = await db.from('classes').select('*').eq('teacher_id', currentUser.id);
-  if (classes?.length) {
-    const cls = classes[0];
-    document.getElementById('classSetup').style.display = 'none';
-    document.getElementById('classInfo').style.display = 'block';
-    document.getElementById('classInviteCode').textContent = cls.invite_code;
-    document.getElementById('teacherSubline').textContent = `${cls.name} · ${cls.year_group || ''}`;
-    await loadClassProgress(cls.id);
-  }
-}
-
-async function createClass() {
-  const name = document.getElementById('className').value.trim();
-  const subject = document.getElementById('classSubject').value.trim();
-  const year = document.getElementById('classYear').value.trim();
-  if (!name || !subject) { showToast('Enter class name and subject'); return; }
-  const { data, error } = await db.from('classes').insert({
-    teacher_id: currentUser.id, name, subject, year_group: year
-  }).select().single();
-  if (error) { showToast('❌ Error creating class'); return; }
-  document.getElementById('classSetup').style.display = 'none';
-  document.getElementById('classInfo').style.display = 'block';
-  document.getElementById('classInviteCode').textContent = data.invite_code;
-  document.getElementById('teacherSubline').textContent = `${name} · ${year}`;
-  showToast('✅ Class created!');
-}
-
-async function loadClassProgress(classId) {
-  const { data: members } = await db.from('class_members')
-    .select('*, children(*)')
-    .eq('class_id', classId);
-
-  const el = document.getElementById('teacherStudentProgress');
-  if (!members?.length) {
-    el.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students yet — share your class invite code!</div>';
-    return;
-  }
-  const colors = ['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
-  const textColors = ['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
-  el.innerHTML = members.map((m, i) => {
-    const c = m.children;
-    if (!c) return '';
-    const initial = c.name?.charAt(0).toUpperCase() || '?';
-    return `
-      <div class="student-prog-row">
-        <div class="s-avatar" style="background:${colors[i%colors.length]};color:${textColors[i%textColors.length]}">${initial}</div>
-        <div class="s-prog-info">
-          <div class="s-prog-name">${c.name}</div>
-          <div class="s-prog-track"><div class="s-prog-fill" style="background:${textColors[i%textColors.length]};width:${Math.floor(Math.random()*80+10)}%"></div></div>
-        </div>
-        <div class="s-prog-pct" style="color:${textColors[i%textColors.length]}">Active</div>
-        <button class="nudge-btn" onclick="sendNudge('${c.id}','${c.name}')">Nudge 👋</button>
-      </div>`;
+  const subjectEl=document.getElementById('parentSubjectProgress');
+  if(!assignments?.length){subjectEl.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet</div>';return;}
+  const icons=['📐','📖','🔬','🌏','🎨'];
+  const colors=['var(--violet)','var(--amber)','var(--mint)','var(--rose)','var(--indigo)'];
+  subjectEl.innerHTML=assignments.map((a,i)=>{
+    const tasks=a.tasks||[];
+    const done=tasks.filter(t=>t.completed).length;
+    const pct=tasks.length?Math.round((done/tasks.length)*100):0;
+    return `<div class="subj-row"><div class="subj-row-icon" style="background:var(--gray-100);">${icons[i%icons.length]}</div><div class="subj-row-info"><div class="subj-row-name">${a.title}</div><div class="subj-row-track"><div class="subj-row-fill" style="background:${colors[i%colors.length]};width:${pct}%"></div></div></div><div style="font-size:12px;font-weight:700;color:${colors[i%colors.length]}">${pct}%</div></div>`;
   }).join('');
 }
-
-async function publishAssignment() {
-  const title = document.getElementById('aTitle').value.trim();
-  const due = document.getElementById('aDue').value;
-  const desc = document.getElementById('aDesc').value.trim();
-  const hours = document.getElementById('aHours').value;
-  if (!title) { showToast('✏️ Add a title first'); return; }
-
-  // Get teacher's class
-  const { data: classes } = await db.from('classes').select('*').eq('teacher_id', currentUser.id);
-  if (!classes?.length) { showToast('Create a class first!'); return; }
-
-  // Get class members
-  const { data: members } = await db.from('class_members')
-    .select('child_id')
-    .eq('class_id', classes[0].id);
-
-  if (!members?.length) { showToast('No students in class yet'); return; }
-
-  // Create assignment for each student
-  const assignments = members.map(m => ({
-    created_by: currentUser.id,
-    class_id: classes[0].id,
-    child_id: m.child_id,
-    title, description: desc,
-    due_date: due || null,
-    estimated_hours: hours || null,
-    subject: classes[0].subject
-  }));
-
-  const { error } = await db.from('assignments').insert(assignments);
-  if (error) { showToast('❌ Error publishing'); return; }
-
-  showToast('✅ Assignment published to all students!');
-  document.getElementById('aTitle').value = '';
-  document.getElementById('aDesc').value = '';
+ 
+async function loadParentVerifyQueue() {
+  if(!currentChildren.length) return;
+  const childIds=currentChildren.map(c=>c.id);
+  const {data:pendingTasks} = await db.from('tasks')
+    .select('*, assignments(title,subject), children(name)')
+    .in('child_id',childIds)
+    .eq('verification_status','pending')
+    .order('proof_submitted_at',{ascending:true});
+  const el=document.getElementById('parentVerifyQueue');
+  if(!pendingTasks?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';return;}
+  el.innerHTML=pendingTasks.map(task=>renderVerifyItem(task,'parent')).join('');
 }
-
-async function sendNudge(childId, childName) {
-  // Find parent of this child
-  const { data: child } = await db.from('children').select('*, families(parent_id)').eq('id', childId).single();
-  if (child?.families?.parent_id) {
-    await db.from('notifications').insert({
-      recipient_id: child.families.parent_id,
-      sender_id: currentUser.id,
-      child_id: childId,
-      type: 'nudge',
-      title: `Nudge from teacher`,
-      body: `${currentProfile.full_name} wants to check in on ${childName}'s progress.`
-    });
+ 
+function renderVerifyItem(task, role) {
+  const isImage = task.proof_url && (task.proof_url.match(/\.(jpg|jpeg|png|gif|webp)/i));
+  const proofEl = task.proof_url ? (isImage ?
+    `<img class="verify-proof" src="${task.proof_url}" alt="proof" onerror="this.style.display='none'">` :
+    `<div class="verify-doc">📄 <span>${task.proof_filename||'Document uploaded'}</span> <a href="${task.proof_url}" target="_blank" style="color:var(--violet);font-weight:600;margin-left:auto;">View ↗</a></div>`) :
+    `<div class="verify-doc" style="color:var(--gray-500);">No proof file attached</div>`;
+  return `<div class="verify-item" id="verifyItem-${task.id}">
+    <div class="verify-header" style="background:var(--gray-50);">
+      <div>
+        <div class="verify-task-name">${task.title}</div>
+        <div class="verify-child-name" style="color:var(--gray-500);">${task.children?.name||'Student'} · ${task.assignments?.title||'Assignment'}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Submitted ${task.proof_submitted_at?new Date(task.proof_submitted_at).toLocaleDateString('en-AU'):''}</div>
+      </div>
+      <div style="font-size:28px;">📸</div>
+    </div>
+    ${proofEl}
+    <div class="verify-actions">
+      <button class="verify-approve-btn" onclick="approveVerification('${task.id}','${task.child_id}','${role}')">✅ Approve</button>
+      <button class="verify-reject-btn" onclick="showRejectInput('${task.id}')">❌ Reject</button>
+    </div>
+    <div style="padding:0 14px 10px;background:white;display:none;" id="rejectPanel-${task.id}">
+      <input class="reject-reason-input visible" type="text" placeholder="Reason for rejection (optional)" id="rejectReason-${task.id}">
+      <button class="confirm-reject-btn visible" onclick="confirmReject('${task.id}','${task.child_id}','${role}')">Confirm Rejection</button>
+    </div>
+  </div>`;
+}
+ 
+function showRejectInput(taskId) {
+  document.getElementById('rejectPanel-'+taskId).style.display='block';
+}
+ 
+async function approveVerification(taskId, childId, role) {
+  const btn=document.getElementById('verifyItem-'+taskId)?.querySelector('.verify-approve-btn');
+  if(btn){btn.disabled=true;btn.textContent='Approving...';}
+  const {error} = await db.rpc('approve_task_verification',{p_task_id:taskId,p_approver_id:currentUser.id});
+  if(error) {
+    // Fallback manual update if RPC not available
+    await db.from('tasks').update({verification_status:'approved',verified_by:currentUser.id,verified_at:new Date().toISOString(),completed:true,completed_at:new Date().toISOString()}).eq('id',taskId);
+    await updateTrustScoreManual(childId,'approved');
   }
-  showToast(`👋 Nudge sent!`);
+  document.getElementById('verifyItem-'+taskId)?.remove();
+  showToast('✅ Proof approved! Stars awarded.');
+  if(role==='parent') await loadChildStats(selectedChildId);
 }
-
-function copyClassCode() {
-  const code = document.getElementById('classInviteCode').textContent;
-  navigator.clipboard.writeText(code).then(() => showToast('📋 Class code copied!'));
+ 
+async function confirmReject(taskId, childId, role) {
+  const reason=document.getElementById('rejectReason-'+taskId)?.value||'';
+  await db.from('tasks').update({verification_status:'rejected',verified_by:currentUser.id,verified_at:new Date().toISOString(),completed:false,rejection_reason:reason,proof_url:null,proof_submitted_at:null}).eq('id',taskId);
+  await updateTrustScoreManual(childId,'rejected');
+  document.getElementById('verifyItem-'+taskId)?.remove();
+  showToast('❌ Proof rejected. Child notified.');
 }
-
-// ══════════════════════════════════════
-// ROLE SWITCHER
-// ══════════════════════════════════════
+ 
+async function updateTrustScoreManual(childId, action) {
+  const {data:child} = await db.from('children').select('trust_score').eq('id',childId).single();
+  if(!child) return;
+  const points = action==='approved'?2:action==='rejected'?-3:1;
+  const newScore = Math.max(0,Math.min(100,(child.trust_score||0)+points));
+  const newLevel = newScore>=81?'champion':newScore>=51?'trust':newScore>=21?'check':'verify';
+  await db.from('children').update({trust_score:newScore,trust_level:newLevel}).eq('id',childId);
+}
+ 
+async function approveReward(rewardId,btn) {
+  await db.from('rewards').update({status:'approved',approved_at:new Date().toISOString()}).eq('id',rewardId);
+  btn.textContent='✓ Approved!';btn.style.background='var(--indigo)';btn.disabled=true;
+  showToast('🎉 Reward approved!');
+}
+function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('familyInviteCode').textContent).then(()=>showToast('📋 Invite code copied!')); }
+ 
+// ── TEACHER APP ──
+async function loadTeacherApp() {
+  showScreen('app');
+  document.getElementById('rbParent').style.display='none';
+  switchRole('teacher');
+  document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
+  const {data:classes} = await db.from('classes').select('*').eq('teacher_id',currentUser.id);
+  if(classes?.length) {
+    const cls=classes[0];
+    document.getElementById('classSetup').style.display='none';
+    document.getElementById('classInfo').style.display='block';
+    document.getElementById('classInviteCode').textContent=cls.invite_code;
+    document.getElementById('teacherSubline').textContent=`${cls.name} · ${cls.year_group||''}`;
+    await loadClassProgress(cls.id);
+    await loadTeacherVerifyQueue(cls.id);
+  }
+}
+ 
+async function loadTeacherVerifyQueue(classId) {
+  // Get assignments by this teacher
+  const {data:assignments} = await db.from('assignments').select('id').eq('created_by',currentUser.id);
+  if(!assignments?.length) return;
+  const assignmentIds=assignments.map(a=>a.id);
+  const {data:pendingTasks} = await db.from('tasks')
+    .select('*, assignments(title), children(name)')
+    .in('assignment_id',assignmentIds)
+    .eq('verification_status','pending')
+    .order('proof_submitted_at',{ascending:true});
+  const el=document.getElementById('teacherVerifyQueue');
+  if(!pendingTasks?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';return;}
+  el.innerHTML=pendingTasks.map(task=>renderVerifyItem(task,'teacher')).join('');
+}
+ 
+async function createClass() {
+  const name=document.getElementById('className').value.trim(),subject=document.getElementById('classSubject').value.trim(),year=document.getElementById('classYear').value.trim();
+  if(!name||!subject){showToast('Enter class name and subject');return;}
+  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year}).select().single();
+  if(error){showToast('❌ Error creating class');return;}
+  document.getElementById('classSetup').style.display='none';
+  document.getElementById('classInfo').style.display='block';
+  document.getElementById('classInviteCode').textContent=data.invite_code;
+  document.getElementById('teacherSubline').textContent=`${name} · ${year}`;
+  showToast('✅ Class created!');
+}
+ 
+async function loadClassProgress(classId) {
+  const {data:members} = await db.from('class_members').select('*, children(*)').eq('class_id',classId);
+  const el=document.getElementById('teacherStudentProgress');
+  if(!members?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students yet — share your class code!</div>';return;}
+  const colors=['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
+  const textColors=['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
+  el.innerHTML=members.map((m,i)=>{
+    const c=m.children; if(!c) return '';
+    const trustCfg=trustConfig[c.trust_level||'verify'];
+    return `<div class="student-prog-row">
+      <div class="s-avatar" style="background:${colors[i%colors.length]};color:${textColors[i%textColors.length]}">${c.name?.charAt(0).toUpperCase()||'?'}</div>
+      <div class="s-prog-info"><div class="s-prog-name">${c.name} <span style="font-size:10px;">${trustCfg.label}</span></div><div class="s-prog-track"><div class="s-prog-fill" style="background:${textColors[i%textColors.length]};width:${c.trust_score||0}%"></div></div></div>
+      <button class="nudge-btn" onclick="sendNudge('${c.id}','${c.name}')">Nudge 👋</button>
+    </div>`;
+  }).join('');
+}
+ 
+async function publishAssignment() {
+  const title=document.getElementById('aTitle').value.trim(),due=document.getElementById('aDue').value,desc=document.getElementById('aDesc').value.trim(),hours=document.getElementById('aHours').value;
+  const requireProof=document.getElementById('requireProofToggle').checked;
+  if(!title){showToast('✏️ Add a title first');return;}
+  const {data:classes}=await db.from('classes').select('*').eq('teacher_id',currentUser.id);
+  if(!classes?.length){showToast('Create a class first!');return;}
+  const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classes[0].id);
+  if(!members?.length){showToast('No students in class yet');return;}
+  const assignments=members.map(m=>({created_by:currentUser.id,class_id:classes[0].id,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:classes[0].subject}));
+  const {data:newAssignments,error}=await db.from('assignments').insert(assignments).select();
+  if(error){showToast('❌ Error publishing');return;}
+  // Create default tasks for each assignment if proof required
+  if(requireProof&&newAssignments) {
+    const defaultTasks=newAssignments.flatMap(a=>[
+      {assignment_id:a.id,child_id:a.child_id,title:'Complete the assignment',xp_value:20,star_value:2,sort_order:1,verification_required:true,verification_type:'either'},
+    ]);
+    await db.from('tasks').insert(defaultTasks);
+  }
+  showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!${requireProof?' (Proof required)':''}`);
+  document.getElementById('aTitle').value='';document.getElementById('aDesc').value='';document.getElementById('requireProofToggle').checked=false;
+}
+ 
+async function sendNudge(childId,childName) {
+  const {data:child}=await db.from('children').select('*, families(parent_id)').eq('id',childId).single();
+  if(child?.families?.parent_id) {
+    await db.from('notifications').insert({recipient_id:child.families.parent_id,sender_id:currentUser.id,child_id:childId,type:'nudge',title:'Nudge from teacher',body:`${currentProfile.full_name} sent a nudge about ${childName}'s progress.`});
+  }
+  showToast(`👋 Nudge sent to ${childName}'s parent!`);
+}
+function copyClassCode() { navigator.clipboard.writeText(document.getElementById('classInviteCode').textContent).then(()=>showToast('📋 Class code copied!')); }
+ 
+// ── ROLE SWITCHER ──
 function switchRole(role) {
-  ['student','parent','teacher'].forEach(r => {
-    document.getElementById('view-' + r).style.display = r === role ? 'block' : 'none';
-    const btn = document.getElementById('rb' + r.charAt(0).toUpperCase() + r.slice(1));
-    if (btn) btn.classList.toggle('active', r === role);
+  ['student','parent','teacher'].forEach(r=>{
+    document.getElementById('view-'+r).style.display=r===role?'block':'none';
+    const btn=document.getElementById('rb'+r.charAt(0).toUpperCase()+r.slice(1));
+    if(btn) btn.classList.toggle('active',r===role);
   });
 }
-
-// ══════════════════════════════════════
-// AI BREAKDOWN
-// ══════════════════════════════════════
+ 
+// ── AI BREAKDOWN ──
 async function breakdownTask() {
-  const input = document.getElementById('questInput').value.trim();
-  if (!input) { showToast('✏️ Describe your task first!'); return; }
-  const t = themes[currentProfile?.theme || 'fantasy'];
-  const btn = document.getElementById('aiBtn');
-  btn.disabled = true;
-  document.getElementById('aiBtnText').textContent = '✨ Summoning steps...';
-  document.getElementById('aiSteps').innerHTML = '';
-  document.getElementById('aiResult').classList.remove('visible');
+  const input=document.getElementById('questInput').value.trim();
+  if(!input){showToast('✏️ Describe your task first!');return;}
+  const t=themes[currentProfile?.theme||'fantasy'];
+  const btn=document.getElementById('aiBtn');
+  btn.disabled=true;document.getElementById('aiBtnText').textContent='✨ Summoning...';
+  document.getElementById('aiSteps').innerHTML='';document.getElementById('aiResult').classList.remove('visible');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:1000,
-        system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,
-        messages:[{role:'user',content:`Break this into steps: ${input}`}]
-      })
-    });
-    const data = await res.json();
-    const steps = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
-    document.getElementById('aiSteps').innerHTML = steps.map((s,i) => `
-      <div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div>${'⭐'.repeat(s.stars||1)}</div></div>`).join('');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
+    const data=await res.json();
+    const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    document.getElementById('aiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div>${'⭐'.repeat(s.stars||1)}</div></div>`).join('');
     document.getElementById('aiResult').classList.add('visible');
   } catch(e) {
-    document.getElementById('aiSteps').innerHTML = '<div style="font-size:13px;color:var(--rose)">Couldn\'t reach the wizard. Check connection!</div>';
+    document.getElementById('aiSteps').innerHTML='<div style="font-size:13px;color:var(--rose)">Couldn\'t reach wizard. Check connection!</div>';
     document.getElementById('aiResult').classList.add('visible');
   }
-  btn.disabled = false;
-  document.getElementById('aiBtnText').textContent = t.aiBtnText;
+  btn.disabled=false;document.getElementById('aiBtnText').textContent=t.aiBtnText;
 }
-
+ 
 async function breakdownHS() {
-  const input = document.getElementById('hsInput').value.trim();
-  if (!input) { showToast('✏️ Describe your assignment first!'); return; }
-  const btn = document.getElementById('hsAiBtn');
-  btn.disabled = true;
-  document.getElementById('hsAiBtnText').textContent = '⏳ Breaking it down...';
-  document.getElementById('hsAiSteps').innerHTML = '';
-  document.getElementById('hsAiResult').classList.remove('visible');
+  const input=document.getElementById('hsInput').value.trim();
+  if(!input){showToast('✏️ Describe your assignment first!');return;}
+  const btn=document.getElementById('hsAiBtn');
+  btn.disabled=true;document.getElementById('hsAiBtnText').textContent='⏳ Breaking it down...';
+  document.getElementById('hsAiSteps').innerHTML='';document.getElementById('hsAiResult').classList.remove('visible');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:1000,
-        system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,
-        messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]
-      })
-    });
-    const data = await res.json();
-    const steps = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
-    document.getElementById('hsAiSteps').innerHTML = steps.map((s,i) => `
-      <div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div></div>`).join('');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]})});
+    const data=await res.json();
+    const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    document.getElementById('hsAiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div></div>`).join('');
     document.getElementById('hsAiResult').classList.add('visible');
   } catch(e) {
-    document.getElementById('hsAiSteps').innerHTML = '<div style="font-size:13px;color:var(--rose)">Connection error. Try again.</div>';
+    document.getElementById('hsAiSteps').innerHTML='<div style="font-size:13px;color:var(--rose)">Connection error. Try again.</div>';
     document.getElementById('hsAiResult').classList.add('visible');
   }
-  btn.disabled = false;
-  document.getElementById('hsAiBtnText').textContent = 'Break into Steps';
+  btn.disabled=false;document.getElementById('hsAiBtnText').textContent='Break into Steps';
 }
-
-// ══════════════════════════════════════
-// NOTIFICATIONS + PWA
-// ══════════════════════════════════════
+ 
+// ── NOTIFICATIONS + PWA ──
 async function requestNotificationPermission() {
-  if (!('Notification' in window) || Notification.permission !== 'default') return;
-  setTimeout(async () => {
-    const p = await Notification.requestPermission();
-    if (p === 'granted') showToast('🔔 Notifications enabled!');
-  }, 4000);
+  if(!('Notification' in window)||Notification.permission!=='default') return;
+  setTimeout(async()=>{const p=await Notification.requestPermission();if(p==='granted') showToast('🔔 Notifications enabled!');},4000);
 }
-
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  setTimeout(() => showInstallBanner(), 15000);
-});
-function showInstallBanner() {
-  if (!deferredPrompt || document.getElementById('installBanner')) return;
-  const b = document.createElement('div');
-  b.id = 'installBanner';
-  b.style.cssText = 'position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';
-  b.innerHTML = `<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install Focably</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;
-  document.body.appendChild(b);
-}
-async function installApp() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const r = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('installBanner')?.remove();
-  if (r.outcome === 'accepted') showToast('🎉 Focably installed!');
-}
-
-// ══════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install Focably</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
+async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 Focably installed!');}
+ 
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 </script>
 </body>
 </html>
