@@ -620,6 +620,7 @@ let currentUser = null, currentProfile = null, currentFamily = null;
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
+let isNavigating = false; // Guard against double-loads
 
 const themes = {
   fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#92400E,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
@@ -643,6 +644,7 @@ window.addEventListener('load', async () => {
 });
 
 db.auth.onAuthStateChange(async (event, session) => {
+  if (isNavigating) return; // Don't interrupt active navigation
   if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
     currentUser = session.user;
     await loadProfile();
@@ -757,6 +759,7 @@ async function completeOnboarding() {
 }
 // ── STUDENT APP ──
 async function loadStudentApp() {
+  isNavigating = true;
   showScreen('app');
   document.getElementById('rbParent').style.display='none';
   document.getElementById('rbTeacher').style.display='none';
@@ -766,6 +769,7 @@ async function loadStudentApp() {
   else{document.getElementById('primary-mode').style.display='none';document.getElementById('hs-mode').style.display='block';document.getElementById('hsName').textContent=`Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;}
   await loadStudentAssignments(age);
   requestNotificationPermission();
+  isNavigating = false;
 }
 
 async function loadStudentAssignments(ageGroup) {
@@ -1029,11 +1033,11 @@ async function linkToFamily() {
   });
   if(error){showToast('❌ Could not link account');return;}
   showToast('✅ Linked to family!');
-  // If student hasn't completed onboarding yet, send them there
+  // Reload full student app so everything renders correctly
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
-    await loadStudentAssignments(currentProfile.age_group);
+    await loadStudentApp();
   }
 }
 
