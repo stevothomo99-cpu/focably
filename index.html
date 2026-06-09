@@ -31,8 +31,9 @@
 body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--indigo); min-height:100vh; overflow-x:hidden; }
 
 /* ── SCREEN SYSTEM ── */
-.screen { display:none; min-height:100vh; }
-.screen.active { display:block; }
+.screen { min-height:100vh; }
+#screen-onboarding { display:block; }
+#screen-app { display:none; }
 
 /* ── TOP NAV ── */
 .top-nav {
@@ -314,7 +315,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 <div class="toast" id="toast"></div>
 
 <!-- ════════════ ONBOARDING ════════════ -->
-<div class="screen active" id="screen-onboarding">
+<div class="screen" id="screen-onboarding">
   <div style="background:linear-gradient(160deg,#1E1B4B 0%,#2D1B69 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;text-align:center;">
     <div class="onboard-logo">Foc<span>ably</span></div>
     <div class="onboard-tagline">School done your way 🚀</div>
@@ -846,13 +847,21 @@ function selectTheme(theme) {
 }
 
 function startApp() {
-  document.getElementById('screen-onboarding').classList.remove('active');
-  document.getElementById('screen-app').classList.add('active');
+  // Hide onboarding, show app — use explicit style overrides
+  const onboard = document.getElementById('screen-onboarding');
+  const app = document.getElementById('screen-app');
+  onboard.style.cssText = 'display:none !important';
+  app.style.cssText = 'display:block !important; min-height:100vh;';
+
   if (selectedAge === 'primary' && selectedTheme) {
     document.getElementById('primary-mode').style.display = 'block';
     document.getElementById('hs-mode').style.display = 'none';
     applyTheme(selectedTheme);
+  } else if (selectedAge === 'highschool') {
+    document.getElementById('primary-mode').style.display = 'none';
+    document.getElementById('hs-mode').style.display = 'block';
   } else {
+    // Fallback — show HS mode if nothing selected
     document.getElementById('primary-mode').style.display = 'none';
     document.getElementById('hs-mode').style.display = 'block';
   }
