@@ -716,7 +716,7 @@ async function loadProfile() {
   showScreen('loading');
   console.log('loadProfile: starting for', currentUser.email);
   try {
-    // Fetch profile with simple await — no .single() which can hang
+    // Fetch profile with simple await — no .maybeSingle() which can hang
     console.log('loadProfile: fetching profile...');
     const profileRes = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
     let profile = profileRes.data;
@@ -735,7 +735,7 @@ async function loadProfile() {
         role: role
       });
       console.log('loadProfile: insert result=', ins.error?.message || 'ok');
-      const r = await db.from('profiles').select('*').eq('id', currentUser.id).single();
+      const r = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
       profile = r.data;
     }
 
@@ -813,7 +813,7 @@ async function loadStudentApp() {
 async function loadStudentAssignments(ageGroup) {
   // Safety check — if no age group yet send to onboarding
   if(!ageGroup) { showScreen('onboarding'); return; }
-  const {data:child, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).single();
+  const {data:child, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).maybeSingle();
   if(!child) {
     document.getElementById('linkAccountCard').style.display='block';
     document.getElementById('primary-mode').style.display='none';
@@ -1016,9 +1016,9 @@ async function submitProof(taskId) {
       completed: false
     }).eq('id', taskId);
     // Notify parent
-    const {data:task} = await db.from('tasks').select('child_id,title').eq('id',taskId).single();
+    const {data:task} = await db.from('tasks').select('child_id,title').eq('id',taskId).maybeSingle();
     if(task) {
-      const {data:child} = await db.from('children').select('*, families(parent_id)').eq('id',task.child_id).single();
+      const {data:child} = await db.from('children').select('*, families(parent_id)').eq('id',task.child_id).maybeSingle();
       if(child?.families?.parent_id) {
         await db.from('notifications').insert({
           recipient_id: child.families.parent_id,
@@ -1057,10 +1057,10 @@ function applyTheme(t) {
 async function linkToFamily() {
   const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
   if(code.length!==6){showToast('Enter the 6-character code');return;}
-  const {data:family} = await db.from('families').select('*').eq('invite_code',code).single();
+  const {data:family} = await db.from('families').select('*').eq('invite_code',code).maybeSingle();
   if(!family){showToast('❌ Code not found — check with your parent');return;}
   // Create child record linked to this family and profile
-  const {data:existing} = await db.from('children').select('id').eq('profile_id',currentUser.id).single();
+  const {data:existing} = await db.from('children').select('id').eq('profile_id',currentUser.id).maybeSingle();
   if(existing){showToast('Already linked!');return;}
   const {error} = await db.from('children').insert({
     profile_id: currentUser.id,
@@ -1086,9 +1086,9 @@ async function loadParentApp() {
   document.getElementById('rbTeacher').style.display='none';
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
-  let {data:family} = await db.from('families').select('*').eq('parent_id',currentUser.id).single();
+  let {data:family} = await db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle();
   if(!family) {
-    const {data:nf} = await db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().single();
+    const {data:nf} = await db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().maybeSingle();
     family=nf;
   }
   currentFamily=family;
@@ -1211,7 +1211,7 @@ async function confirmReject(taskId, childId, role) {
 }
 
 async function updateTrustScoreManual(childId, action) {
-  const {data:child} = await db.from('children').select('trust_score').eq('id',childId).single();
+  const {data:child} = await db.from('children').select('trust_score').eq('id',childId).maybeSingle();
   if(!child) return;
   const points = action==='approved'?2:action==='rejected'?-3:1;
   const newScore = Math.max(0,Math.min(100,(child.trust_score||0)+points));
@@ -1263,7 +1263,7 @@ async function loadTeacherVerifyQueue(classId) {
 async function createClass() {
   const name=document.getElementById('className').value.trim(),subject=document.getElementById('classSubject').value.trim(),year=document.getElementById('classYear').value.trim();
   if(!name||!subject){showToast('Enter class name and subject');return;}
-  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year}).select().single();
+  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year}).select().maybeSingle();
   if(error){showToast('❌ Error creating class');return;}
   document.getElementById('classSetup').style.display='none';
   document.getElementById('classInfo').style.display='block';
@@ -1312,7 +1312,7 @@ async function publishAssignment() {
 }
 
 async function sendNudge(childId,childName) {
-  const {data:child}=await db.from('children').select('*, families(parent_id)').eq('id',childId).single();
+  const {data:child}=await db.from('children').select('*, families(parent_id)').eq('id',childId).maybeSingle();
   if(child?.families?.parent_id) {
     await db.from('notifications').insert({recipient_id:child.families.parent_id,sender_id:currentUser.id,child_id:childId,type:'nudge',title:'Nudge from teacher',body:`${currentProfile.full_name} sent a nudge about ${childName}'s progress.`});
   }
