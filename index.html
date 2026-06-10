@@ -1085,11 +1085,46 @@ async function loadStudentAssignments(ageGroup) {
   updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
   else{document.getElementById('hs-mode').style.display='block';}
-  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes!left(name, subject, year_group, profiles!left(full_name))').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
-  console.log('Assignments loaded:', assignments?.length);
-  assignments?.forEach(a => {
-    console.log('  -', a.title, '| tasks:', a.tasks?.length, '| tasks data:', JSON.stringify(a.tasks?.map(t=>({title:t.title,completed:t.completed}))));
+  // Fetch assignments
+  const {data:rawAssignments} = await dbQuery(
+    db.from('assignments').select('*').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}),
+    8000, []
+  );
+  console.log('Raw assignments:', rawAssignments?.length);
+
+  // Fetch tasks for these assignments
+  const assignmentIds = (rawAssignments||[]).map(a=>a.id);
+  const {data:allTasks} = assignmentIds.length ? await dbQuery(
+    db.from('tasks').select('*').in('assignment_id', assignmentIds),
+    8000, []
+  ) : {data:[]};
+
+  // Fetch class details for assignments that have a class_id
+  const classIds = [...new Set((rawAssignments||[]).filter(a=>a.class_id).map(a=>a.class_id))];
+  const {data:classData} = classIds.length ? await dbQuery(
+    db.from('classes').select('id, name, subject, year_group, teacher_id').in('id', classIds),
+    8000, []
+  ) : {data:[]};
+
+  // Fetch teacher names
+  const teacherIds = [...new Set((classData||[]).map(c=>c.teacher_id))];
+  const {data:teacherData} = teacherIds.length ? await dbQuery(
+    db.from('profiles').select('id, full_name').in('id', teacherIds),
+    8000, []
+  ) : {data:[]};
+
+  // Combine everything
+  const assignments = (rawAssignments||[]).map(a => {
+    const tasks = (allTasks||[]).filter(t=>t.assignment_id===a.id);
+    const cls = (classData||[]).find(c=>c.id===a.class_id);
+    const teacher = cls ? (teacherData||[]).find(t=>t.id===cls.teacher_id) : null;
+    return {
+      ...a,
+      tasks,
+      classes: cls ? {...cls, profiles: teacher ? {full_name: teacher.full_name} : null} : null
+    };
   });
+  console.log('Assignments built:', assignments?.length, 'tasks total:', allTasks?.length);
   if(ageGroup==='primary') renderPrimaryAssignments(assignments||[],child);
   else renderHSAssignments(assignments||[],child);
 }
