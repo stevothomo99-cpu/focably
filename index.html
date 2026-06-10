@@ -268,6 +268,44 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .link-input{flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:14px;font-family:'Inter',sans-serif;outline:none;text-transform:uppercase;letter-spacing:3px;font-weight:700;}
 .link-input:focus{border-color:var(--violet);}
 .link-btn{padding:10px 16px;border-radius:10px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
+
+/* ── CLASS TILES ── */
+.class-tiles { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
+.class-tile { border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(30,27,75,0.12); transition:all 0.3s; }
+.class-tile-header { padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+.class-tile-icon { font-size:28px; flex-shrink:0; }
+.class-tile-info { flex:1; }
+.class-tile-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:16px; color:white; margin-bottom:2px; }
+.class-tile-teacher { font-size:12px; color:rgba(255,255,255,0.75); }
+.class-tile-due { font-size:11px; font-weight:700; color:rgba(255,255,255,0.9); margin-top:3px; }
+.class-tile-progress { padding:0 16px 12px; }
+.class-tile-track { background:rgba(255,255,255,0.2); border-radius:10px; height:8px; margin-bottom:4px; }
+.class-tile-fill { border-radius:10px; height:8px; background:rgba(255,255,255,0.9); transition:width 0.6s; }
+.class-tile-label { font-size:11px; color:rgba(255,255,255,0.8); display:flex; justify-content:space-between; }
+.class-tile-steps { background:rgba(0,0,0,0.15); display:none; }
+.class-tile-steps.open { display:block; }
+.class-tile-step { display:flex; align-items:flex-start; gap:10px; padding:10px 16px; border-top:1px solid rgba(255,255,255,0.1); cursor:pointer; transition:background 0.2s; }
+.class-tile-step:hover { background:rgba(255,255,255,0.05); }
+.class-tile-step.done { opacity:0.55; }
+.class-tile-step.pending { background:rgba(245,158,11,0.2); }
+.class-tile-step.rejected { background:rgba(244,63,94,0.15); }
+.step-circle { width:24px; height:24px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; color:white; background:rgba(255,255,255,0.1); margin-top:1px; }
+.class-tile-step.done .step-circle { background:rgba(255,255,255,0.3); border-color:transparent; }
+.class-tile-step.pending .step-circle { background:rgba(245,158,11,0.5); border-color:var(--amber); }
+.step-title { flex:1; font-size:13px; font-weight:600; color:white; line-height:1.4; }
+.class-tile-step.done .step-title { text-decoration:line-through; opacity:0.7; }
+.step-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:rgba(255,255,255,0.15); color:white; white-space:nowrap; }
+/* Tile colour states */
+.tile-overdue  { background:linear-gradient(135deg,#9B1C1C,#DC2626); }
+.tile-urgent   { background:linear-gradient(135deg,#92400E,#D97706); }
+.tile-active   { background:linear-gradient(135deg,#1E1B4B,#7C3AED); }
+.tile-good     { background:linear-gradient(135deg,#064E3B,#10B981); }
+.tile-done     { background:linear-gradient(135deg,#374151,#6B7280); }
+@keyframes glowRed   { 0%,100%{box-shadow:0 0 8px rgba(220,38,38,0.6);} 50%{box-shadow:0 0 24px rgba(220,38,38,0.95);} }
+@keyframes glowAmber { 0%,100%{box-shadow:0 0 8px rgba(217,119,6,0.6);} 50%{box-shadow:0 0 24px rgba(217,119,6,0.95);} }
+.tile-overdue { animation:glowRed 2s infinite; }
+.tile-urgent  { animation:glowAmber 2s infinite; }
+
 </style>
 </head>
 <body>
