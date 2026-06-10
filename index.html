@@ -1137,10 +1137,13 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     // Class tile state = worst across all assignments
     const allTasks = bucket.assignments.flatMap(a => a.tasks||[]);
     const totalDone = allTasks.filter(t=>t.completed).length;
+    // Only mark complete if there ARE tasks AND all are done
     const allComplete = allTasks.length > 0 && totalDone === allTasks.length;
     const aStates = bucket.assignments.map(a => getTileState(a));
     const stateOrder = ['overdue','urgent','active','good','done'];
-    const classState = allComplete ? 'done' : (stateOrder.find(s => aStates.includes(s) && s !== 'done') || 'active');
+    // If any assignment has no tasks, treat it as active not done
+    const hasEmptyAssignments = bucket.assignments.some(a => (a.tasks||[]).length === 0);
+    const classState = (allComplete && !hasEmptyAssignments) ? 'done' : (stateOrder.find(s => aStates.includes(s) && s !== 'done') || (allComplete ? 'done' : 'active'));
     const classCfg = stateColors[classState];
 
     // Build assignment tiles
