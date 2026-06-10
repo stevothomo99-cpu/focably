@@ -302,7 +302,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .tile-good     { background:linear-gradient(135deg,#064E3B,#10B981); }
 .tile-done     { background:linear-gradient(135deg,#374151,#6B7280); }
 @keyframes glowRed   { 0%,100%{box-shadow:0 0 8px rgba(220,38,38,0.6);} 50%{box-shadow:0 0 24px rgba(220,38,38,0.95);} }
-@keyframes glowAmber { 0%,100%{box-shadow:0 0 8px rgba(217,119,6,0.6);} 50%{box-shadow:0 0 24px rgba(217,119,6,0.95);} }
+@keyframes glowAmber { 0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.6);} 50%{box-shadow:0 0 24px rgba(249,115,22,0.95);} }
 .tile-overdue { animation:glowRed 2s infinite; }
 .tile-urgent  { animation:glowAmber 2s infinite; }
 
@@ -1101,7 +1101,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
   // State config
   const stateColors = {
     overdue: { tile: 'linear-gradient(135deg,#9B1C1C,#DC2626)', anim: 'glowRed 2s infinite',  label: '⚠️ Overdue' },
-    urgent:  { tile: 'linear-gradient(135deg,#92400E,#D97706)', anim: 'glowAmber 2s infinite', label: '⏰ Due Soon' },
+    urgent:  { tile: 'linear-gradient(135deg,#F59E0B,#F97316)', anim: 'glowAmber 2s infinite', label: '⏰ Due Soon' },
     active:  { tile: 'linear-gradient(135deg,#1E1B4B,#7C3AED)', anim: 'none',                 label: '📝 In Progress' },
     good:    { tile: 'linear-gradient(135deg,#064E3B,#10B981)', anim: 'none',                 label: '✅ On Track' },
     done:    { tile: 'linear-gradient(135deg,#374151,#6B7280)', anim: 'none',                 label: '✓ Complete' },
@@ -1110,7 +1110,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
   // Assignment row background (semi-transparent, sits inside class tile)
   const aRowBg = {
     overdue: 'rgba(185,28,28,0.35)',
-    urgent:  'rgba(146,64,14,0.35)',
+    urgent:  'rgba(249,115,22,0.35)',
     active:  'rgba(255,255,255,0.1)',
     good:    'rgba(6,78,59,0.35)',
     done:    'rgba(255,255,255,0.06)',
