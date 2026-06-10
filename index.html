@@ -675,10 +675,11 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <option value="">Select a class first...</option>
         </select>
       </div>
-      <div class="upload-zone" onclick="showToast('📎 File upload coming soon!')">
+      <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="display:none;" onchange="handleAssignmentFile(this)">
+      <div class="upload-zone" onclick="document.getElementById('assignmentFileInput').click()" id="assignmentUploadZone">
         <div style="font-size:28px;margin-bottom:6px;">📎</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:3px;">Tap to attach file</div>
-        <div style="font-size:12px;color:var(--gray-500);">PDF, Word, images supported</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:3px;" id="assignmentUploadLabel">Tap to attach file</div>
+        <div style="font-size:12px;color:var(--gray-500);">PDF, Word, PowerPoint, images</div>
       </div>
       <div class="form-grp"><label class="form-lbl">Assignment Title</label><input class="form-input" type="text" id="aTitle" placeholder="e.g. Climate Change Essay"></div>
       <div class="form-row">
@@ -1456,7 +1457,7 @@ async function submitProof(taskId) {
     const fileName = `${currentUser.id}/${taskId}-${Date.now()}.${fileExt}`;
     const { data: uploadData, error: uploadError } = await db.storage
       .from('task-proofs')
-      .upload(fileName, currentProofFile);
+      .upload(fileName, currentProofFile, { upsert: true });
     if(uploadError) throw uploadError;
     const { data: { publicUrl } } = db.storage.from('task-proofs').getPublicUrl(fileName);
     await db.from('tasks').update({
@@ -1706,6 +1707,39 @@ async function approveReward(rewardId,btn) {
   showToast('🎉 Reward approved!');
 }
 function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('familyInviteCode').textContent).then(()=>showToast('📋 Invite code copied!')); }
+
+// ── ASSIGNMENT FILE UPLOAD ──
+let pendingAssignmentFile = null;
+
+function handleAssignmentFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  pendingAssignmentFile = file;
+  const label = document.getElementById('assignmentUploadLabel');
+  const zone = document.getElementById('assignmentUploadZone');
+  if(label) label.textContent = '📎 ' + file.name;
+  if(zone) zone.style.borderColor = 'var(--mint)';
+  showToast(`📎 ${file.name} ready`);
+  input.value = '';
+}
+
+async function uploadAssignmentFile(assignmentId) {
+  if(!pendingAssignmentFile) return null;
+  const ext = pendingAssignmentFile.name.split('.').pop();
+  const path = `${currentUser.id}/${assignmentId}.${ext}`;
+  const { data, error } = await db.storage
+    .from('assignment-files')
+    .upload(path, pendingAssignmentFile, { upsert: true });
+  if(error) { console.log('Assignment upload error:', error.message); return null; }
+  const { data: { publicUrl } } = db.storage.from('assignment-files').getPublicUrl(path);
+  pendingAssignmentFile = null;
+  // Reset upload zone
+  const label = document.getElementById('assignmentUploadLabel');
+  const zone = document.getElementById('assignmentUploadZone');
+  if(label) label.textContent = 'Tap to attach file';
+  if(zone) zone.style.borderColor = '';
+  return publicUrl;
+}
 
 async function parentAddTask() {
   const title = document.getElementById('parentTaskTitle').value.trim();
@@ -2022,6 +2056,14 @@ async function publishAssignment() {
   const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classId);
   if(!members?.length){showToast('No students in class yet');return;}
   const assignments=members.map(m=>({created_by:currentUser.id,class_id:classId,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:cls?.subject||''}));
+  // Upload file first if one is attached
+  let fileUrl = null;
+  if(pendingAssignmentFile) {
+    const tempId = Date.now().toString();
+    fileUrl = await uploadAssignmentFile(tempId);
+  }
+  // Add file_url to all assignments
+  if(fileUrl) assignments.forEach(a => a.file_url = fileUrl);
   const {data:newAssignments,error}=await dbQuery(db.from('assignments').insert(assignments).select());
   if(error?.message&&error.message!=='timeout'){showToast('❌ Error publishing');return;}
 
