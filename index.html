@@ -788,12 +788,13 @@ async function loadProfile() {
   showScreen('loading');
   console.log('loadProfile: starting for', currentUser.email);
   try {
-    // Fetch profile with simple await — no .maybeSingle() which can hang
     console.log('loadProfile: fetching profile...');
-    const profileRes = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    const profilePromise = db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    const profileTimeout = new Promise(resolve => setTimeout(() => resolve({data:null, error:{message:'timeout'}}), 8000));
+    const profileRes = await Promise.race([profilePromise, profileTimeout]);
     let profile = profileRes.data;
     let profileError = profileRes.error;
-    console.log('loadProfile: fetch done, profile=', profile, 'error=', profileError);
+    console.log('loadProfile: fetch done, profile=', profile?.role, 'error=', profileError?.message);
 
     console.log('loadProfile: profile=', profile?.role, 'error=', profileError?.message);
 
