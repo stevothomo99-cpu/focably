@@ -525,6 +525,20 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
 
     <div class="card">
+      <div class="card-title">🏫 Join a Class</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Got a class code from a teacher? Enter it below to add your child to their class.</p>
+      <div id="joinClassChildSelect" style="margin-bottom:10px;"></div>
+      <div class="link-box">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);">Enter Class Invite Code</div>
+        <div class="link-input-row">
+          <input class="link-input" type="text" id="classCodeInput" placeholder="ABC123" maxlength="6">
+          <button class="link-btn" onclick="joinClass()" style="background:var(--mint);">Join ✓</button>
+        </div>
+      </div>
+      <div id="joinedClasses" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">📊 Subject Progress</div>
       <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
     </div>
@@ -1103,7 +1117,22 @@ async function loadParentApp() {
   const {data:children} = await db.from('children').select('*').eq('family_id',family.id);
   currentChildren=children||[];
   renderChildTabs();
-  if(currentChildren.length){selectedChildId=currentChildren[0].id;await loadChildStats(selectedChildId);}
+  if(currentChildren.length){
+    selectedChildId=currentChildren[0].id;
+    await loadChildStats(selectedChildId);
+    await loadJoinedClasses(selectedChildId);
+    // Populate child selector in join class card
+    const sel = document.getElementById('joinClassChildSelect');
+    if(sel) {
+      if(currentChildren.length > 1) {
+        sel.innerHTML = '<select class="form-input" id="joinClassChildId" style="margin-bottom:8px;">' +
+          currentChildren.map(c => `<option value="${c.id}">${c.name}</option>`).join('') +
+          '</select>';
+      } else {
+        sel.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--indigo);margin-bottom:8px;">For: ${currentChildren[0].name}</div>`;
+      }
+    }
+  }
   await loadParentVerifyQueue();
 }
 
@@ -1232,6 +1261,51 @@ async function approveReward(rewardId,btn) {
   showToast('🎉 Reward approved!');
 }
 function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('familyInviteCode').textContent).then(()=>showToast('📋 Invite code copied!')); }
+
+async function joinClass() {
+  const code = document.getElementById('classCodeInput').value.trim().toUpperCase();
+  if(code.length !== 6) { showToast('Enter the 6-character class code'); return; }
+
+  // Find the class
+  const {data:cls} = await db.from('classes').select('*, profiles(full_name)').eq('invite_code', code).maybeSingle();
+  if(!cls) { showToast('❌ Class not found — check the code'); return; }
+
+  // Use selected child or first child
+  const childId = document.getElementById('joinClassChildSelect')?.value || currentChildren?.[0]?.id;
+  if(!childId) { showToast('No child linked to your account yet'); return; }
+
+  // Check not already in class
+  const {data:existing} = await db.from('class_members').select('id').eq('class_id', cls.id).eq('child_id', childId).maybeSingle();
+  if(existing) { showToast('Already in this class!'); return; }
+
+  // Add to class
+  const {error} = await db.from('class_members').insert({ class_id: cls.id, child_id: childId });
+  if(error) { showToast('❌ Could not join class: ' + error.message); return; }
+
+  showToast(`✅ Joined ${cls.name}!`);
+  document.getElementById('classCodeInput').value = '';
+  await loadJoinedClasses(childId);
+}
+
+async function loadJoinedClasses(childId) {
+  const {data:memberships} = await db.from('class_members')
+    .select('*, classes(name, subject, year_group, profiles(full_name))')
+    .eq('child_id', childId);
+
+  const el = document.getElementById('joinedClasses');
+  if(!memberships?.length) { el.innerHTML=''; return; }
+
+  el.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Enrolled Classes</div>' +
+    memberships.map(m => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
+        <div style="font-size:24px;">📚</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px;">${m.classes.name}</div>
+          <div style="font-size:11px;color:var(--gray-500);">${m.classes.subject} · ${m.classes.year_group||''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>
+      </div>`).join('');
+}
 
 // ── TEACHER APP ──
 async function loadTeacherApp() {
