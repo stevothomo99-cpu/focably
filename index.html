@@ -1003,7 +1003,7 @@ async function loadStudentAssignments(ageGroup) {
   updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
   else{document.getElementById('hs-mode').style.display='block';}
-  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*)').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
+  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes(name, subject, year_group, profiles(full_name))').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
   if(ageGroup==='primary') renderPrimaryAssignments(assignments||[],child);
   else renderHSAssignments(assignments||[],child);
 }
@@ -1053,47 +1053,83 @@ function renderClassTiles(assignments, child, containerId, isHS) {
   const icons=['📐','📖','🔬','🌏','🎨','🏃','🎯','🧪'];
   const stateLabels = {overdue:'⚠️ OVERDUE',urgent:'⏰ Due Soon',active:'In Progress',good:'On Track',done:'✅ Complete'};
 
-  container.innerHTML = `<div class="class-tiles">${assignments.map((a,i)=>{
-    const tasks = a.tasks||[];
-    const done = tasks.filter(t=>t.completed).length;
-    const pct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
-    const state = getTileState(a);
-    const tileClass = getTileClass(state);
-    const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
+  // Group assignments by class
+  const classBuckets = {};
+  (assignments||[]).forEach(a => {
+    const classId = a.class_id || 'noclass';
+    if(!classBuckets[classId]) classBuckets[classId] = {cls: a.classes, assignments: []};
+    classBuckets[classId].assignments.push(a);
+  });
 
-    const stepsHtml = tasks.map(task => {
-      const isPending = task.verification_status==='pending';
-      const isDone = task.completed && (task.verification_status==='approved'||!task.verification_required);
-      const isRejected = task.verification_status==='rejected';
-      const cls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
-      const gem = isDone?'✓':isPending?'⏳':isRejected?'✗':'';
-      const badge = task.verification_required?'<span class="step-badge">📸 Proof</span>':'';
-      const clickFn = !task.verification_required&&!isDone?`onclick="tileToggleTask('${task.id}',this)"`:'';
-      return `<div class="class-tile-step ${cls}" id="tilestep-${task.id}" ${clickFn}>
-        <div class="step-circle">${gem}</div>
-        <div class="step-title">${task.title}</div>
-        ${badge}
-        ${task.verification_required&&!isDone&&!isPending?`<button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="padding:4px 10px;border-radius:20px;border:none;background:var(--amber);color:white;font-size:11px;font-weight:700;cursor:pointer;">Upload</button>`:''}
+  container.innerHTML = `<div class="class-tiles">${Object.entries(classBuckets).map(([classId, bucket], i) => {
+    const cls = bucket.cls;
+    const className = cls?.name || cls?.subject || 'Class';
+    const teacherName = cls?.profiles?.full_name || 'Your Teacher';
+    const allTasks = bucket.assignments.flatMap(a => a.tasks||[]);
+    const done = allTasks.filter(t=>t.completed).length;
+    const pct = allTasks.length ? Math.round((done/allTasks.length)*100) : 0;
+    
+    // Get worst state across all assignments in this class
+    const states = bucket.assignments.map(a => getTileState(a));
+    const stateOrder = ['overdue','urgent','active','good','done'];
+    const worstState = stateOrder.find(s => states.includes(s)) || 'active';
+    const tileClass = getTileClass(worstState);
+
+    // Build assignments with tasks inside
+    const assignmentsHtml = bucket.assignments.map(a => {
+      const tasks = a.tasks||[];
+      const aDone = tasks.filter(t=>t.completed).length;
+      const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
+      const aState = getTileState(a);
+
+      const stepsHtml = tasks.map(task => {
+        const isPending = task.verification_status==='pending';
+        const isDone = task.completed && (task.verification_status==='approved'||!task.verification_required);
+        const isRejected = task.verification_status==='rejected';
+        const cls2 = isDone?'done':isPending?'pending':isRejected?'rejected':'';
+        const gem = isDone?'✓':isPending?'⏳':isRejected?'✗':'';
+        const badge = task.verification_required?'<span class="step-badge">📸 Proof</span>':'';
+        const clickFn = !task.verification_required&&!isDone?`onclick="tileToggleTask('${task.id}',this)"`:'';
+        return `<div class="class-tile-step ${cls2}" id="tilestep-${task.id}" ${clickFn}>
+          <div class="step-circle">${gem}</div>
+          <div class="step-title">${task.title}</div>
+          ${badge}
+          ${task.verification_required&&!isDone&&!isPending?`<button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="padding:4px 10px;border-radius:20px;border:none;background:var(--amber);color:white;font-size:11px;font-weight:700;cursor:pointer;">Upload</button>`:''}
+        </div>`;
+      }).join('');
+
+      return `<div style="border-top:1px solid rgba(255,255,255,0.1);">
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleTile('${a.id}')">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:white;">${a.title}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.7);">📅 ${aDue} · ${aDone}/${tasks.length} steps · ${stateLabels[aState]}</div>
+          </div>
+          <div style="color:rgba(255,255,255,0.5);font-size:14px;" id="chevron-${a.id}">▼</div>
+        </div>
+        <div class="class-tile-steps" id="tilesteps-${a.id}">
+          ${stepsHtml}
+          ${tasks.length===0?'<div style="padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No steps yet</div>':''}
+        </div>
       </div>`;
     }).join('');
 
-    return `<div class="class-tile ${tileClass}" id="tile-${a.id}">
-      <div class="class-tile-header" onclick="toggleTile('${a.id}')">
+    return `<div class="class-tile ${tileClass}" id="tile-${classId}">
+      <div class="class-tile-header" onclick="toggleTile('${classId}')">
         <div class="class-tile-icon">${icons[i%icons.length]}</div>
         <div class="class-tile-info">
-          <div class="class-tile-name">${a.title}</div>
-          <div class="class-tile-teacher">${a.subject||'Class'} · ${stateLabels[state]}</div>
-          <div class="class-tile-due">📅 ${dueStr}</div>
+          <div class="class-tile-name">${className}</div>
+          <div class="class-tile-teacher">${teacherName} · ${stateLabels[worstState]}</div>
+          <div class="class-tile-due">${done}/${allTasks.length} steps complete</div>
         </div>
-        <div style="color:rgba(255,255,255,0.6);font-size:18px;" id="chevron-${a.id}">▼</div>
+        <div style="color:rgba(255,255,255,0.6);font-size:18px;" id="chevron-${classId}">▼</div>
       </div>
       <div class="class-tile-progress">
         <div class="class-tile-track"><div class="class-tile-fill" style="width:${pct}%"></div></div>
-        <div class="class-tile-label"><span>${done} of ${tasks.length} steps done</span><span>${pct}%</span></div>
+        <div class="class-tile-label"><span>${done} of ${allTasks.length} steps done</span><span>${pct}%</span></div>
       </div>
-      <div class="class-tile-steps" id="tilesteps-${a.id}">
-        ${stepsHtml}
-        ${tasks.length===0?'<div style="padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No steps yet — check back soon</div>':''}
+      <div class="class-tile-steps" id="tilesteps-${classId}">
+        ${assignmentsHtml}
+        ${bucket.assignments.length===0?'<div style="padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No assignments yet</div>':''}
       </div>
     </div>`;
   }).join('')}</div>`;
