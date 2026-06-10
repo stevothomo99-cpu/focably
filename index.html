@@ -306,6 +306,20 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .tile-overdue { animation:glowRed 2s infinite; }
 .tile-urgent  { animation:glowAmber 2s infinite; }
 
+
+/* ── STEP BUILDER ── */
+.step-builder { background:var(--gray-50); border-radius:12px; padding:14px; margin-top:10px; }
+.step-builder-title { font-size:12px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+.step-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+.step-row-input input { flex:1; padding:9px 12px; border-radius:10px; border:1.5px solid var(--gray-200); font-size:13px; font-family:'Inter',sans-serif; outline:none; }
+.step-row-input input:focus { border-color:var(--violet); }
+.step-remove-btn { width:28px; height:28px; border-radius:50%; border:none; background:var(--rose); color:white; font-size:14px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.step-add-row { display:flex; gap:8px; margin-top:4px; }
+.step-add-btn { flex:1; padding:9px; border-radius:10px; border:1.5px dashed var(--gray-200); background:transparent; color:var(--gray-500); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.step-add-btn:hover { border-color:var(--violet); color:var(--violet); background:var(--gray-100); }
+.ai-steps-btn { padding:9px 14px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--violet),#5B21B6); color:white; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.step-proof-toggle { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gray-500); margin-top:4px; }
+
 </style>
 </head>
 <body>
@@ -684,6 +698,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
             <div class="toggle-sub">Students must upload photo or document before task is marked complete</div>
           </div>
           <label class="toggle"><input type="checkbox" id="requireProofToggle"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <!-- AI Step Generation -->
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 Assignment Steps</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">Steps help students break work into manageable chunks. Generate with AI or add manually.</p>
+        <div id="teacherStepsList"></div>
+        <div class="step-add-row">
+          <button class="step-add-btn" onclick="addTeacherStep()">+ Add Step</button>
+          <button class="ai-steps-btn" id="aiStepsBtn" onclick="generateTeacherSteps()">✨ AI Generate</button>
+        </div>
+        <div id="aiStepsPreview" style="display:none;margin-top:10px;background:white;border-radius:10px;padding:10px;border:1.5px solid var(--violet-light);">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:8px;">✨ AI Suggested Steps — tap to accept</div>
+          <div id="aiStepsPreviewList"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button onclick="acceptAISteps()" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;">✓ Use These Steps</button>
+            <button onclick="document.getElementById('aiStepsPreview').style.display='none'" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;font-weight:700;font-size:13px;cursor:pointer;">✗ Dismiss</button>
+          </div>
         </div>
       </div>
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
@@ -1610,17 +1642,32 @@ async function parentAddTask() {
   );
   if(aErr?.message && aErr.message !== 'timeout'){ showToast('❌ Error adding task: '+aErr.message); return; }
 
-  // Create a default task step
+  // AI auto-generate steps for parent tasks too
   if(assignment) {
-    await dbQuery(db.from('tasks').insert({
+    let parentSteps = [];
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-20250514', max_tokens:600,
+          system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each: "title" (max 8 words). No markdown.`,
+          messages:[{role:'user',content:`Task: "${title}". ${desc}`}]
+        })
+      });
+      const d = await res.json();
+      parentSteps = JSON.parse(d.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim());
+    } catch(e) {
+      parentSteps = [{title: title}];
+    }
+    const tasks = parentSteps.map((s,i) => ({
       assignment_id: assignment.id,
       child_id: childId,
-      title: title,
-      xp_value: 15,
-      star_value: 1,
-      sort_order: 1,
+      title: s.title||title,
+      xp_value: 15, star_value: 1,
+      sort_order: i+1,
       verification_required: false
     }));
+    await dbQuery(db.from('tasks').insert(tasks));
   }
 
   showToast('✅ Task added for '+currentChildren.find(c=>c.id===childId)?.name+'!');
@@ -1798,6 +1845,83 @@ async function loadClassProgress(classId) {
   }).join('');
 }
 
+// ── TEACHER STEP BUILDER ──
+let teacherSteps = [];
+let aiGeneratedSteps = [];
+
+function addTeacherStep(title='') {
+  const id = 'step_' + Date.now() + Math.random().toString(36).substr(2,5);
+  teacherSteps.push({id, title, verification_required: false});
+  renderTeacherSteps();
+}
+
+function removeTeacherStep(id) {
+  teacherSteps = teacherSteps.filter(s => s.id !== id);
+  renderTeacherSteps();
+}
+
+function renderTeacherSteps() {
+  const container = document.getElementById('teacherStepsList');
+  if(!container) return;
+  if(!teacherSteps.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:8px;">No steps added yet — AI will generate them on publish if left empty</div>';
+    return;
+  }
+  container.innerHTML = teacherSteps.map((s,i) => `
+    <div class="step-row-input">
+      <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+      <input type="text" value="${s.title}" placeholder="Step ${i+1} description..." 
+        oninput="teacherSteps[${i}].title=this.value"
+        style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-500);white-space:nowrap;cursor:pointer;">
+        <input type="checkbox" ${s.verification_required?'checked':''} onchange="teacherSteps[${i}].verification_required=this.checked"> 📸
+      </label>
+      <button class="step-remove-btn" onclick="removeTeacherStep('${s.id}')">×</button>
+    </div>`).join('');
+}
+
+async function generateTeacherSteps() {
+  const title = document.getElementById('aTitle').value.trim();
+  const desc = document.getElementById('aDesc').value.trim();
+  if(!title) { showToast('Add an assignment title first'); return; }
+  const btn = document.getElementById('aiStepsBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating...';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:`You help teachers create step-by-step tasks for students with ADHD. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words) and "verification_required" (true only for the final submission step). No markdown, no backticks.`,
+        messages:[{role:'user',content:`Assignment: "${title}". ${desc?'Instructions: '+desc:''}`}]
+      })
+    });
+    const data = await res.json();
+    aiGeneratedSteps = JSON.parse(data.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim());
+    const preview = document.getElementById('aiStepsPreviewList');
+    preview.innerHTML = aiGeneratedSteps.map((s,i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:13px;">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;">${s.title}</div>
+        ${s.verification_required?'<span style="font-size:10px;background:var(--amber-light);padding:2px 6px;border-radius:10px;">📸 Proof</span>':''}
+      </div>`).join('');
+    document.getElementById('aiStepsPreview').style.display = 'block';
+  } catch(e) {
+    showToast('❌ AI error — add steps manually');
+  }
+  btn.disabled = false; btn.textContent = '✨ AI Generate';
+}
+
+function acceptAISteps() {
+  teacherSteps = aiGeneratedSteps.map(s => ({
+    id: 'step_'+Date.now()+Math.random().toString(36).substr(2,5),
+    title: s.title,
+    verification_required: s.verification_required||false
+  }));
+  document.getElementById('aiStepsPreview').style.display = 'none';
+  renderTeacherSteps();
+  showToast('✅ AI steps added!');
+}
+
 async function publishAssignment() {
   const title=document.getElementById('aTitle').value.trim(),due=document.getElementById('aDue').value,desc=document.getElementById('aDesc').value.trim(),hours=document.getElementById('aHours').value;
   const requireProof=document.getElementById('requireProofToggle').checked;
@@ -1808,17 +1932,59 @@ async function publishAssignment() {
   const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classId);
   if(!members?.length){showToast('No students in class yet');return;}
   const assignments=members.map(m=>({created_by:currentUser.id,class_id:classId,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:cls?.subject||''}));
-  const {data:newAssignments,error}=await db.from('assignments').insert(assignments).select();
-  if(error){showToast('❌ Error publishing');return;}
-  // Create default tasks for each assignment if proof required
-  if(requireProof&&newAssignments) {
-    const defaultTasks=newAssignments.flatMap(a=>[
-      {assignment_id:a.id,child_id:a.child_id,title:'Complete the assignment',xp_value:20,star_value:2,sort_order:1,verification_required:true,verification_type:'either'},
-    ]);
-    await db.from('tasks').insert(defaultTasks);
+  const {data:newAssignments,error}=await dbQuery(db.from('assignments').insert(assignments).select());
+  if(error?.message&&error.message!=='timeout'){showToast('❌ Error publishing');return;}
+
+  // Create tasks from teacherSteps, AI-generate if none defined
+  if(newAssignments?.length) {
+    let stepsToCreate = [...teacherSteps];
+
+    // AI auto-generate if no steps defined
+    if(!stepsToCreate.length) {
+      const title = document.getElementById('aTitle').value.trim();
+      const desc = document.getElementById('aDesc').value.trim();
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            model:'claude-sonnet-4-20250514', max_tokens:800,
+            system:`Break this school assignment into 4-5 clear steps for a student. Return ONLY a raw JSON array. Each: "title" (max 10 words) and "verification_required" (true only for final step if proof needed). No markdown.`,
+            messages:[{role:'user',content:`Assignment: "${title}". ${desc}`}]
+          })
+        });
+        const d = await res.json();
+        stepsToCreate = JSON.parse(d.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim()).map(s=>({
+          id:'auto',title:s.title,verification_required:requireProof&&s.verification_required
+        }));
+      } catch(e) {
+        // Fallback to single step
+        stepsToCreate = [{id:'auto',title:'Complete the assignment',verification_required:requireProof}];
+      }
+    }
+
+    // Create tasks for each student
+    const allTasks = newAssignments.flatMap(a =>
+      stepsToCreate.map((s,i) => ({
+        assignment_id: a.id,
+        child_id: a.child_id,
+        title: s.title,
+        xp_value: 15,
+        star_value: 1,
+        sort_order: i+1,
+        verification_required: s.verification_required||false,
+        verification_type: 'either'
+      }))
+    );
+    await dbQuery(db.from('tasks').insert(allTasks));
   }
-  showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!${requireProof?' (Proof required)':''}`);
-  document.getElementById('aTitle').value='';document.getElementById('aDesc').value='';document.getElementById('requireProofToggle').checked=false;
+
+  showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!`);
+  // Reset form and steps
+  document.getElementById('aTitle').value='';
+  document.getElementById('aDesc').value='';
+  document.getElementById('requireProofToggle').checked=false;
+  teacherSteps = [];
+  renderTeacherSteps();
 }
 
 async function sendNudge(childId,childName) {
