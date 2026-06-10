@@ -1144,6 +1144,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     // If any assignment has no tasks, treat it as active not done
     const hasEmptyAssignments = bucket.assignments.some(a => (a.tasks||[]).length === 0);
     const classState = (allComplete && !hasEmptyAssignments) ? 'done' : (stateOrder.find(s => aStates.includes(s) && s !== 'done') || (allComplete ? 'done' : 'active'));
+    console.log('Class:', className, 'state:', classState, 'aStates:', aStates, 'allComplete:', allComplete, 'hasEmpty:', hasEmptyAssignments);
     const classCfg = stateColors[classState];
 
     // Build assignment tiles
@@ -1152,6 +1153,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       const aDone = tasks.filter(t=>t.completed).length;
       const aTotal = tasks.length;
       const aState = getTileState(a);
+      console.log('Assignment:', a.title, 'state:', aState, 'due:', a.due_date, 'tasks:', (a.tasks||[]).length, 'done:', (a.tasks||[]).filter(t=>t.completed).length);
       const aCfg = stateColors[aState];
       const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
       const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.2);color:white;font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
