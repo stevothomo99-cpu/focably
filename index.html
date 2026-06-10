@@ -893,14 +893,13 @@ async function loadProfile() {
     if(!profile) {
       const role = currentUser.user_metadata?.role || 'parent';
       console.log('loadProfile: creating new profile, role=', role);
-      const ins = await db.from('profiles').insert({
+      await dbQuery(db.from('profiles').insert({
         id: currentUser.id,
         email: currentUser.email,
         full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
         role: role
-      });
-      console.log('loadProfile: insert result=', ins.error?.message || 'ok');
-      const r = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+      }));
+      const r = await dbQuery(db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle());
       profile = r.data;
     }
 
@@ -911,10 +910,10 @@ async function loadProfile() {
       return;
     }
 
-    // Fix role if metadata says different
+    // Fix role if metadata says different — run in background, don't block
     if(currentUser.user_metadata?.role && profile.role !== currentUser.user_metadata.role) {
-      await db.from('profiles').update({role: currentUser.user_metadata.role}).eq('id', currentUser.id);
       profile.role = currentUser.user_metadata.role;
+      dbQuery(db.from('profiles').update({role: currentUser.user_metadata.role}).eq('id', currentUser.id)).catch(()=>{});
     }
 
     currentProfile = profile;
