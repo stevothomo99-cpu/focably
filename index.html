@@ -766,7 +766,7 @@ window.addEventListener('load', async () => {
   try {
     console.log('App starting — waking Supabase...');
     // Ping Supabase first to wake it up
-    fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+    fetch(`${SUPA_URL}/rest/v1/profiles?select=id&limit=1`, {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).catch(()=>{});
     // Small delay to let it wake
     await new Promise(r => setTimeout(r, 1500));
     console.log('Getting session...');
@@ -784,7 +784,7 @@ window.addEventListener('load', async () => {
 
 // Keep Supabase awake — ping every 4 minutes
 setInterval(() => {
-  fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+  fetch(`${SUPA_URL}/rest/v1/profiles?select=id&limit=1`, {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).catch(()=>{});
 }, 240000);
 
 db.auth.onAuthStateChange(async (event, session) => {
@@ -858,7 +858,7 @@ async function signIn() {
   const btn=document.getElementById('siBtn'); btn.disabled=true; btn.textContent='Signing in...';
   try {
     // Wake up Supabase before signing in
-    await fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+    await fetch(`${SUPA_URL}/rest/v1/profiles?select=id&limit=1`, {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}).catch(()=>{});
     btn.textContent='Connecting...';
     const signInPromise = db.auth.signInWithPassword({email,password:pw});
     const signInTimeout = new Promise((_,reject) => setTimeout(() => reject(new Error('Sign in timed out — please try again')), 15000));
@@ -938,12 +938,12 @@ async function loadProfile() {
     if(!profile) {
       const role = currentUser.user_metadata?.role || 'parent';
       console.log('loadProfile: creating new profile, role=', role);
-      await dbQuery(db.from('profiles').insert({
+      await dbQuery(db.from('profiles').upsert({
         id: currentUser.id,
         email: currentUser.email,
         full_name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
         role: role
-      }));
+      }, {onConflict: 'id', ignoreDuplicates: true}));
       const r = await dbQuery(db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle());
       profile = r.data;
     }
