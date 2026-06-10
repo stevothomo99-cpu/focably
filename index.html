@@ -678,9 +678,14 @@ const trustConfig = {
 // ── INIT ──
 window.addEventListener('load', async () => {
   try {
-    console.log('App starting...');
+    console.log('App starting — waking Supabase...');
+    // Ping Supabase first to wake it up
+    fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+    // Small delay to let it wake
+    await new Promise(r => setTimeout(r, 1500));
+    console.log('Getting session...');
     const sessionPromise = db.auth.getSession();
-    const timeout = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 8000));
+    const timeout = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 15000));
     const { data: { session } } = await Promise.race([sessionPromise, timeout]);
     console.log('Session:', session ? 'logged in as ' + session.user.email : 'none');
     if (session) { currentUser = session.user; await loadProfile(); }
@@ -690,6 +695,11 @@ window.addEventListener('load', async () => {
     showScreen('auth');
   }
 });
+
+// Keep Supabase awake — ping every 4 minutes
+setInterval(() => {
+  fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+}, 240000);
 
 db.auth.onAuthStateChange(async (event, session) => {
   // Once app is loaded, only respond to sign out
@@ -760,9 +770,16 @@ async function signIn() {
   const email=document.getElementById('siEmail').value.trim(), pw=document.getElementById('siPassword').value;
   if(!email||!pw){showError('Enter email and password');return;}
   const btn=document.getElementById('siBtn'); btn.disabled=true; btn.textContent='Signing in...';
-  const {error}=await db.auth.signInWithPassword({email,password:pw});
-  btn.disabled=false; btn.textContent='Sign In';
-  if(error) showError(error.message);
+  try {
+    // Wake up Supabase before signing in
+    await fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
+    const {error}=await db.auth.signInWithPassword({email,password:pw});
+    btn.disabled=false; btn.textContent='Sign In';
+    if(error) showError(error.message);
+  } catch(e) {
+    btn.disabled=false; btn.textContent='Sign In';
+    showError('Connection error — please try again');
+  }
 }
 async function signUp() {
   const name=document.getElementById('suName').value.trim(), email=document.getElementById('suEmail').value.trim(), pw=document.getElementById('suPassword').value;
@@ -790,7 +807,7 @@ async function loadProfile() {
   try {
     console.log('loadProfile: fetching profile...');
     const profilePromise = db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-    const profileTimeout = new Promise(resolve => setTimeout(() => resolve({data:null, error:{message:'timeout'}}), 8000));
+    const profileTimeout = new Promise(resolve => setTimeout(() => resolve({data:null, error:{message:'timeout'}}), 15000));
     const profileRes = await Promise.race([profilePromise, profileTimeout]);
     let profile = profileRes.data;
     let profileError = profileRes.error;
