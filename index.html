@@ -621,43 +621,41 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   </div>
 
   <!-- TEACHER VIEW -->
-  <div id="view-teacher" class="scroll-content" style="display:none;">
+  <div <div id="view-teacher" class="scroll-content" style="display:none;">
+
+    <!-- TEACHER HEADER -->
     <div class="teacher-header">
       <div style="font-size:13px;opacity:0.7;margin-bottom:3px;">Welcome back,</div>
       <div class="teacher-name" id="teacherName">Loading...</div>
-      <div style="font-size:13px;opacity:0.75;" id="teacherSubline">Setting up your class...</div>
+      <div style="font-size:13px;opacity:0.75;" id="teacherSubline">Select a class to get started</div>
     </div>
 
-    <!-- TEACHER VERIFICATION QUEUE -->
-    <div class="card">
-      <div class="card-title">📋 Proof Verification Queue</div>
-      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Only tasks you created appear here.</p>
-      <div id="teacherVerifyQueue">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications</div>
-      </div>
-    </div>
-
+    <!-- MASTER CLASS SELECTOR -->
     <div class="card">
       <div class="card-title">🏫 My Classes</div>
-      
-      <!-- Class selector -->
-      <div id="classSelector" style="display:none;margin-bottom:12px;">
-        <select class="form-input" id="classDropdown" onchange="selectClass(this.value)"></select>
-      </div>
-
-      <!-- Selected class info -->
-      <div id="classInfo" style="display:none;margin-bottom:12px;">
-        <div class="invite-box">
-          <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Class Invite Code</div>
-          <div class="invite-code" id="classInviteCode">——</div>
-          <button class="copy-btn" onclick="copyClassCode()">Copy Code</button>
+      <select class="form-input" id="classDropdown" onchange="selectClass(this.value)" style="font-size:14px;font-weight:700;margin-bottom:10px;">
+        <option value="">— Select a class —</option>
+      </select>
+      <div id="classInfo" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;">Invite Code</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:24px;letter-spacing:4px;color:var(--violet);" id="classInviteCode">——</div>
+          </div>
+          <button class="copy-btn" onclick="copyClassCode()">Copy</button>
         </div>
-        <p style="font-size:12px;color:var(--gray-500);text-align:center;margin-top:10px;">Share with parents to add their child to this class</p>
+        <div style="font-size:12px;color:var(--gray-500);text-align:center;" id="classStudentCount">Share with parents to enrol students</div>
       </div>
+      <div id="classSelector" style="display:none;"></div>
+      <div id="addAnotherClass" style="display:none;margin-top:10px;">
+        <button onclick="showCreateClass()" style="width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--gray-200);background:transparent;color:var(--violet);font-size:13px;font-weight:600;cursor:pointer;">+ Add Another Class</button>
+      </div>
+    </div>
 
-      <!-- Create new class -->
+    <!-- CREATE CLASS -->
+    <div class="card" id="classSetupCard" style="display:none;">
+      <div class="card-title">🏫 Create a Class</div>
       <div id="classSetup">
-        <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:10px;" id="createClassTitle">Create your first class</div>
         <div class="form-grp"><label class="form-lbl">Class Name</label><input class="form-input" id="className" placeholder="e.g. Year 9 English"></div>
         <div class="form-row">
           <div class="form-grp"><label class="form-lbl">Subject</label><input class="form-input" id="classSubject" placeholder="e.g. English"></div>
@@ -665,25 +663,41 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         </div>
         <button class="publish-btn" onclick="createClass()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Create Class</button>
       </div>
+    </div>
 
-      <!-- Add another class button -->
-      <div id="addAnotherClass" style="display:none;margin-top:10px;">
-        <button onclick="showCreateClass()" style="width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--gray-200);background:transparent;color:var(--violet);font-size:13px;font-weight:600;cursor:pointer;">+ Add Another Class</button>
+    <!-- ASSIGNMENTS FOR SELECTED CLASS -->
+    <div class="card" id="classAssignmentsCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0;">📋 Assignments</div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="setTeacherView('assignments')" id="viewAssignmentsBtn" style="padding:5px 12px;border-radius:20px;border:none;background:var(--violet);color:white;font-size:11px;font-weight:700;cursor:pointer;">By Assignment</button>
+          <button onclick="setTeacherView('students')" id="viewStudentsBtn" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:700;cursor:pointer;">By Student</button>
+        </div>
+      </div>
+      <div id="teacherAssignmentsView">
+        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet for this class</div>
+      </div>
+      <div id="teacherStudentsView" style="display:none;">
+        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students enrolled yet</div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">📤 Upload Assignment</div>
-      <div class="form-grp">
-        <label class="form-lbl">Publish to Class</label>
-        <select class="form-input" id="assignmentClass">
-          <option value="">Select a class first...</option>
-        </select>
+    <!-- PROOF VERIFICATION -->
+    <div class="card" id="teacherVerifyCard" style="display:none;">
+      <div class="card-title">📸 Proof Verification Queue</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Only tasks you created appear here.</p>
+      <div id="teacherVerifyQueue">
+        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>
       </div>
+    </div>
+
+    <!-- NEW ASSIGNMENT -->
+    <div class="card" id="newAssignmentCard" style="display:none;">
+      <div class="card-title">📤 New Assignment for <span id="publishClassLabel" style="color:var(--violet);">—</span></div>
       <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="display:none;" onchange="handleAssignmentFile(this)">
       <div class="upload-zone" onclick="document.getElementById('assignmentFileInput').click()" id="assignmentUploadZone">
         <div style="font-size:28px;margin-bottom:6px;">📎</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:3px;" id="assignmentUploadLabel">Tap to attach file</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:3px;" id="assignmentUploadLabel">Tap to attach file (optional)</div>
         <div style="font-size:12px;color:var(--gray-500);">PDF, Word, PowerPoint, images</div>
       </div>
       <div class="form-grp"><label class="form-lbl">Assignment Title</label><input class="form-input" type="text" id="aTitle" placeholder="e.g. Climate Change Essay"></div>
@@ -693,42 +707,31 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
       <div class="form-grp"><label class="form-lbl">Instructions</label><textarea class="form-input" rows="3" id="aDesc" placeholder="What do students need to do?"></textarea></div>
       <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-lbl">📸 Require Proof of Completion</div>
-            <div class="toggle-sub">Students must upload photo or document before task is marked complete</div>
-          </div>
-          <label class="toggle"><input type="checkbox" id="requireProofToggle"><span class="toggle-slider"></span></label>
-        </div>
-      </div>
-      <!-- AI Step Generation -->
-      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
-        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 Assignment Steps</div>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">Steps help students break work into manageable chunks. Generate with AI or add manually.</p>
+        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 Steps</div>
         <div id="teacherStepsList"></div>
         <div class="step-add-row">
           <button class="step-add-btn" onclick="addTeacherStep()">+ Add Step</button>
           <button class="ai-steps-btn" id="aiStepsBtn" onclick="generateTeacherSteps()">✨ AI Generate</button>
         </div>
         <div id="aiStepsPreview" style="display:none;margin-top:10px;background:white;border-radius:10px;padding:10px;border:1.5px solid var(--violet-light);">
-          <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:8px;">✨ AI Suggested Steps — tap to accept</div>
+          <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:8px;">✨ AI Suggested Steps</div>
           <div id="aiStepsPreviewList"></div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button onclick="acceptAISteps()" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;">✓ Use These Steps</button>
+            <button onclick="acceptAISteps()" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;">✓ Use These</button>
             <button onclick="document.getElementById('aiStepsPreview').style.display='none'" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;font-weight:700;font-size:13px;cursor:pointer;">✗ Dismiss</button>
           </div>
+        </div>
+      </div>
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div class="toggle-row">
+          <div><div class="toggle-lbl">📸 Require Proof</div><div class="toggle-sub">Students must upload proof before marking complete</div></div>
+          <label class="toggle"><input type="checkbox" id="requireProofToggle"><span class="toggle-slider"></span></label>
         </div>
       </div>
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
     </div>
 
-    <div class="card">
-      <div class="card-title">📊 Student Progress</div>
-      <div id="teacherStudentProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Create a class to see student progress</div></div>
-    </div>
-  </div>
-
-  <div class="bottom-nav">
+  </div>class="bottom-nav">
     <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
     <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
     <div class="nav-item"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
@@ -1857,6 +1860,7 @@ async function loadJoinedClasses(childId) {
 // ── TEACHER APP ──
 let teacherClasses = [];
 let selectedClassId = null;
+let teacherViewMode = 'assignments';
 
 async function loadTeacherApp() {
   showScreen('app');
@@ -1864,27 +1868,40 @@ async function loadTeacherApp() {
   document.getElementById('rbParent').style.display='none';
   switchRole('teacher');
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
-  
-  setLoadingStatus('Loading your classes...');
+
   try {
     const {data:classes} = await dbQuery(db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true}), 8000, []);
     teacherClasses = classes || [];
     if(teacherClasses.length) {
       renderClassDropdown();
-      selectedClassId = teacherClasses[0].id;
-      document.getElementById('classSetup').style.display='none';
       document.getElementById('addAnotherClass').style.display='block';
-      document.getElementById('classInfo').style.display='block';
-      document.getElementById('classInviteCode').textContent=teacherClasses[0].invite_code;
-      document.getElementById('teacherSubline').textContent=`${teacherClasses[0].name} · ${teacherClasses[0].year_group||''}`;
-      // Load progress and verify queue in background — don't block app load
-      loadClassProgress(teacherClasses[0].id).catch(()=>{});
-      loadTeacherVerifyQueue(teacherClasses[0].id).catch(()=>{});
+      // Auto-select first class
+      document.getElementById('classDropdown').value = teacherClasses[0].id;
+      await selectClass(teacherClasses[0].id);
+    } else {
+      // No classes yet — show create form
+      document.getElementById('classSetupCard').style.display='block';
     }
-    showScreen('app');
   } catch(e) {
     console.error('loadTeacherApp error:', e.message);
-    showScreen('app');
+    document.getElementById('classSetupCard').style.display='block';
+  }
+}
+
+function setTeacherView(mode) {
+  teacherViewMode = mode;
+  const aView = document.getElementById('teacherAssignmentsView');
+  const sView = document.getElementById('teacherStudentsView');
+  const aBtn = document.getElementById('viewAssignmentsBtn');
+  const sBtn = document.getElementById('viewStudentsBtn');
+  if(mode === 'assignments') {
+    aView.style.display='block'; sView.style.display='none';
+    aBtn.style.background=`var(--violet)`; aBtn.style.color='white'; aBtn.style.border='none';
+    sBtn.style.background='white'; sBtn.style.color='var(--gray-500)'; sBtn.style.border='1.5px solid var(--gray-200)';
+  } else {
+    aView.style.display='none'; sView.style.display='block';
+    sBtn.style.background=`var(--violet)`; sBtn.style.color='white'; sBtn.style.border='none';
+    aBtn.style.background='white'; aBtn.style.color='var(--gray-500)'; aBtn.style.border='1.5px solid var(--gray-200)';
   }
 }
 
@@ -1906,17 +1923,143 @@ function renderClassDropdown() {
 }
 
 async function selectClass(classId) {
+  if(!classId) return;
   selectedClassId = classId;
   const cls = teacherClasses.find(c => c.id === classId);
   if(!cls) return;
+
+  // Update header
+  document.getElementById('teacherSubline').textContent = `${cls.name} · ${cls.subject} ${cls.year_group||''}`;
+
+  // Show invite code
   document.getElementById('classInfo').style.display='block';
-  document.getElementById('classInviteCode').textContent=cls.invite_code;
-  document.getElementById('teacherSubline').textContent=`${cls.name} · ${cls.year_group||''}`;
-  // Sync assignment class dropdown to selected class
-  const assignDropdown = document.getElementById('assignmentClass');
-  if(assignDropdown && classId) assignDropdown.value = classId;
-  await loadClassProgress(classId);
-  await loadTeacherVerifyQueue(classId);
+  document.getElementById('classInviteCode').textContent = cls.invite_code;
+
+  // Update publish label
+  const lbl = document.getElementById('publishClassLabel');
+  if(lbl) lbl.textContent = cls.name;
+
+  // Show class-specific cards
+  document.getElementById('classAssignmentsCard').style.display='block';
+  document.getElementById('teacherVerifyCard').style.display='block';
+  document.getElementById('newAssignmentCard').style.display='block';
+  document.getElementById('classSetupCard').style.display='none';
+
+  // Load data
+  await loadTeacherClassAssignments(classId);
+  loadTeacherVerifyQueue(classId).catch(()=>{});
+
+  // Get student count
+  const {data:members} = await dbQuery(db.from('class_members').select('id').eq('class_id',classId), 5000, []);
+  const count = members?.length || 0;
+  const countEl = document.getElementById('classStudentCount');
+  if(countEl) countEl.textContent = count > 0 ? `${count} student${count!==1?'s':''} enrolled` : 'No students yet — share invite code';
+}
+
+async function loadTeacherClassAssignments(classId) {
+  // Load assignments for this class with task completion data
+  const {data:assignments} = await dbQuery(
+    db.from('assignments').select('*, tasks(*), children(name)').eq('class_id', classId).eq('status','active').order('due_date',{ascending:true}),
+    8000, []
+  );
+
+  const aView = document.getElementById('teacherAssignmentsView');
+  const sView = document.getElementById('teacherStudentsView');
+
+  if(!assignments?.length) {
+    aView.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:16px 0;">No assignments yet — add one below</div>';
+    sView.innerHTML = '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:16px 0;">No assignments yet</div>';
+    return;
+  }
+
+  // GROUP BY ASSIGNMENT (unique titles — same assignment published to multiple students)
+  const assignmentGroups = {};
+  assignments.forEach(a => {
+    const key = a.title + '_' + (a.due_date||'');
+    if(!assignmentGroups[key]) assignmentGroups[key] = {title:a.title, due:a.due_date, desc:a.description, instances:[]};
+    assignmentGroups[key].instances.push(a);
+  });
+
+  // ASSIGNMENT VIEW
+  aView.innerHTML = Object.values(assignmentGroups).map(group => {
+    const instances = group.instances;
+    const totalStudents = instances.length;
+    const completedStudents = instances.filter(a => {
+      const tasks = a.tasks||[];
+      return tasks.length > 0 && tasks.every(t=>t.completed);
+    }).length;
+    const dueStr = group.due ? new Date(group.due).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) : 'No due date';
+    const today = new Date();
+    const due = group.due ? new Date(group.due) : null;
+    const isOverdue = due && due < today;
+    const pct = totalStudents ? Math.round((completedStudents/totalStudents)*100) : 0;
+    const statusColor = isOverdue ? 'var(--rose)' : pct===100 ? 'var(--mint)' : 'var(--amber)';
+
+    const studentRows = instances.map(a => {
+      const tasks = a.tasks||[];
+      const done = tasks.filter(t=>t.completed).length;
+      const studentPct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray-100);">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;flex-shrink:0;">${a.children?.name?.charAt(0)||'?'}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">${a.children?.name||'Student'}</div>
+          <div style="background:var(--gray-100);border-radius:10px;height:4px;margin-top:3px;"><div style="background:${studentPct===100?'var(--mint)':'var(--violet)'};border-radius:10px;height:4px;width:${studentPct}%;"></div></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:${studentPct===100?'var(--mint)':'var(--gray-500)'};">${done}/${tasks.length}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="border-radius:12px;border:1.5px solid var(--gray-200);overflow:hidden;margin-bottom:10px;">
+      <div style="padding:12px;cursor:pointer;background:var(--gray-50);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:14px;color:var(--indigo);">${group.title}</div>
+            <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+              <span style="font-size:11px;color:${isOverdue?'var(--rose)':'var(--gray-500)'};">📅 ${dueStr}</span>
+              <span style="font-size:11px;font-weight:700;color:${statusColor};">${completedStudents}/${totalStudents} students done</span>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:900;color:${statusColor};">${pct}%</div>
+        </div>
+        <div style="background:var(--gray-200);border-radius:10px;height:5px;margin-top:8px;"><div style="background:${statusColor};border-radius:10px;height:5px;width:${pct}%;transition:width 0.6s;"></div></div>
+      </div>
+      <div style="display:none;padding:10px 12px;">${studentRows}</div>
+    </div>`;
+  }).join('');
+
+  // STUDENT VIEW — group by student
+  const studentMap = {};
+  assignments.forEach(a => {
+    const name = a.children?.name || 'Unknown';
+    if(!studentMap[name]) studentMap[name] = {name, assignments:[]};
+    studentMap[name].assignments.push(a);
+  });
+
+  sView.innerHTML = Object.values(studentMap).map(student => {
+    const totalTasks = student.assignments.flatMap(a=>a.tasks||[]).length;
+    const doneTasks = student.assignments.flatMap(a=>a.tasks||[]).filter(t=>t.completed).length;
+    const pct = totalTasks ? Math.round((doneTasks/totalTasks)*100) : 0;
+    const initial = student.name.charAt(0).toUpperCase();
+    const colors = ['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
+    const tColors = ['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
+    const ci = Object.keys(studentMap).indexOf(student.name) % 4;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);">
+      <div style="width:36px;height:36px;border-radius:50%;background:${colors[ci]};color:${tColors[ci]};display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;">${initial}</div>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${student.name}</div>
+        <div style="background:var(--gray-100);border-radius:10px;height:5px;"><div style="background:${pct===100?'var(--mint)':'var(--violet)'};border-radius:10px;height:5px;width:${pct}%;"></div></div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${pct===100?'var(--mint)':'var(--gray-500)'};">${doneTasks}/${totalTasks}</div>
+      <button class="nudge-btn" onclick="sendNudge('','${student.name}')">Nudge 👋</button>
+    </div>`;
+  }).join('');
+}
+
+function showCreateClass() {
+  document.getElementById('classSetupCard').style.display='block';
+  document.getElementById('className').value='';
+  document.getElementById('classSubject').value='';
+  document.getElementById('classYear').value='';
 }
 
 function showCreateClass() {
