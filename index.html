@@ -1160,6 +1160,7 @@ function getTileState(assignment) {
     // Days difference
     const due = new Date(dueStr + 'T12:00:00');
     const diffDays = Math.ceil((due - today)/(1000*60*60*24));
+    if(diffDays <= 1) return 'overdue';
     if(diffDays <= 7) return 'urgent';
   }
   return done > 0 ? 'good' : 'active';
