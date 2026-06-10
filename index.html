@@ -1085,7 +1085,7 @@ async function loadStudentAssignments(ageGroup) {
   updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
   else{document.getElementById('hs-mode').style.display='block';}
-  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes(name, subject, year_group, profiles(full_name))').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
+  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes!left(name, subject, year_group, profiles!left(full_name))').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
   console.log('Assignments loaded:', assignments?.length);
   assignments?.forEach(a => {
     console.log('  -', a.title, '| tasks:', a.tasks?.length, '| tasks data:', JSON.stringify(a.tasks?.map(t=>({title:t.title,completed:t.completed}))));
@@ -1176,8 +1176,8 @@ function renderClassTiles(assignments, child, containerId, isHS) {
 
   container.innerHTML = '<div class="class-tiles">' + Object.entries(classBuckets).map(([classId, bucket], i) => {
     const cls = bucket.cls;
-    const className = cls?.name || cls?.subject || 'My Class';
-    const teacherName = cls?.profiles?.full_name ? 'with ' + cls.profiles.full_name : '';
+    const className = cls?.name || cls?.subject || '📚 Home Tasks';
+    const teacherName = cls?.profiles?.full_name ? 'with ' + cls.profiles.full_name : classId === 'noclass' ? 'Added by parent' : '';
     const openAssignments = bucket.assignments.filter(a => {
       const tasks = a.tasks||[];
       const done = tasks.filter(t=>t.completed).length;
