@@ -279,6 +279,8 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   <div style="text-align:center;">
     <div class="loading-logo">Foc<span>ably</span></div>
     <div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div id="loadingStatus" style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:16px;">Connecting...</div>
+    <button id="loadingRetry" onclick="retryLoad()" style="display:none;margin-top:16px;padding:10px 24px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:14px;cursor:pointer;">Tap to Retry</button>
   </div>
 </div>
 
@@ -809,9 +811,33 @@ async function signUp() {
 async function signInGoogle() { await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}}); }
 async function signOut() { await db.auth.signOut(); showToast('👋 Signed out'); }
 
+function setLoadingStatus(msg) {
+  const el = document.getElementById('loadingStatus');
+  if(el) el.textContent = msg;
+  console.log('Status:', msg);
+}
+
+function showRetryButton() {
+  const btn = document.getElementById('loadingRetry');
+  if(btn) btn.style.display = 'block';
+}
+
+async function retryLoad() {
+  document.getElementById('loadingRetry').style.display = 'none';
+  await loadProfile();
+}
+
 async function loadProfile() {
   showScreen('loading');
+  setLoadingStatus('Loading your profile...');
   console.log('loadProfile: starting for', currentUser.email);
+  
+  // Hard timeout — show retry button after 12 seconds
+  const hardTimeout = setTimeout(() => {
+    setLoadingStatus('Taking longer than usual...');
+    showRetryButton();
+  }, 12000);
+
   try {
     console.log('loadProfile: fetching profile...');
     const profilePromise = db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
@@ -819,6 +845,8 @@ async function loadProfile() {
     const profileRes = await Promise.race([profilePromise, profileTimeout]);
     let profile = profileRes.data;
     let profileError = profileRes.error;
+    clearTimeout(hardTimeout);
+    setLoadingStatus('Profile loaded — setting up your app...');
     console.log('loadProfile: fetch done, profile=', profile?.role, 'error=', profileError?.message);
 
     console.log('loadProfile: profile=', profile?.role, 'error=', profileError?.message);
@@ -866,6 +894,7 @@ async function loadProfile() {
       showError('Unknown account role. Please sign up again.');
     }
   } catch(e) {
+    clearTimeout(hardTimeout);
     console.error('loadProfile: fatal error', e.message);
     showScreen('auth');
     showError('Something went wrong loading your profile. Please try again.');
