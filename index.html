@@ -645,13 +645,19 @@ window.addEventListener('load', async () => {
 });
 
 db.auth.onAuthStateChange(async (event, session) => {
-  // Once app is loaded don't let auth state changes interrupt the UI
-  if (appReady && event === 'SIGNED_IN') return;
+  // Once app is loaded, only respond to sign out
+  if (appReady) {
+    if (event === 'SIGNED_OUT') {
+      appReady = false;
+      currentUser = null;
+      showScreen('auth');
+    }
+    return;
+  }
   if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
     currentUser = session.user;
     await loadProfile();
   } else if (event === 'SIGNED_OUT') {
-    appReady = false;
     currentUser = null;
     showScreen('auth');
   }
