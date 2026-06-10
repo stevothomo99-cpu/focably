@@ -270,6 +270,8 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .link-input:focus{border-color:var(--violet);}
 .link-btn{padding:10px 16px;border-radius:10px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
 
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
 /* ── CLASS TILES ── */
 .class-tiles { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
 .class-tile { border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(30,27,75,0.12); transition:all 0.3s; }
@@ -413,10 +415,13 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 <div class="screen" id="screen-app" style="display:none;">
   <div class="top-nav">
     <div class="logo">Achiev<span>ED</span></div>
-    <div class="role-switcher">
-      <button class="role-btn active" id="rbStudent" onclick="switchRole('student')">🎒 Me</button>
-      <button class="role-btn" id="rbParent" onclick="switchRole('parent')">👨‍👩‍👧 Parent</button>
-      <button class="role-btn" id="rbTeacher" onclick="switchRole('teacher')">📚 Teacher</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button onclick="refreshCurrentView()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" id="refreshBtn" title="Refresh">↻</button>
+      <div class="role-switcher">
+        <button class="role-btn active" id="rbStudent" onclick="switchRole('student')">🎒 Me</button>
+        <button class="role-btn" id="rbParent" onclick="switchRole('parent')">👨‍👩‍👧 Parent</button>
+        <button class="role-btn" id="rbTeacher" onclick="switchRole('teacher')">📚 Teacher</button>
+      </div>
     </div>
   </div>
 
@@ -2127,6 +2132,31 @@ async function sendNudge(childId,childName) {
   showToast(`👋 Nudge sent to ${childName}'s parent!`);
 }
 function copyClassCode() { navigator.clipboard.writeText(document.getElementById('classInviteCode').textContent).then(()=>showToast('📋 Class code copied!')); }
+
+// ── REFRESH ──
+async function refreshCurrentView() {
+  const btn = document.getElementById('refreshBtn');
+  if(btn) { btn.style.animation = 'spin 0.6s linear'; btn.textContent = '↻'; }
+  
+  try {
+    if(currentProfile.role === 'student') {
+      await loadStudentAssignments(currentProfile.age_group);
+    } else if(currentProfile.role === 'parent') {
+      if(selectedChildId) await loadChildStats(selectedChildId);
+      await loadParentVerifyQueue();
+    } else if(currentProfile.role === 'teacher') {
+      if(selectedClassId) {
+        await loadClassProgress(selectedClassId);
+        await loadTeacherVerifyQueue(selectedClassId);
+      }
+    }
+    showToast('✅ Updated!');
+  } catch(e) {
+    showToast('❌ Refresh failed — try again');
+  }
+  
+  if(btn) { btn.style.animation = ''; }
+}
 
 // ── ROLE SWITCHER ──
 function switchRole(role) {
