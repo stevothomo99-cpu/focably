@@ -297,7 +297,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .step-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:rgba(255,255,255,0.15); color:white; white-space:nowrap; }
 /* Tile colour states */
 .tile-overdue  { background:linear-gradient(135deg,#9B1C1C,#DC2626); }
-.tile-urgent   { background:linear-gradient(135deg,#92400E,#D97706); }
+.tile-urgent   { background:linear-gradient(135deg,#F59E0B,#F97316); }
 .tile-active   { background:linear-gradient(135deg,#1E1B4B,#7C3AED); }
 .tile-good     { background:linear-gradient(135deg,#064E3B,#10B981); }
 .tile-done     { background:linear-gradient(135deg,#374151,#6B7280); }
@@ -749,9 +749,9 @@ let currentProofFile = null, currentProofTaskId = null;
 let appReady = false; // True once app is fully loaded — blocks auth interrupts
 
 const themes = {
-  fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#92400E,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
+  fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#F59E0B,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },
   space:     { grad:'linear-gradient(135deg,#1E3A8A,#2563EB)', emoji:'👨‍🚀', name:'Cadet Explorer', title:'Navigator · Space Academy', streak:'🚀 Lieutenant', realm1Grad:'linear-gradient(135deg,#1E3A8A,#1D4ED8)', realm2Grad:'linear-gradient(135deg,#065F46,#059669)', chest:'🛸', aiTitle:'🤖 Mission Control', aiSub:'Divide your assignment into missions!', aiBtnText:'Plan My Missions', aiStyle:'space mission objectives' },
-  adventure: { grad:'linear-gradient(135deg,#064E3B,#065F46)', emoji:'🧭', name:'The Young Explorer', title:'Trailblazer · Exploration Corps', streak:'🗺️ Pathfinder', realm1Grad:'linear-gradient(135deg,#064E3B,#047857)', realm2Grad:'linear-gradient(135deg,#7C2D12,#9A3412)', chest:'🗺️', aiTitle:'🧭 Trail Guide', aiSub:'Map every step of the trail!', aiBtnText:'Map My Trail', aiStyle:'adventure trail waypoints' }
+  adventure: { grad:'linear-gradient(135deg,#064E3B,#065F46)', emoji:'🧭', name:'The Young Explorer', title:'Trailblazer · Exploration Corps', streak:'🗺️ Pathfinder', realm1Grad:'linear-gradient(135deg,#064E3B,#047857)', realm2Grad:'linear-gradient(135deg,#7C2D12,#F97316)', chest:'🗺️', aiTitle:'🧭 Trail Guide', aiSub:'Map every step of the trail!', aiBtnText:'Map My Trail', aiStyle:'adventure trail waypoints' }
 };
 
 const trustConfig = {
