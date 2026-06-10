@@ -677,11 +677,18 @@ const trustConfig = {
 
 // ── INIT ──
 window.addEventListener('load', async () => {
-  // Service worker disabled temporarily
-// if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  const { data: { session } } = await db.auth.getSession();
-  if (session) { currentUser = session.user; await loadProfile(); }
-  else showScreen('auth');
+  try {
+    console.log('App starting...');
+    const sessionPromise = db.auth.getSession();
+    const timeout = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 8000));
+    const { data: { session } } = await Promise.race([sessionPromise, timeout]);
+    console.log('Session:', session ? 'logged in as ' + session.user.email : 'none');
+    if (session) { currentUser = session.user; await loadProfile(); }
+    else showScreen('auth');
+  } catch(e) {
+    console.error('Startup error:', e.message);
+    showScreen('auth');
+  }
 });
 
 db.auth.onAuthStateChange(async (event, session) => {
