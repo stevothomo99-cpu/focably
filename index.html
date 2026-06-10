@@ -1271,13 +1271,21 @@ function updateTileProgress(stepEl) {
   classTile.style.animation = 'none';
   classTile.style.boxShadow = 'none';
 
+  const gradients = {
+    'tile-done':   'linear-gradient(135deg,#374151,#6B7280)',
+    'tile-good':   'linear-gradient(135deg,#064E3B,#10B981)',
+    'tile-active': 'linear-gradient(135deg,#1E1B4B,#7C3AED)',
+  };
   if(doneClass === totalClass && totalClass > 0) {
     classTile.classList.add('tile-done');
+    classTile.style.background = gradients['tile-done'];
     showToast('🏆 Quest complete! Amazing work!');
   } else if(doneClass > 0) {
     classTile.classList.add('tile-good');
+    classTile.style.background = gradients['tile-good'];
   } else {
     classTile.classList.add('tile-active');
+    classTile.style.background = gradients['tile-active'];
   }
 }
 
