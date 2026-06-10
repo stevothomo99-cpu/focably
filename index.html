@@ -773,12 +773,20 @@ async function signIn() {
   try {
     // Wake up Supabase before signing in
     await fetch(`${SUPA_URL}/rest/v1/`, {headers:{'apikey':SUPA_KEY}}).catch(()=>{});
-    const {error}=await db.auth.signInWithPassword({email,password:pw});
+    btn.textContent='Connecting...';
+    const signInPromise = db.auth.signInWithPassword({email,password:pw});
+    const signInTimeout = new Promise((_,reject) => setTimeout(() => reject(new Error('Sign in timed out — please try again')), 15000));
+    const {data:signInData, error} = await Promise.race([signInPromise, signInTimeout]);
     btn.disabled=false; btn.textContent='Sign In';
-    if(error) showError(error.message);
+    if(error) { showError(error.message); return; }
+    // Manually trigger profile load if onAuthStateChange doesn't fire
+    if(signInData?.session) {
+      currentUser = signInData.session.user;
+      await loadProfile();
+    }
   } catch(e) {
     btn.disabled=false; btn.textContent='Sign In';
-    showError('Connection error — please try again');
+    showError(e.message || 'Connection error — please try again');
   }
 }
 async function signUp() {
