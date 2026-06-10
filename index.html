@@ -1119,7 +1119,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     urgent:  'rgba(180,52,3,0.55)',
     active:  'rgba(91,33,182,0.55)',
     good:    'rgba(6,95,70,0.55)',
-    done:    'rgba(0,0,0,0.25)',
+    done:    'rgba(0,0,0,0.45)',
   };
   // Assignment row text opacity for done state
   const aRowOpacity = { overdue:'1', urgent:'1', active:'1', good:'1', done:'0.6' };
@@ -1183,7 +1183,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
           <div style="padding:12px 14px;cursor:pointer;" onclick="toggleTile('${a.id}')">
             <div style="display:flex;align-items:center;gap:8px;">
               <div style="flex:1;">
-                <div style="font-size:14px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">${a.title}</div>
+                <div style="font-size:14px;font-weight:900;color:white;font-family:'Nunito',sans-serif;${aState==='done'?'text-decoration:line-through;opacity:0.7;':''}">${aState==='done'?'✓ ':''} ${a.title}</div>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
                   <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;">📅 ${aDue}</span>
                   <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;" id="acount-${a.id}">${aDone}/${aTotal} steps</span>
