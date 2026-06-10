@@ -1548,14 +1548,16 @@ async function loadTeacherApp() {
 
 function renderClassDropdown() {
   const dropdown = document.getElementById('classDropdown');
-  dropdown.innerHTML = teacherClasses.map(c =>
-    `<option value="${c.id}">${c.name} — ${c.subject} ${c.year_group||''}</option>`
-  ).join('');
-  document.getElementById('classSelector').style.display='block';
-  // Populate assignment class dropdown too
+  if(dropdown) {
+    dropdown.innerHTML = teacherClasses.map(c =>
+      `<option value="${c.id}">${c.name} — ${c.subject} ${c.year_group||''}</option>`
+    ).join('');
+    document.getElementById('classSelector').style.display='block';
+  }
+  // Always populate assignment class dropdown
   const assignDropdown = document.getElementById('assignmentClass');
   if(assignDropdown) {
-    assignDropdown.innerHTML = teacherClasses.map(c =>
+    assignDropdown.innerHTML = '<option value="">— Select class —</option>' + teacherClasses.map(c =>
       `<option value="${c.id}">${c.name} — ${c.subject}</option>`
     ).join('');
   }
@@ -1568,6 +1570,9 @@ async function selectClass(classId) {
   document.getElementById('classInfo').style.display='block';
   document.getElementById('classInviteCode').textContent=cls.invite_code;
   document.getElementById('teacherSubline').textContent=`${cls.name} · ${cls.year_group||''}`;
+  // Sync assignment class dropdown to selected class
+  const assignDropdown = document.getElementById('assignmentClass');
+  if(assignDropdown && classId) assignDropdown.value = classId;
   await loadClassProgress(classId);
   await loadTeacherVerifyQueue(classId);
 }
@@ -1632,7 +1637,7 @@ async function publishAssignment() {
   const requireProof=document.getElementById('requireProofToggle').checked;
   if(!title){showToast('✏️ Add a title first');return;}
   const classId = document.getElementById('assignmentClass')?.value || selectedClassId;
-  if(!classId){showToast('Select a class first!');return;}
+  if(!classId||classId===''){showToast('⚠️ Please select a class first!');return;}
   const cls = teacherClasses.find(c=>c.id===classId);
   const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classId);
   if(!members?.length){showToast('No students in class yet');return;}
