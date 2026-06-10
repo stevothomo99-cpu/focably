@@ -1049,6 +1049,7 @@ async function loadStudentAssignments(ageGroup) {
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
   else{document.getElementById('hs-mode').style.display='block';}
   const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes(name, subject, year_group, profiles(full_name))').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
+  console.log('Assignments loaded:', assignments?.length, 'first tasks:', assignments?.[0]?.tasks?.length);
   if(ageGroup==='primary') renderPrimaryAssignments(assignments||[],child);
   else renderHSAssignments(assignments||[],child);
 }
@@ -1655,7 +1656,7 @@ async function parentAddTask() {
         })
       });
       const d = await res.json();
-      parentSteps = JSON.parse(d.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim());
+      parentSteps = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
     } catch(e) {
       parentSteps = [{title: title}];
     }
@@ -1896,7 +1897,7 @@ async function generateTeacherSteps() {
       })
     });
     const data = await res.json();
-    aiGeneratedSteps = JSON.parse(data.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim());
+    aiGeneratedSteps = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     const preview = document.getElementById('aiStepsPreviewList');
     preview.innerHTML = aiGeneratedSteps.map((s,i) => `
       <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:13px;">
@@ -1953,7 +1954,7 @@ async function publishAssignment() {
           })
         });
         const d = await res.json();
-        stepsToCreate = JSON.parse(d.content[0].text.replace(/\`\`\`json|\`\`\`/g,'').trim()).map(s=>({
+        stepsToCreate = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim()).map(s=>({
           id:'auto',title:s.title,verification_required:requireProof&&s.verification_required
         }));
       } catch(e) {
