@@ -1070,8 +1070,9 @@ async function linkToFamily() {
     theme: currentProfile.theme
   });
   if(error){showToast('❌ Could not link account');return;}
+  // Set appReady BEFORE navigating so auth state change can't interrupt
+  appReady = true;
   showToast('✅ Linked to family!');
-  // Reload full student app so everything renders correctly
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
