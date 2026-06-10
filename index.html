@@ -2419,11 +2419,11 @@ function burstConfetti(el) {
       font-size:${18+Math.random()*16}px;
       pointer-events:none;
       z-index:9999;
-      animation:${anims[Math.floor(Math.random()*anims.length)]} ${1.2+Math.random()*0.8}s ease forwards;
+      animation:${anims[Math.floor(Math.random()*anims.length)]} ${2.0+Math.random()*1.0}s ease forwards;
       animation-delay:${Math.random()*0.1}s;
     `;
     document.body.appendChild(particle);
-    setTimeout(() => particle.remove(), 2200);
+    setTimeout(() => particle.remove(), 3200);
   }
 
   // Wave 2 — delayed second burst (15 more)
@@ -2438,12 +2438,12 @@ function burstConfetti(el) {
         font-size:${14+Math.random()*20}px;
         pointer-events:none;
         z-index:9999;
-        animation:confettiUp ${1.0+Math.random()*0.6}s ease forwards;
+        animation:confettiUp ${1.8+Math.random()*1.2}s ease forwards;
       `;
       document.body.appendChild(particle);
-      setTimeout(() => particle.remove(), 1800);
+      setTimeout(() => particle.remove(), 3200);
     }
-  }, 300);
+  }, 400);
 
   // Big star flash
   const flash = document.createElement('div');
@@ -2455,10 +2455,29 @@ function burstConfetti(el) {
     font-size:60px;
     pointer-events:none;
     z-index:9999;
-    animation:starPop 0.8s ease forwards;
+    animation:starPop 1.2s ease forwards;
   `;
   document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 900);
+  setTimeout(() => flash.remove(), 1400);
+
+  // Wave 3 — late stragglers
+  setTimeout(() => {
+    for(let i=0; i<10; i++) {
+      const particle = document.createElement('div');
+      particle.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      particle.style.cssText = `
+        position:fixed;
+        left:${cx + (Math.random()-0.5)*200}px;
+        top:${cy + (Math.random()-0.5)*80}px;
+        font-size:${20+Math.random()*18}px;
+        pointer-events:none;
+        z-index:9999;
+        animation:confettiFall ${1.5+Math.random()*1.0}s ease forwards;
+      `;
+      document.body.appendChild(particle);
+      setTimeout(() => particle.remove(), 2800);
+    }
+  }, 800);
 
   // Ring pulse
   const ring = document.createElement('div');
@@ -2472,10 +2491,10 @@ function burstConfetti(el) {
     border:3px solid var(--amber);
     pointer-events:none;
     z-index:9998;
-    animation:starRing 0.7s ease forwards;
+    animation:starRing 1.0s ease forwards;
   `;
   document.body.appendChild(ring);
-  setTimeout(() => ring.remove(), 800);
+  setTimeout(() => ring.remove(), 1200);
 }
 
 function celebrateStep(stepEl) {
