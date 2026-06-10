@@ -296,15 +296,9 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .class-tile-step.done .step-title { text-decoration:line-through; opacity:0.7; }
 .step-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:rgba(255,255,255,0.15); color:white; white-space:nowrap; }
 /* Tile colour states */
-.tile-overdue  { background:linear-gradient(135deg,#9B1C1C,#DC2626); }
-.tile-urgent   { background:linear-gradient(135deg,#F59E0B,#F97316); }
-.tile-active   { background:linear-gradient(135deg,#1E1B4B,#7C3AED); }
-.tile-good     { background:linear-gradient(135deg,#064E3B,#10B981); }
-.tile-done     { background:linear-gradient(135deg,#374151,#6B7280); }
+/* tile colours handled via inline styles only */
 @keyframes glowRed   { 0%,100%{box-shadow:0 0 8px rgba(220,38,38,0.6);} 50%{box-shadow:0 0 24px rgba(220,38,38,0.95);} }
-@keyframes glowAmber { 0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.6);} 50%{box-shadow:0 0 24px rgba(249,115,22,0.95);} }
-.tile-overdue { animation:glowRed 2s infinite; }
-.tile-urgent  { animation:glowAmber 2s infinite; }
+@keyframes glowAmber { 0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.7);} 50%{box-shadow:0 0 24px rgba(249,115,22,1.0);} }
 
 
 /* ── STEP BUILDER ── */
@@ -1137,17 +1131,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       return tasks.length === 0 || done < tasks.length;
     }).length;
 
-    // Class tile state = worst across all assignments
-    const allTasks = bucket.assignments.flatMap(a => a.tasks||[]);
-    const totalDone = allTasks.filter(t=>t.completed).length;
-    // Only mark complete if there ARE tasks AND all are done
-    const allComplete = allTasks.length > 0 && totalDone === allTasks.length;
+    // Class tile state
     const aStates = bucket.assignments.map(a => getTileState(a));
     const stateOrder = ['overdue','urgent','active','good','done'];
-    // If any assignment has no tasks, treat it as active not done
-    const hasEmptyAssignments = bucket.assignments.some(a => (a.tasks||[]).length === 0);
-    const classState = (allComplete && !hasEmptyAssignments) ? 'done' : (stateOrder.find(s => aStates.includes(s) && s !== 'done') || (allComplete ? 'done' : 'active'));
-    console.log('Class:', className, 'state:', classState, 'aStates:', aStates, 'allComplete:', allComplete, 'hasEmpty:', hasEmptyAssignments);
+    const classState = stateOrder.find(s => aStates.includes(s)) || 'active';
+    console.log('Class:', className, 'state:', classState, 'aStates:', aStates);
     const classCfg = stateColors[classState];
 
     // Build assignment tiles
