@@ -1116,10 +1116,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     const total = allTasks.length;
     const pct = total ? Math.round((done/total)*100) : 0;
 
-    // Worst state across all assignments
+    // Overall state — all done = done, otherwise worst active state
+    const allDone = total > 0 && done === total;
     const states = bucket.assignments.map(a => getTileState(a));
     const stateOrder = ['overdue','urgent','active','good','done'];
-    const worstState = stateOrder.find(s => states.includes(s)) || 'active';
+    const worstState = allDone ? 'done' : (stateOrder.find(s => states.includes(s) && s !== 'done') || 'active');
     const tileClass = getTileClass(worstState);
 
     // Each assignment renders as a row — tap to expand its steps
