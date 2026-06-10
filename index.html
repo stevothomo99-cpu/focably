@@ -790,6 +790,12 @@ const trustConfig = {
 
 // ── INIT ──
 window.addEventListener('load', async () => {
+  // Register service worker first
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(e => console.log('SW failed:', e.message));
+  }
   try {
     console.log('App starting — waking Supabase...');
     // Ping Supabase first to wake it up
