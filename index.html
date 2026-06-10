@@ -282,7 +282,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .class-tile-track { background:rgba(255,255,255,0.2); border-radius:10px; height:8px; margin-bottom:4px; }
 .class-tile-fill { border-radius:10px; height:8px; background:rgba(255,255,255,0.9); transition:width 0.6s; }
 .class-tile-label { font-size:11px; color:rgba(255,255,255,0.8); display:flex; justify-content:space-between; }
-.class-tile-steps { background:rgba(0,0,0,0.15); display:none; }
+.class-tile-steps { background:rgba(0,0,0,0.25); display:none; }
 .class-tile-steps.open { display:block; }
 .class-tile-step { display:flex; align-items:flex-start; gap:10px; padding:10px 16px; border-top:1px solid rgba(255,255,255,0.1); cursor:pointer; transition:background 0.2s; }
 .class-tile-step:hover { background:rgba(255,255,255,0.05); }
@@ -292,7 +292,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .step-circle { width:24px; height:24px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; color:white; background:rgba(255,255,255,0.1); margin-top:1px; }
 .class-tile-step.done .step-circle { background:rgba(255,255,255,0.3); border-color:transparent; }
 .class-tile-step.pending .step-circle { background:rgba(245,158,11,0.5); border-color:var(--amber); }
-.step-title { flex:1; font-size:13px; font-weight:600; color:white; line-height:1.4; }
+.step-title { flex:1; font-size:13px; font-weight:700; color:white; line-height:1.4; text-shadow:0 1px 2px rgba(0,0,0,0.3); }
 .class-tile-step.done .step-title { text-decoration:line-through; opacity:0.7; }
 .step-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:rgba(255,255,255,0.15); color:white; white-space:nowrap; }
 /* Tile colour states */
@@ -1115,11 +1115,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;line-height:1.5;">${a.description}</div>` : '';
       const hoursHtml = a.estimated_hours ? `<span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:10px;font-size:11px;">⏱ ${a.estimated_hours}h estimated</span>` : '';
 
-      return `<div style="border-top:2px solid rgba(255,255,255,0.15);">
-        <div style="padding:12px 16px;background:rgba(0,0,0,0.2);cursor:pointer;" onclick="toggleTile('${a.id}')">
+      return `<div style="padding:8px 0 0 0;">
+        <div style="padding:12px 16px;background:rgba(255,255,255,0.15);border-radius:10px;margin:0 8px 0 8px;cursor:pointer;backdrop-filter:blur(4px);" onclick="toggleTile('${a.id}')">
           <div style="display:flex;align-items:center;gap:8px;">
             <div style="flex:1;">
-              <div style="font-size:14px;font-weight:800;color:white;font-family:'Nunito',sans-serif;">${a.title}</div>
+              <div style="font-size:15px;font-weight:900;color:white;font-family:'Nunito',sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.3);">${a.title}</div>
               <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
                 <span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:10px;font-size:11px;color:white;">📅 ${aDue}</span>
                 <span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:10px;font-size:11px;color:white;">${aDone}/${tasks.length} steps</span>
