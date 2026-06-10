@@ -609,6 +609,13 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
 
     <div class="card">
+      <div class="card-title">🔔 Notifications</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Enable push notifications to get alerts when your child completes steps.</p>
+      <div id="notifStatus" style="font-size:13px;margin-bottom:10px;padding:8px 12px;border-radius:10px;background:var(--gray-50);">Checking status...</div>
+      <button onclick="enableNotifications()" id="enableNotifsBtn" class="publish-btn" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">🔔 Enable Notifications</button>
+    </div>
+
+    <div class="card">
       <div class="card-title">📬 Family Invite Code</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Share this with your child to link their account.</p>
       <div class="invite-box">
@@ -1719,6 +1726,7 @@ async function loadParentApp() {
   }
   loadParentVerifyQueue().catch(()=>{});
   showScreen('app');
+  setTimeout(updateNotifStatus, 1000);
 }
 
 function renderChildTabs() {
@@ -2600,6 +2608,53 @@ async function breakdownHS() {
 }
 
 // ── NOTIFICATIONS + PWA ──
+async function enableNotifications() {
+  const btn = document.getElementById('enableNotifsBtn');
+  const status = document.getElementById('notifStatus');
+  if(!('Notification' in window)) {
+    if(status) status.textContent = '❌ Notifications not supported in this browser';
+    return;
+  }
+  if(btn) { btn.disabled=true; btn.textContent='Requesting...'; }
+  const permission = await Notification.requestPermission();
+  if(permission === 'granted') {
+    if(status) { status.textContent = '✅ Notifications enabled!'; status.style.background='#ECFDF5'; }
+    if(btn) btn.style.display='none';
+    await subscribeToPush();
+    showToast('🔔 Notifications enabled!');
+  } else if(permission === 'denied') {
+    if(status) { status.textContent = '❌ Blocked — enable in browser settings'; status.style.background='#FFF1F2'; }
+    if(btn) { btn.disabled=false; btn.textContent='🔔 Enable Notifications'; }
+  } else {
+    if(status) { status.textContent = '⚠️ Permission dismissed — try again'; }
+    if(btn) { btn.disabled=false; btn.textContent='🔔 Enable Notifications'; }
+  }
+}
+
+async function updateNotifStatus() {
+  const status = document.getElementById('notifStatus');
+  const btn = document.getElementById('enableNotifsBtn');
+  if(!status) return;
+  if(!('Notification' in window)) {
+    status.textContent = '❌ Not supported in this browser';
+    if(btn) btn.style.display='none';
+    return;
+  }
+  if(Notification.permission === 'granted') {
+    status.textContent = '✅ Notifications are enabled';
+    status.style.background = '#ECFDF5';
+    if(btn) btn.style.display='none';
+    await subscribeToPush();
+  } else if(Notification.permission === 'denied') {
+    status.textContent = '❌ Blocked — go to browser settings to allow';
+    status.style.background = '#FFF1F2';
+    if(btn) btn.textContent = '⚙️ Open Settings';
+  } else {
+    status.textContent = '⚠️ Not enabled yet — tap below to allow';
+    status.style.background = '#FFF7ED';
+  }
+}
+
 async function requestNotificationPermission() {
   if(!('Notification' in window)) return;
   if(Notification.permission === 'granted') {
