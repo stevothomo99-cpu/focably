@@ -716,13 +716,12 @@ async function loadProfile() {
   showScreen('loading');
   console.log('loadProfile: starting for', currentUser.email);
   try {
-    // Add timeout to catch hanging Supabase queries
-    const timeout = new Promise((_,reject) => setTimeout(() => reject(new Error('Supabase timeout after 10s')), 10000));
-    const query = db.from('profiles').select('*').eq('id', currentUser.id).single();
-    let {data:profile, error:profileError} = await Promise.race([query, timeout.then(()=>{throw new Error('timeout')})]).catch(async(e) => {
-      if(e.message === 'timeout') { console.log('loadProfile: query timed out'); return {data:null, error:e}; }
-      return {data:null, error:e};
-    });
+    // Fetch profile with simple await — no .single() which can hang
+    console.log('loadProfile: fetching profile...');
+    const profileRes = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+    let profile = profileRes.data;
+    let profileError = profileRes.error;
+    console.log('loadProfile: fetch done, profile=', profile, 'error=', profileError);
 
     console.log('loadProfile: profile=', profile?.role, 'error=', profileError?.message);
 
