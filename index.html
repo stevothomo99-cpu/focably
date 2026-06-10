@@ -963,17 +963,26 @@ async function completeOnboarding() {
 // ── STUDENT APP ──
 async function loadStudentApp() {
   isNavigating = true;
+  appReady = true;
+  // Show app screen immediately — don't wait for data
   showScreen('app');
   document.getElementById('rbParent').style.display='none';
   document.getElementById('rbTeacher').style.display='none';
   switchRole('student');
   const age=currentProfile.age_group, theme=currentProfile.theme||'fantasy';
-  if(age==='primary'){document.getElementById('primary-mode').style.display='block';document.getElementById('hs-mode').style.display='none';applyTheme(theme);}
-  else{document.getElementById('primary-mode').style.display='none';document.getElementById('hs-mode').style.display='block';document.getElementById('hsName').textContent=`Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;}
-  await loadStudentAssignments(age);
-  requestNotificationPermission();
+  if(age==='primary'){
+    document.getElementById('primary-mode').style.display='block';
+    document.getElementById('hs-mode').style.display='none';
+    applyTheme(theme);
+  } else {
+    document.getElementById('primary-mode').style.display='none';
+    document.getElementById('hs-mode').style.display='block';
+    document.getElementById('hsName').textContent=`Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;
+  }
   isNavigating = false;
-  appReady = true;
+  // Load assignments in background — don't block app display
+  loadStudentAssignments(age).catch(e => console.log('Assignment load error:', e.message));
+  requestNotificationPermission();
 }
 
 async function loadStudentAssignments(ageGroup) {
@@ -995,7 +1004,7 @@ async function loadStudentAssignments(ageGroup) {
   updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
   else{document.getElementById('hs-mode').style.display='block';}
-  const {data:assignments} = await db.from('assignments').select('*, tasks(*)').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true});
+  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*)').eq('child_id',child.id).eq('status','active').order('due_date',{ascending:true}), 8000, []);
   if(ageGroup==='primary') renderPrimaryAssignments(assignments||[],child);
   else renderHSAssignments(assignments||[],child);
 }
