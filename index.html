@@ -271,6 +271,25 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .link-btn{padding:10px 16px;border-radius:10px;border:none;background:var(--violet);color:white;font-weight:700;font-size:13px;cursor:pointer;}
 
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes stepSuccess { 0%{transform:scale(1)} 30%{transform:scale(1.08)} 60%{transform:scale(0.97)} 100%{transform:scale(1)} }
+@keyframes confettiFall { 0%{transform:translateY(-10px) rotate(0deg);opacity:1;} 100%{transform:translateY(80px) rotate(720deg);opacity:0;} }
+@keyframes starPop { 0%{transform:scale(0) rotate(-20deg);opacity:0;} 60%{transform:scale(1.3) rotate(10deg);opacity:1;} 100%{transform:scale(1) rotate(0deg);opacity:1;} }
+.step-success {
+  background:linear-gradient(135deg,rgba(16,185,129,0.4),rgba(6,78,59,0.4)) !important;
+  animation: stepSuccess 0.4s ease !important;
+  border:1.5px solid rgba(110,231,183,0.5) !important;
+}
+.step-success .step-circle {
+  background:var(--mint) !important;
+  border-color:transparent !important;
+  font-size:13px !important;
+}
+.step-success .step-title {
+  text-decoration:none !important;
+  font-weight:800 !important;
+  color:white !important;
+  opacity:1 !important;
+}
 
 /* ── CLASS TILES ── */
 .class-tiles { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
@@ -1192,7 +1211,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
           </div>` : '';
 
         const rejectionMsg = isRejected ? `<div style="font-size:11px;color:#FCA5A5;margin-top:4px;">❌ ${task.rejection_reason||'Proof rejected — try again'}</div>` : '';
-        const pendingMsg = isPending ? `<div style="font-size:11px;color:rgba(245,158,11,0.9);margin-top:4px;">⏳ Waiting for approval...</div>` : '';
+        const pendingMsg = isPending ? `
+          <div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;">
+            <div style="font-size:11px;color:rgba(245,158,11,0.9);margin-bottom:6px;">⏳ Waiting for approval...</div>
+            <button onclick="event.stopPropagation();withdrawProof('${task.id}')" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:11px;font-weight:600;cursor:pointer;">↩️ Replace File</button>
+          </div>` : '';
 
         return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}">
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
@@ -1257,18 +1280,19 @@ function toggleTile(assignmentId) {
 
 async function tileToggleTask(taskId, el) {
   const step = el.closest('.class-tile-step');
-  if(!step || step.classList.contains('done')) return;
-  step.classList.add('done');
-  step.querySelector('.step-circle').textContent = '✓';
+  if(!step || step.classList.contains('done') || step.classList.contains('step-success')) return;
+  // Optimistic update with celebration
+  celebrateStep(step);
   const {error} = await dbQuery(db.from('tasks').update({completed:true,completed_at:new Date().toISOString()}).eq('id',taskId));
   if(error?.message && error.message !== 'timeout') {
+    step.classList.remove('step-success');
     step.classList.remove('done');
-    step.querySelector('.step-circle').textContent = '';
+    const circle = step.querySelector('.step-circle');
+    if(circle) circle.textContent = '';
     showToast('❌ Could not save — try again');
     return;
   }
-  showToast('⭐ Step complete!');
-  // Update tile progress dynamically
+  // Update tile progress
   updateTileProgress(step);
   // Send notification to parent
   sendCompletionNotification(taskId);
@@ -1332,6 +1356,23 @@ function updateTileProgress(stepEl) {
   } else {
     classTile.style.background = 'linear-gradient(135deg,#1E1B4B,#7C3AED)';
   }
+}
+
+async function withdrawProof(taskId) {
+  const {error} = await dbQuery(db.from('tasks').update({
+    verification_status: 'none',
+    proof_url: null,
+    proof_filename: null,
+    proof_submitted_at: null,
+    completed: false
+  }).eq('id', taskId));
+  if(error?.message && error.message !== 'timeout') {
+    showToast('❌ Could not withdraw — try again');
+    return;
+  }
+  showToast('↩️ Proof withdrawn — upload a new file');
+  // Reload student assignments
+  await loadStudentAssignments(currentProfile.age_group);
 }
 
 async function sendCompletionNotification(taskId) {
@@ -2305,6 +2346,46 @@ async function sendNudge(childId,childName) {
   showToast(`👋 Nudge sent to ${childName}'s parent!`);
 }
 function copyClassCode() { navigator.clipboard.writeText(document.getElementById('classInviteCode').textContent).then(()=>showToast('📋 Class code copied!')); }
+
+// ── CONFETTI CELEBRATION ──
+function burstConfetti(el) {
+  const emojis = ['⭐','🌟','✨','🎉','🏆','💫','🎊','⚡'];
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  for(let i=0; i<10; i++) {
+    const particle = document.createElement('div');
+    particle.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    particle.style.cssText = `
+      position:fixed;
+      left:${cx + (Math.random()-0.5)*80}px;
+      top:${cy}px;
+      font-size:${14+Math.random()*10}px;
+      pointer-events:none;
+      z-index:9999;
+      animation:confettiFall ${0.6+Math.random()*0.6}s ease forwards;
+      animation-delay:${Math.random()*0.2}s;
+    `;
+    document.body.appendChild(particle);
+    setTimeout(() => particle.remove(), 1200);
+  }
+}
+
+function celebrateStep(stepEl) {
+  // Add success styling
+  stepEl.classList.add('step-success');
+  stepEl.classList.remove('done');
+  // Update circle
+  const circle = stepEl.querySelector('.step-circle');
+  if(circle) { circle.textContent='✓'; circle.style.fontSize='14px'; }
+  // Update title
+  const title = stepEl.querySelector('.step-title');
+  if(title) title.innerHTML = '🌟 ' + title.textContent.replace('🌟 ','');
+  // Burst confetti
+  burstConfetti(stepEl);
+  // Show XP/star toast with flair
+  setTimeout(() => showToast('⭐ Step complete! Keep going!'), 100);
+}
 
 // ── REFRESH ──
 async function refreshCurrentView() {
