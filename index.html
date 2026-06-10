@@ -813,8 +813,11 @@ async function loadStudentApp() {
 async function loadStudentAssignments(ageGroup) {
   // Safety check — if no age group yet send to onboarding
   if(!ageGroup) { showScreen('onboarding'); return; }
+  console.log('loadStudentAssignments: fetching child for user', currentUser.id);
   const {data:child, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).maybeSingle();
+  console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
   if(!child) {
+    console.log('loadStudentAssignments: no child found — showing link card');
     document.getElementById('linkAccountCard').style.display='block';
     document.getElementById('primary-mode').style.display='none';
     document.getElementById('hs-mode').style.display='none';
@@ -1062,14 +1065,15 @@ async function linkToFamily() {
   // Create child record linked to this family and profile
   const {data:existing} = await db.from('children').select('id').eq('profile_id',currentUser.id).maybeSingle();
   if(existing){showToast('Already linked!');return;}
-  const {error} = await db.from('children').insert({
+  const {data:newChild, error} = await db.from('children').insert({
     profile_id: currentUser.id,
     family_id: family.id,
     name: currentProfile.full_name,
     age_group: currentProfile.age_group,
     theme: currentProfile.theme
-  });
-  if(error){showToast('❌ Could not link account');return;}
+  }).select().maybeSingle();
+  console.log('linkToFamily: insert result=', newChild, 'error=', error?.message);
+  if(error){showToast('❌ Could not link account: ' + error.message);return;}
   // Set appReady BEFORE navigating so auth state change can't interrupt
   appReady = true;
   showToast('✅ Linked to family!');
