@@ -814,7 +814,9 @@ async function loadStudentAssignments(ageGroup) {
   // Safety check — if no age group yet send to onboarding
   if(!ageGroup) { showScreen('onboarding'); return; }
   console.log('loadStudentAssignments: fetching child for user', currentUser.id);
-  const {data:child, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).maybeSingle();
+  // Use limit(1) instead of maybeSingle to handle any duplicate records gracefully
+  const {data:children, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1);
+  const child = children?.[0] || null;
   console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
   if(!child) {
     console.log('loadStudentAssignments: no child found — showing link card');
@@ -1063,8 +1065,8 @@ async function linkToFamily() {
   const {data:family} = await db.from('families').select('*').eq('invite_code',code).maybeSingle();
   if(!family){showToast('❌ Code not found — check with your parent');return;}
   // Create child record linked to this family and profile
-  const {data:existing} = await db.from('children').select('id').eq('profile_id',currentUser.id).maybeSingle();
-  if(existing){showToast('Already linked!');return;}
+  const {data:existingRows} = await db.from('children').select('id').eq('profile_id',currentUser.id).limit(1);
+  if(existingRows?.length){showToast('Already linked!');return;}
   const {data:newChild, error} = await db.from('children').insert({
     profile_id: currentUser.id,
     family_id: family.id,
