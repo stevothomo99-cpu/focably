@@ -1265,19 +1265,19 @@ function updateTileProgress(stepEl) {
   if(dueEl) dueEl.textContent = doneClass + '/' + totalClass + ' steps complete';
 
   // Update tile colour based on completion
+  // Remove all state classes first then add the right one
+  const stateClasses = ['tile-overdue','tile-urgent','tile-active','tile-good','tile-done'];
+  stateClasses.forEach(c => classTile.classList.remove(c));
+  classTile.style.animation = 'none';
+  classTile.style.boxShadow = 'none';
+
   if(doneClass === totalClass && totalClass > 0) {
-    // All done — grey/done state
-    classTile.className = classTile.className
-      .replace(/tile-overdue|tile-urgent|tile-active|tile-good/g, '')
-      .trim() + ' tile-done';
-    classTile.style.animation = 'none';
-    showToast('🏆 All steps complete!');
+    classTile.classList.add('tile-done');
+    showToast('🏆 Quest complete! Amazing work!');
   } else if(doneClass > 0) {
-    // In progress — green
-    classTile.className = classTile.className
-      .replace(/tile-overdue|tile-urgent|tile-active|tile-done/g, '')
-      .trim() + ' tile-good';
-    classTile.style.animation = 'none';
+    classTile.classList.add('tile-good');
+  } else {
+    classTile.classList.add('tile-active');
   }
 }
 
