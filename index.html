@@ -1081,7 +1081,15 @@ function getTileState(assignment) {
 }
 
 function getTileClass(state) {
-  return {overdue:'tile-overdue',urgent:'tile-urgent',active:'tile-active',good:'tile-good',done:'tile-done'}[state]||'tile-active';
+  // Returns inline gradient - no CSS classes used
+  const gradients = {
+    overdue: 'linear-gradient(135deg,#9B1C1C,#DC2626)',
+    urgent:  'linear-gradient(135deg,#F59E0B,#F97316)',
+    active:  'linear-gradient(135deg,#1E1B4B,#7C3AED)',
+    good:    'linear-gradient(135deg,#064E3B,#10B981)',
+    done:    'linear-gradient(135deg,#374151,#6B7280)',
+  };
+  return gradients[state] || gradients.active;
 }
 
 function renderClassTiles(assignments, child, containerId, isHS) {
@@ -1282,26 +1290,18 @@ function updateTileProgress(stepEl) {
 
   // Update tile colour based on completion
   // Remove all state classes first then add the right one
-  const stateClasses = ['tile-overdue','tile-urgent','tile-active','tile-good','tile-done'];
+  // Colours handled via inline styles
   stateClasses.forEach(c => classTile.classList.remove(c));
   classTile.style.animation = 'none';
   classTile.style.boxShadow = 'none';
 
-  const gradients = {
-    'tile-done':   'linear-gradient(135deg,#374151,#6B7280)',
-    'tile-good':   'linear-gradient(135deg,#064E3B,#10B981)',
-    'tile-active': 'linear-gradient(135deg,#1E1B4B,#7C3AED)',
-  };
   if(doneClass === totalClass && totalClass > 0) {
-    classTile.classList.add('tile-done');
-    classTile.style.background = gradients['tile-done'];
+    classTile.style.background = 'linear-gradient(135deg,#374151,#6B7280)';
     showToast('🏆 Quest complete! Amazing work!');
   } else if(doneClass > 0) {
-    classTile.classList.add('tile-good');
-    classTile.style.background = gradients['tile-good'];
+    classTile.style.background = 'linear-gradient(135deg,#064E3B,#10B981)';
   } else {
-    classTile.classList.add('tile-active');
-    classTile.style.background = gradients['tile-active'];
+    classTile.style.background = 'linear-gradient(135deg,#1E1B4B,#7C3AED)';
   }
 }
 
