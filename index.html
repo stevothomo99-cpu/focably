@@ -1358,6 +1358,36 @@ function updateTileProgress(stepEl) {
   }
 }
 
+function updateStepToPending(taskId, proofUrl) {
+  const stepEl = document.getElementById('tilestep-'+taskId);
+  if(!stepEl) return;
+
+  // Update circle to pending
+  const circle = stepEl.querySelector('.step-circle');
+  if(circle) circle.textContent = '⏳';
+
+  // Update title
+  const title = stepEl.querySelector('.step-title');
+  if(title) title.innerHTML = title.textContent.replace('🌟 ','');
+
+  // Add pending class
+  stepEl.classList.remove('done','step-success','rejected');
+  stepEl.classList.add('pending');
+
+  // Replace proof section with pending message + replace button
+  const proofSection = stepEl.querySelector('[id^="proofSection-"]');
+  if(proofSection) {
+    proofSection.innerHTML = `
+      <div style="font-size:11px;color:rgba(245,158,11,0.9);margin-bottom:6px;">⏳ Proof submitted — waiting for approval</div>
+      ${proofUrl && proofUrl.match(/\.(jpg|jpeg|png|gif|webp)/i) ?
+        `<img src="${proofUrl}" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:6px;">` :
+        proofUrl ? `<div style="font-size:11px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:8px;margin-bottom:6px;">📄 File submitted</div>` : ''
+      }
+      <button onclick="event.stopPropagation();withdrawProof('${taskId}')" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:11px;font-weight:600;cursor:pointer;">↩️ Replace File</button>
+    `;
+  }
+}
+
 async function withdrawProof(taskId) {
   const {error} = await dbQuery(db.from('tasks').update({
     verification_status: 'none',
@@ -1371,8 +1401,25 @@ async function withdrawProof(taskId) {
     return;
   }
   showToast('↩️ Proof withdrawn — upload a new file');
-  // Reload student assignments
-  await loadStudentAssignments(currentProfile.age_group);
+  // Update step in place — restore upload UI
+  const stepEl = document.getElementById('tilestep-'+taskId);
+  if(stepEl) {
+    stepEl.classList.remove('pending','done','step-success');
+    const circle = stepEl.querySelector('.step-circle');
+    if(circle) circle.textContent = '';
+    const proofSection = stepEl.querySelector('[id^="proofSection-"]');
+    if(proofSection) {
+      proofSection.innerHTML = `
+        <div style="font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;">📸 Upload proof to complete this step</div>
+        <div id="proofPreview-${taskId}" style="display:none;margin-bottom:6px;border-radius:8px;overflow:hidden;max-height:120px;"><img id="proofImg-${taskId}" src="" style="width:100%;object-fit:cover;"></div>
+        <div id="proofFileName-${taskId}" style="display:none;font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="event.stopPropagation();triggerProofUpload('${taskId}')" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:12px;font-weight:600;cursor:pointer;" id="proofUploadBtn-${taskId}">📎 Choose File</button>
+          <button onclick="event.stopPropagation();submitProof('${taskId}')" style="flex:1;padding:7px;border-radius:10px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;display:none;" id="proofSubmitBtn-${taskId}">✓ Submit</button>
+        </div>
+      `;
+    }
+  }
 }
 
 async function sendCompletionNotification(taskId) {
@@ -1560,8 +1607,8 @@ async function submitProof(taskId) {
     }
     currentProofFile = null;
     showToast('✅ Proof submitted! Waiting for approval.');
-    // Reload assignments
-    await loadStudentAssignments(currentProfile.age_group);
+    // Update just this step in place — don't reload whole page
+    updateStepToPending(taskId, publicUrl);
   } catch(e) {
     if(btn){btn.disabled=false;btn.textContent='✓ Submit Proof';}
     showToast('❌ Upload failed. Try again.');
