@@ -1232,8 +1232,9 @@ async function loadParentApp() {
   renderChildTabs();
   if(currentChildren.length){
     selectedChildId=currentChildren[0].id;
-    await loadChildStats(selectedChildId);
-    await loadJoinedClasses(selectedChildId);
+    // Load stats in background — don't block app load
+    loadChildStats(selectedChildId).catch(()=>{});
+    loadJoinedClasses(selectedChildId).catch(()=>{});
     // Populate child selector in join class card
     const sel = document.getElementById('joinClassChildSelect');
     if(sel) {
@@ -1246,7 +1247,8 @@ async function loadParentApp() {
       }
     }
   }
-  await loadParentVerifyQueue();
+  loadParentVerifyQueue().catch(()=>{});
+  showScreen('app');
 }
 
 function renderChildTabs() {
@@ -1430,14 +1432,29 @@ async function loadTeacherApp() {
   document.getElementById('rbParent').style.display='none';
   switchRole('teacher');
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
-  const {data:classes} = await db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true});
-  teacherClasses = classes || [];
-  if(teacherClasses.length) {
-    renderClassDropdown();
-    selectedClassId = teacherClasses[0].id;
-    selectClass(selectedClassId);
-    document.getElementById('classSetup').style.display='none';
-    document.getElementById('addAnotherClass').style.display='block';
+  
+  setLoadingStatus('Loading your classes...');
+  try {
+    const classPromise = db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true});
+    const classTimeout = new Promise(resolve => setTimeout(() => resolve({data:[]}), 10000));
+    const {data:classes} = await Promise.race([classPromise, classTimeout]);
+    teacherClasses = classes || [];
+    if(teacherClasses.length) {
+      renderClassDropdown();
+      selectedClassId = teacherClasses[0].id;
+      document.getElementById('classSetup').style.display='none';
+      document.getElementById('addAnotherClass').style.display='block';
+      document.getElementById('classInfo').style.display='block';
+      document.getElementById('classInviteCode').textContent=teacherClasses[0].invite_code;
+      document.getElementById('teacherSubline').textContent=`${teacherClasses[0].name} · ${teacherClasses[0].year_group||''}`;
+      // Load progress and verify queue in background — don't block app load
+      loadClassProgress(teacherClasses[0].id).catch(()=>{});
+      loadTeacherVerifyQueue(teacherClasses[0].id).catch(()=>{});
+    }
+    showScreen('app');
+  } catch(e) {
+    console.error('loadTeacherApp error:', e.message);
+    showScreen('app');
   }
 }
 
