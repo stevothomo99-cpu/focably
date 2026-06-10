@@ -1177,13 +1177,30 @@ function renderClassTiles(assignments, child, containerId, isHS) {
         const isRejected = task.verification_status==='rejected';
         const sCls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
         const gem = isDone?'✓':isPending?'⏳':isRejected?'✗':'';
-        const badge = task.verification_required ? '<span class="step-badge">📸</span>' : '';
         const clickFn = !task.verification_required&&!isDone ? `onclick="tileToggleTask('${task.id}',this)"` : '';
-        const uploadBtn = task.verification_required&&!isDone&&!isPending ? `<button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="padding:3px 9px;border-radius:20px;border:none;background:var(--amber);color:white;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">Upload</button>` : '';
-        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn}>
-          <div class="step-circle">${gem}</div>
-          <div class="step-title">${task.title}</div>
-          ${badge}${uploadBtn}
+        const needsProof = task.verification_required && !isDone && !isPending;
+
+        const proofSection = needsProof ? `
+          <div id="proofSection-${task.id}" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;">
+            <div style="font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;">📸 Upload proof to complete this step</div>
+            <div id="proofPreview-${task.id}" style="display:none;margin-bottom:6px;border-radius:8px;overflow:hidden;max-height:120px;"><img id="proofImg-${task.id}" src="" style="width:100%;object-fit:cover;"></div>
+            <div id="proofFileName-${task.id}" style="display:none;font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:8px;"></div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:12px;font-weight:600;cursor:pointer;" id="proofUploadBtn-${task.id}">📎 Choose File</button>
+              <button onclick="event.stopPropagation();submitProof('${task.id}')" style="flex:1;padding:7px;border-radius:10px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;display:none;" id="proofSubmitBtn-${task.id}">✓ Submit</button>
+            </div>
+          </div>` : '';
+
+        const rejectionMsg = isRejected ? `<div style="font-size:11px;color:#FCA5A5;margin-top:4px;">❌ ${task.rejection_reason||'Proof rejected — try again'}</div>` : '';
+        const pendingMsg = isPending ? `<div style="font-size:11px;color:rgba(245,158,11,0.9);margin-top:4px;">⏳ Waiting for approval...</div>` : '';
+
+        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}">
+          <div style="display:flex;align-items:center;gap:10px;width:100%;">
+            <div class="step-circle">${gem}</div>
+            <div style="flex:1;"><div class="step-title">${task.title}</div>${rejectionMsg}${pendingMsg}</div>
+            ${task.verification_required?'<span class="step-badge">📸</span>':''}
+          </div>
+          ${proofSection}
         </div>`;
       }).join('') : '<div style="padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No steps yet</div>';
 
