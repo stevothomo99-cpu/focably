@@ -1439,20 +1439,29 @@ document.getElementById('proofFileInput').addEventListener('change', function(e)
   if(!file) return;
   currentProofFile = file;
   const taskId = currentProofTaskId;
-  // Show preview for images
+
+  // Show preview for images in tile
   if(file.type.startsWith('image/')) {
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const prev = document.getElementById('preview-'+taskId);
-      const img = document.getElementById('previewImg-'+taskId);
+      const prev = document.getElementById('proofPreview-'+taskId);
+      const img = document.getElementById('proofImg-'+taskId);
       if(prev&&img) { img.src=ev.target.result; prev.style.display='block'; }
     };
     reader.readAsDataURL(file);
+  } else {
+    // Show filename for non-images
+    const nameEl = document.getElementById('proofFileName-'+taskId);
+    if(nameEl) { nameEl.textContent = '📄 ' + file.name; nameEl.style.display='block'; }
   }
-  // Show submit button
-  const submitBtn = document.getElementById('submitProof-'+taskId) || document.getElementById('hsSubmitProof-'+taskId);
+
+  // Show submit button, update upload button label
+  const submitBtn = document.getElementById('proofSubmitBtn-'+taskId);
+  const uploadBtn = document.getElementById('proofUploadBtn-'+taskId);
   if(submitBtn) submitBtn.style.display='block';
-  showToast(`📎 ${file.name} ready to submit`);
+  if(uploadBtn) uploadBtn.textContent = '📎 Change File';
+
+  showToast(`📎 ${file.name} ready`);
   this.value = '';
 });
 
