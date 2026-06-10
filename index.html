@@ -1155,6 +1155,7 @@ function getTileState(assignment) {
       String(today.getMonth()+1).padStart(2,'0') + '-' +
       String(today.getDate()).padStart(2,'0');
     const dueStr = assignment.due_date.split('T')[0];
+    console.log('Date check:', assignment.title, 'due:', dueStr, 'today:', todayStr, 'overdue:', dueStr <= todayStr);
     if(dueStr <= todayStr) return 'overdue';
     // Days difference
     const due = new Date(dueStr + 'T12:00:00');
