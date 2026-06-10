@@ -1215,8 +1215,70 @@ async function tileToggleTask(taskId, el) {
     return;
   }
   showToast('⭐ Step complete!');
+  // Update tile progress dynamically
+  updateTileProgress(step);
   // Send notification to parent
   sendCompletionNotification(taskId);
+}
+
+function updateTileProgress(stepEl) {
+  // Find the parent assignment container
+  const assignmentContainer = stepEl.closest('[id^="tilesteps-"]');
+  if(!assignmentContainer) return;
+  const assignmentId = assignmentContainer.id.replace('tilesteps-','');
+
+  // Count steps in this assignment
+  const allSteps = assignmentContainer.querySelectorAll('.class-tile-step');
+  const doneSteps = assignmentContainer.querySelectorAll('.class-tile-step.done');
+  const total = allSteps.length;
+  const done = doneSteps.length;
+
+  // Update assignment row label
+  const chevronEl = document.getElementById('chevron-'+assignmentId);
+  if(chevronEl) {
+    const labelEl = chevronEl.closest('[onclick]')?.querySelector('div:last-of-type span:last-of-type');
+  }
+
+  // Find the parent class tile
+  const classTile = stepEl.closest('.class-tile');
+  if(!classTile) return;
+  const classId = classTile.id.replace('tile-','');
+
+  // Recount ALL steps across all assignments in this class tile
+  const allClassSteps = classTile.querySelectorAll('.class-tile-step');
+  const doneClassSteps = classTile.querySelectorAll('.class-tile-step.done');
+  const totalClass = allClassSteps.length;
+  const doneClass = doneClassSteps.length;
+  const pct = totalClass ? Math.round((doneClass/totalClass)*100) : 0;
+
+  // Update progress bar
+  const fillEl = classTile.querySelector('.class-tile-fill');
+  if(fillEl) fillEl.style.width = pct + '%';
+
+  // Update label
+  const labelEls = classTile.querySelectorAll('.class-tile-label span');
+  if(labelEls[0]) labelEls[0].textContent = doneClass + ' of ' + totalClass + ' steps done';
+  if(labelEls[1]) labelEls[1].textContent = pct + '%';
+
+  // Update tile header count
+  const dueEl = classTile.querySelector('.class-tile-due');
+  if(dueEl) dueEl.textContent = doneClass + '/' + totalClass + ' steps complete';
+
+  // Update tile colour based on completion
+  if(doneClass === totalClass && totalClass > 0) {
+    // All done — grey/done state
+    classTile.className = classTile.className
+      .replace(/tile-overdue|tile-urgent|tile-active|tile-good/g, '')
+      .trim() + ' tile-done';
+    classTile.style.animation = 'none';
+    showToast('🏆 All steps complete!');
+  } else if(doneClass > 0) {
+    // In progress — green
+    classTile.className = classTile.className
+      .replace(/tile-overdue|tile-urgent|tile-active|tile-done/g, '')
+      .trim() + ' tile-good';
+    classTile.style.animation = 'none';
+  }
 }
 
 async function sendCompletionNotification(taskId) {
