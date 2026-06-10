@@ -1433,14 +1433,20 @@ async function sendCompletionNotification(taskId) {
     const {data:children} = await dbQuery(db.from('children').select('*, families(parent_id)').eq('id',task.child_id).limit(1));
     const child = children?.[0];
     if(child?.families?.parent_id) {
+      const parentId = child.families.parent_id;
+      const notifTitle = '⭐ Step completed!';
+      const notifBody = `${currentProfile.full_name} completed: "${task.title}"`;
+      // Save in-app notification
       await dbQuery(db.from('notifications').insert({
-        recipient_id: child.families.parent_id,
+        recipient_id: parentId,
         sender_id: currentUser.id,
         child_id: task.child_id,
         type: 'task_complete',
-        title: '⭐ Step completed!',
-        body: `${currentProfile.full_name} completed: "${task.title}"`
+        title: notifTitle,
+        body: notifBody
       }));
+      // Send push notification
+      await sendPushToUser(parentId, notifTitle, notifBody);
     }
   } catch(e) { console.log('Notification error:', e.message); }
 }
@@ -2589,8 +2595,71 @@ async function breakdownHS() {
 
 // ── NOTIFICATIONS + PWA ──
 async function requestNotificationPermission() {
-  if(!('Notification' in window)||Notification.permission!=='default') return;
-  setTimeout(async()=>{const p=await Notification.requestPermission();if(p==='granted') showToast('🔔 Notifications enabled!');},4000);
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted') {
+    await subscribeToPush();
+    return;
+  }
+  if(Notification.permission !== 'default') return;
+  setTimeout(async() => {
+    const permission = await Notification.requestPermission();
+    if(permission === 'granted') {
+      showToast('🔔 Notifications enabled!');
+      await subscribeToPush();
+    }
+  }, 4000);
+}
+
+async function subscribeToPush() {
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const subscription = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array('BNXQMt9GXyAdtZFj58uSmh69Xeifj_oCL-9jzpj-wBY-WOth7tqcOl7iSFBIyx3slgH_p9--qYft8kTTrKHWIAw')
+    });
+    // Store subscription in Supabase
+    await dbQuery(db.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      subscription: subscription.toJSON()
+    }, {onConflict: 'user_id'}));
+    console.log('Push subscription saved');
+  } catch(e) {
+    console.log('Push subscription failed:', e.message);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function sendPushToUser(userId, title, body) {
+  try {
+    const {data:sub} = await dbQuery(
+      db.from('push_subscriptions').select('subscription').eq('user_id', userId).maybeSingle()
+    );
+    if(!sub?.subscription) return;
+    // Call Supabase Edge Function
+    await fetch('https://mxgnrgajspprupzxaeld.supabase.co/functions/v1/send-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (await db.auth.getSession()).data.session?.access_token
+      },
+      body: JSON.stringify({
+        subscription: sub.subscription,
+        title,
+        body,
+        icon: '/icon-192.png'
+      })
+    });
+  } catch(e) {
+    console.log('Push send error:', e.message);
+  }
 }
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install AchievED</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
