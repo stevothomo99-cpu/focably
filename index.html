@@ -2641,17 +2641,15 @@ async function updateNotifStatus() {
     return;
   }
   if(Notification.permission === 'granted') {
-    status.textContent = '✅ Notifications enabled';
-    status.style.color = 'var(--mint)';
-    if(btn) btn.style.display='none';
+    status.textContent = '✅ On';
+    if(btn) { btn.textContent = '🔔 Enabled'; btn.style.opacity='0.6'; btn.style.display='block'; }
     await subscribeToPush();
   } else if(Notification.permission === 'denied') {
-    status.textContent = '❌ Blocked in browser settings';
-    status.style.color = 'var(--rose)';
-    if(btn) { btn.textContent = '⚙️ How to fix'; btn.onclick = () => showToast('Go to Chrome → Settings → Site settings → Notifications → Allow focably.vercel.app'); }
+    status.textContent = '❌ Blocked';
+    if(btn) { btn.textContent = '🔔 Enable'; btn.style.display='block'; btn.style.opacity='1'; }
   } else {
-    status.textContent = 'Tap Enable to get notified when your child completes steps';
-    if(btn) btn.style.display='block';
+    status.textContent = '';
+    if(btn) { btn.textContent = '🔔 Enable'; btn.style.display='block'; btn.style.opacity='1'; }
   }
 }
 
