@@ -942,7 +942,7 @@ async function loadStudentAssignments(ageGroup) {
   if(!ageGroup) { showScreen('onboarding'); return; }
   console.log('loadStudentAssignments: fetching child for user', currentUser.id);
   // Use limit(1) instead of maybeSingle to handle any duplicate records gracefully
-  const {data:children, error:childError} = await db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1);
+  const {data:children, error:childError} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 8000, []);
   const child = children?.[0] || null;
   console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
   if(!child) {
@@ -1220,14 +1220,14 @@ async function loadParentApp() {
   document.getElementById('rbTeacher').style.display='none';
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
-  let {data:family} = await db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle();
+  let {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
   if(!family) {
-    const {data:nf} = await db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().maybeSingle();
+    const {data:nf} = await dbQuery(db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().maybeSingle());
     family=nf;
   }
   currentFamily=family;
   document.getElementById('familyInviteCode').textContent=family?.invite_code||'——';
-  const {data:children} = await db.from('children').select('*').eq('family_id',family.id);
+  const {data:children} = await dbQuery(db.from('children').select('*').eq('family_id',family.id), 8000, []);
   currentChildren=children||[];
   renderChildTabs();
   if(currentChildren.length){
@@ -1435,9 +1435,7 @@ async function loadTeacherApp() {
   
   setLoadingStatus('Loading your classes...');
   try {
-    const classPromise = db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true});
-    const classTimeout = new Promise(resolve => setTimeout(() => resolve({data:[]}), 10000));
-    const {data:classes} = await Promise.race([classPromise, classTimeout]);
+    const {data:classes} = await dbQuery(db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true}), 8000, []);
     teacherClasses = classes || [];
     if(teacherClasses.length) {
       renderClassDropdown();
@@ -1630,6 +1628,19 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 AchievED installed!');}
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── SUPABASE QUERY HELPER WITH TIMEOUT ──
+async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
+  try {
+    const timeout = new Promise(resolve => 
+      setTimeout(() => resolve({data: fallback, error: {message: 'timeout'}}), timeoutMs)
+    );
+    const result = await Promise.race([queryPromise, timeout]);
+    return result;
+  } catch(e) {
+    return {data: fallback, error: {message: e.message}};
+  }
+}
 </script>
 </body>
 </html>
