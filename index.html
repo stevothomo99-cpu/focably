@@ -1467,7 +1467,8 @@ async function submitProof(taskId) {
       .from('task-proofs')
       .upload(fileName, currentProofFile, { upsert: true });
     if(uploadError) throw uploadError;
-    const { data: { publicUrl } } = db.storage.from('task-proofs').getPublicUrl(fileName);
+    const { data: signedProof } = await db.storage.from('task-proofs').createSignedUrl(fileName, 31536000);
+    const publicUrl = signedProof?.signedUrl || '';
     await db.from('tasks').update({
       verification_status:'pending',
       proof_url: publicUrl,
@@ -1739,14 +1740,17 @@ async function uploadAssignmentFile(assignmentId) {
     .from('assignment-files')
     .upload(path, pendingAssignmentFile, { upsert: true });
   if(error) { console.log('Assignment upload error:', error.message); return null; }
-  const { data: { publicUrl } } = db.storage.from('assignment-files').getPublicUrl(path);
+  // Generate signed URL (1 year expiry) for private bucket
+  const { data: signedData, error: signedError } = await db.storage
+    .from('assignment-files')
+    .createSignedUrl(path, 31536000);
+  const fileUrl = signedData?.signedUrl || null;
   pendingAssignmentFile = null;
-  // Reset upload zone
   const label = document.getElementById('assignmentUploadLabel');
   const zone = document.getElementById('assignmentUploadZone');
   if(label) label.textContent = 'Tap to attach file';
   if(zone) zone.style.borderColor = '';
-  return publicUrl;
+  return fileUrl;
 }
 
 async function parentAddTask() {
