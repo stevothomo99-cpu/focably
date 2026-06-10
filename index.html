@@ -1090,123 +1090,128 @@ function getTileClass(state) {
 function renderClassTiles(assignments, child, containerId, isHS) {
   const container = document.getElementById(containerId);
   if(!container) return;
-  
+
   if(!assignments.length) {
     container.innerHTML=`<div class="card" style="text-align:center;padding:20px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:700;">No ${isHS?'assignments':'quests'} yet!</div><div style="font-size:13px;color:var(--gray-500);margin-top:4px;">Check back when your teacher adds work.</div></div>`;
     return;
   }
 
-  const icons=['📐','📖','🔬','🌏','🎨','🏃','🎯','🧪'];
-  const stateLabels = {overdue:'⚠️ OVERDUE',urgent:'⏰ Due Soon',active:'In Progress',good:'On Track',done:'✅ Complete'};
+  const icons = ['📐','📖','🔬','🌏','🎨','🏃','🎯','🧪'];
 
-  // Group assignments by class
+  // State config
+  const stateColors = {
+    overdue: { tile: 'linear-gradient(135deg,#9B1C1C,#DC2626)', anim: 'glowRed 2s infinite',  label: '⚠️ Overdue' },
+    urgent:  { tile: 'linear-gradient(135deg,#92400E,#D97706)', anim: 'glowAmber 2s infinite', label: '⏰ Due Soon' },
+    active:  { tile: 'linear-gradient(135deg,#1E1B4B,#7C3AED)', anim: 'none',                 label: '📝 In Progress' },
+    good:    { tile: 'linear-gradient(135deg,#064E3B,#10B981)', anim: 'none',                 label: '✅ On Track' },
+    done:    { tile: 'linear-gradient(135deg,#374151,#6B7280)', anim: 'none',                 label: '✓ Complete' },
+  };
+
+  // Assignment row background (semi-transparent, sits inside class tile)
+  const aRowBg = {
+    overdue: 'rgba(185,28,28,0.35)',
+    urgent:  'rgba(146,64,14,0.35)',
+    active:  'rgba(255,255,255,0.1)',
+    good:    'rgba(6,78,59,0.35)',
+    done:    'rgba(255,255,255,0.06)',
+  };
+
+  // Group by class
   const classBuckets = {};
-  (assignments||[]).forEach(a => {
-    const classId = a.class_id || 'noclass';
-    if(!classBuckets[classId]) classBuckets[classId] = {cls: a.classes, assignments: []};
-    classBuckets[classId].assignments.push(a);
+  assignments.forEach(a => {
+    const cid = a.class_id || 'noclass';
+    if(!classBuckets[cid]) classBuckets[cid] = { cls: a.classes, assignments: [] };
+    classBuckets[cid].assignments.push(a);
   });
 
-  container.innerHTML = `<div class="class-tiles">${Object.entries(classBuckets).map(([classId, bucket], i) => {
+  container.innerHTML = '<div class="class-tiles">' + Object.entries(classBuckets).map(([classId, bucket], i) => {
     const cls = bucket.cls;
-    const className = cls?.name || cls?.subject || 'Class';
-    const teacherName = cls?.profiles?.full_name || 'Your Teacher';
+    const className = cls?.name || cls?.subject || 'My Class';
+    const teacherName = cls?.profiles?.full_name ? 'with ' + cls.profiles.full_name : '';
+    const openAssignments = bucket.assignments.filter(a => {
+      const tasks = a.tasks||[];
+      const done = tasks.filter(t=>t.completed).length;
+      return tasks.length === 0 || done < tasks.length;
+    }).length;
+
+    // Class tile state = worst across all assignments
     const allTasks = bucket.assignments.flatMap(a => a.tasks||[]);
-    const done = allTasks.filter(t=>t.completed).length;
-    const total = allTasks.length;
-    const pct = total ? Math.round((done/total)*100) : 0;
-
-    // Overall state — all done = done, otherwise worst active state
-    const allDone = total > 0 && done === total;
-    const states = bucket.assignments.map(a => getTileState(a));
+    const totalDone = allTasks.filter(t=>t.completed).length;
+    const allComplete = allTasks.length > 0 && totalDone === allTasks.length;
+    const aStates = bucket.assignments.map(a => getTileState(a));
     const stateOrder = ['overdue','urgent','active','good','done'];
-    const worstState = allDone ? 'done' : (stateOrder.find(s => states.includes(s) && s !== 'done') || 'active');
-    const tileClass = getTileClass(worstState);
+    const classState = allComplete ? 'done' : (stateOrder.find(s => aStates.includes(s) && s !== 'done') || 'active');
+    const classCfg = stateColors[classState];
 
-    // Each assignment renders as a row — tap to expand its steps
-    const assignmentsHtml = bucket.assignments.map(a => {
+    // Build assignment tiles
+    const assignmentTiles = bucket.assignments.map(a => {
       const tasks = a.tasks||[];
       const aDone = tasks.filter(t=>t.completed).length;
-      const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
+      const aTotal = tasks.length;
       const aState = getTileState(a);
-      const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.2);color:white;font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
-      const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:3px;line-height:1.4;">${a.description}</div>` : '';
-      const hoursHtml = a.estimated_hours ? `<span style="background:rgba(255,255,255,0.15);padding:2px 7px;border-radius:10px;font-size:11px;">⏱ ${a.estimated_hours}h</span>` : '';
+      const aCfg = stateColors[aState];
+      const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
+      const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.2);color:white;font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
+      const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:3px;line-height:1.4;">${a.description}</div>` : '';
 
-      // Steps — only shown when assignment row is expanded
-      const stepsHtml = tasks.length ? tasks.map(task => {
+      // Steps inside assignment
+      const stepsHtml = aTotal ? tasks.map(task => {
         const isPending = task.verification_status==='pending';
         const isDone = task.completed && (task.verification_status==='approved'||!task.verification_required);
         const isRejected = task.verification_status==='rejected';
-        const stepCls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
+        const sCls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
         const gem = isDone?'✓':isPending?'⏳':isRejected?'✗':'';
-        const badge = task.verification_required?'<span class="step-badge">📸 Proof</span>':'';
-        const clickFn = !task.verification_required&&!isDone?`onclick="tileToggleTask('${task.id}',this)"`:'';
-        const uploadBtn = task.verification_required&&!isDone&&!isPending ? `<button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="padding:3px 9px;border-radius:20px;border:none;background:var(--amber);color:white;font-size:11px;font-weight:700;cursor:pointer;">Upload</button>` : '';
-        return `<div class="class-tile-step ${stepCls}" id="tilestep-${task.id}" ${clickFn}>
+        const badge = task.verification_required ? '<span class="step-badge">📸</span>' : '';
+        const clickFn = !task.verification_required&&!isDone ? `onclick="tileToggleTask('${task.id}',this)"` : '';
+        const uploadBtn = task.verification_required&&!isDone&&!isPending ? `<button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="padding:3px 9px;border-radius:20px;border:none;background:var(--amber);color:white;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">Upload</button>` : '';
+        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn}>
           <div class="step-circle">${gem}</div>
           <div class="step-title">${task.title}</div>
           ${badge}${uploadBtn}
         </div>`;
       }).join('') : '<div style="padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No steps yet</div>';
 
-      // Assignment row colour based on its own state
-      const aRowColors = {
-        overdue: 'rgba(220,38,38,0.25)',
-        urgent:  'rgba(217,119,6,0.25)',
-        active:  'rgba(255,255,255,0.1)',
-        good:    'rgba(16,185,129,0.2)',
-        done:    'rgba(255,255,255,0.06)'
-      };
-      const aRowBorder = {
-        overdue: '1.5px solid rgba(220,38,38,0.4)',
-        urgent:  '1.5px solid rgba(217,119,6,0.4)',
-        active:  '1.5px solid rgba(255,255,255,0.1)',
-        good:    '1.5px solid rgba(16,185,129,0.3)',
-        done:    '1.5px solid rgba(255,255,255,0.08)'
-      };
-      const aStatusIcons = {overdue:'⚠️',urgent:'⏰',active:'📝',good:'✅',done:'✓'};
-
-      return `<div style="margin:0 8px 8px;border-radius:12px;overflow:hidden;background:${aRowColors[aState]};border:${aRowBorder[aState]};">
-        <div style="padding:11px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;" onclick="toggleTile('${a.id}')">
-          <div style="flex:1;">
-            <div style="font-size:14px;font-weight:800;color:white;font-family:'Nunito',sans-serif;">${a.title}</div>
-            <div style="display:flex;align-items:center;gap:5px;margin-top:4px;flex-wrap:wrap;">
-              <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-size:11px;color:white;">📅 ${aDue}</span>
-              <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-size:11px;color:white;" id="acount-${a.id}">${aStatusIcons[aState]} ${aDone}/${tasks.length} steps</span>
-              ${hoursHtml}
+      return `
+        <div style="margin:0 8px 8px;border-radius:12px;overflow:hidden;background:${aRowBg[aState]};border:1.5px solid rgba(255,255,255,0.15);">
+          <div style="padding:12px 14px;cursor:pointer;" onclick="toggleTile('${a.id}')">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">${a.title}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
+                  <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;">📅 ${aDue}</span>
+                  <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;" id="acount-${a.id}">${aDone}/${aTotal} steps</span>
+                  <span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;">${aCfg.label}</span>
+                </div>
+                ${descHtml}
+                ${fileLink}
+              </div>
+              <div style="color:rgba(255,255,255,0.6);font-size:16px;flex-shrink:0;" id="chevron-${a.id}">▼</div>
             </div>
-            ${descHtml}
-            ${fileLink}
           </div>
-          <div style="color:rgba(255,255,255,0.6);font-size:15px;flex-shrink:0;margin-top:2px;" id="chevron-${a.id}">▼</div>
-        </div>
-        <div class="class-tile-steps" id="tilesteps-${a.id}">
-          ${stepsHtml}
-        </div>
-      </div>`;
+          <div class="class-tile-steps" id="tilesteps-${a.id}">
+            ${stepsHtml}
+          </div>
+        </div>`;
     }).join('');
 
-    return `<div class="class-tile ${tileClass}" id="tile-${classId}">
-      <div class="class-tile-header" onclick="toggleTile('classtile-${classId}')">
-        <div class="class-tile-icon">${icons[i%icons.length]}</div>
-        <div class="class-tile-info">
-          <div class="class-tile-name">${className}</div>
-          <div class="class-tile-teacher">${teacherName}</div>
-          <div class="class-tile-due" id="classprog-${classId}">${done}/${total} steps complete · ${stateLabels[worstState]}</div>
+    return `
+      <div class="class-tile" id="tile-${classId}" style="background:${classCfg.tile};animation:${classCfg.anim};">
+        <div class="class-tile-header" onclick="toggleTile('classtile-${classId}')">
+          <div class="class-tile-icon">${icons[i%icons.length]}</div>
+          <div class="class-tile-info">
+            <div class="class-tile-name">${className}</div>
+            <div class="class-tile-teacher">${teacherName}</div>
+            <div class="class-tile-due" id="classprog-${classId}">${openAssignments} open assignment${openAssignments!==1?'s':''}</div>
+          </div>
+          <div style="color:rgba(255,255,255,0.7);font-size:18px;" id="chevron-classtile-${classId}">▼</div>
         </div>
-        <div style="color:rgba(255,255,255,0.6);font-size:18px;" id="chevron-classtile-${classId}">▼</div>
-      </div>
-      <div class="class-tile-progress">
-        <div class="class-tile-track"><div class="class-tile-fill" id="classprogbar-${classId}" style="width:${pct}%"></div></div>
-        <div class="class-tile-label" id="classprogtxt-${classId}"><span>${done} of ${total} steps done</span><span>${pct}%</span></div>
-      </div>
-      <div class="class-tile-steps" id="tilesteps-classtile-${classId}">
-        ${assignmentsHtml}
-      </div>
-    </div>`;
-  }).join('')}</div>`;
+        <div class="class-tile-steps" id="tilesteps-classtile-${classId}">
+          ${assignmentTiles}
+        </div>
+      </div>`;
+  }).join('') + '</div>';
 }
+
 
 function toggleTile(assignmentId) {
   const steps = document.getElementById('tilesteps-'+assignmentId);
