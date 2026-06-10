@@ -2638,6 +2638,9 @@ async function enableNotifications() {
 async function updateNotifStatus() {
   const status = document.getElementById('notifStatus');
   const btn = document.getElementById('enableNotifsBtn');
+  const card = document.getElementById('notifCard');
+  // Always keep card visible
+  if(card) card.style.display = 'block';
   if(!status) return;
   if(!('Notification' in window)) {
     status.textContent = '❌ Not supported in this browser';
@@ -2645,17 +2648,17 @@ async function updateNotifStatus() {
     return;
   }
   if(Notification.permission === 'granted') {
-    status.textContent = '✅ Notifications are enabled';
-    status.style.background = '#ECFDF5';
+    status.textContent = '✅ Notifications enabled';
+    status.style.color = 'var(--mint)';
     if(btn) btn.style.display='none';
     await subscribeToPush();
   } else if(Notification.permission === 'denied') {
-    status.textContent = '❌ Blocked — go to browser settings to allow';
-    status.style.background = '#FFF1F2';
-    if(btn) btn.textContent = '⚙️ Open Settings';
+    status.textContent = '❌ Blocked in browser settings';
+    status.style.color = 'var(--rose)';
+    if(btn) { btn.textContent = '⚙️ How to fix'; btn.onclick = () => showToast('Go to Chrome → Settings → Site settings → Notifications → Allow focably.vercel.app'); }
   } else {
-    status.textContent = '⚠️ Not enabled yet — tap below to allow';
-    status.style.background = '#FFF7ED';
+    status.textContent = 'Tap Enable to get notified when your child completes steps';
+    if(btn) btn.style.display='block';
   }
 }
 
