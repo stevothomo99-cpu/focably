@@ -318,6 +318,38 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .theme-fantasy  { --th1:#7C3AED; --th2:#A78BFA; --th3:#EDE9FE; --th4:#F59E0B; }
 .theme-space    { --th1:#1D4ED8; --th2:#60A5FA; --th3:#DBEAFE; --th4:#06B6D4; }
 .theme-adventure{ --th1:#065F46; --th2:#34D399; --th3:#D1FAE5; --th4:#F59E0B; }
+
+/* ── ASSIGNMENT STATUS COLOURS ── */
+/* Status: green = 15+ days, amber = 8-14 days, red = ≤7 days, grey = complete */
+.assign-tile {
+  border-left: 4px solid transparent;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: white;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(30,27,75,0.06);
+  transition: border-color 0.3s;
+}
+.assign-tile.status-green  { border-left-color: var(--mint); }
+.assign-tile.status-amber  { border-left-color: var(--amber); }
+.assign-tile.status-red    { border-left-color: var(--rose); }
+.assign-tile.status-grey   { border-left-color: #CBD5E1; opacity: 0.7; }
+
+.assign-status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.badge-green  { background: #ECFDF5; color: var(--mint); }
+.badge-amber  { background: #FFFBEB; color: var(--amber); }
+.badge-red    { background: #FFF1F2; color: var(--rose); }
+.badge-grey   { background: #F1F5F9; color: #94A3B8; }
+
+.assign-tile-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.assign-tile-title  { font-weight:700; font-size:14px; color:var(--indigo); flex:1; margin-right:8px; }
+.assign-tile-meta   { font-size:12px; color:var(--gray-500); margin-bottom:6px; }
+.assign-tile-progress-track { background:var(--gray-100); border-radius:10px; height:5px; }
+.assign-tile-progress-fill  { border-radius:10px; height:5px; transition:width 0.5s; }
 </style>
 </head>
 <body>
@@ -575,6 +607,11 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Write conclusion & proofread</div><div class="hs-task-xp">+15 XP</div></div>
       </div>
 
+      <div class="card">
+        <div class="card-title">📚 My Assignments</div>
+        <div id="student-class-tiles"></div>
+      </div>
+
       <!-- AI HS Breakdown -->
       <div class="card">
         <div class="card-title">🤖 AI Task Breakdown</div>
@@ -679,6 +716,11 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
     </div>
 
     <div class="card">
+      <div class="card-title">📚 Assignments by Class</div>
+      <div id="parent-class-tiles"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">🏆 Reward Approvals</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Georgie has unlocked a reward — waiting for your go-ahead.</p>
       <div style="display:flex;align-items:center;gap:12px;background:var(--gray-50);border-radius:12px;padding:12px;">
@@ -761,6 +803,11 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <button class="nudge-btn" style="background:#F3F4F6;border-color:#E5E7EB;color:var(--gray-500);cursor:default;">Done!</button>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title">📚 My Classes — Assignment Overview</div>
+      <div id="teacher-class-tiles"></div>
+    </div>
+
   </div>
 
   <div class="bottom-nav">
@@ -780,6 +827,115 @@ let selectedTheme = null;
 let questStars = 20;
 let xp = 350;
 const xpMax = 500;
+
+// ── ASSIGNMENT STATUS ──
+// Returns { status, badgeClass, borderClass, label }
+// status rules: complete → grey | ≤7 days → red | ≤14 days → amber | 15+ days → green
+function getAssignmentStatus(dueDateStr, progressPct) {
+  if (progressPct >= 100) {
+    return { status:'grey',  borderClass:'status-grey',  badgeClass:'badge-grey',  label:'Completed' };
+  }
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const due  = new Date(dueDateStr); due.setHours(0,0,0,0);
+  const days = Math.round((due - now) / (1000*60*60*24));
+  if (days < 0)  return { status:'red',   borderClass:'status-red',   badgeClass:'badge-red',   label:'Overdue' };
+  if (days <= 7) return { status:'red',   borderClass:'status-red',   badgeClass:'badge-red',   label:`Due in ${days}d` };
+  if (days <= 14)return { status:'amber', borderClass:'status-amber', badgeClass:'badge-amber', label:`Due in ${days}d` };
+  return           { status:'green', borderClass:'status-green', badgeClass:'badge-green', label:`Due in ${days}d` };
+}
+
+// Render an assignment tile into a container element
+// assignment = { title, subject, dueDate, progress, teacher }
+function renderAssignmentTile(assignment) {
+  const s = getAssignmentStatus(assignment.dueDate, assignment.progress);
+  const progressColor = s.status === 'grey' ? '#CBD5E1'
+                      : s.status === 'red'   ? 'var(--rose)'
+                      : s.status === 'amber' ? 'var(--amber)'
+                      : 'var(--mint)';
+  const tile = document.createElement('div');
+  tile.className = `assign-tile ${s.borderClass}`;
+  tile.innerHTML = `
+    <div class="assign-tile-header">
+      <div class="assign-tile-title">${assignment.title}</div>
+      <span class="assign-status-badge ${s.badgeClass}">${s.label}</span>
+    </div>
+    <div class="assign-tile-meta">${assignment.teacher} · Due ${formatDate(assignment.dueDate)}</div>
+    <div class="assign-tile-progress-track">
+      <div class="assign-tile-progress-fill" style="width:${assignment.progress}%;background:${progressColor}"></div>
+    </div>
+    <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-top:3px;">${assignment.progress}% complete</div>
+  `;
+  return tile;
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-AU', { day:'numeric', month:'short' });
+}
+
+// Demo assignment data — replace with real Supabase data when ready
+const DEMO_ASSIGNMENTS = [
+  { title:'Climate Change Essay',   subject:'English',     teacher:'Ms Clarke',    dueDate: daysFromNow(3),  progress: 25 },
+  { title:'Fractions Test Prep',    subject:'Mathematics', teacher:'Mr Henderson', dueDate: daysFromNow(10), progress: 60 },
+  { title:'Ecosystem Report',       subject:'Science',     teacher:'Ms Rivera',    dueDate: daysFromNow(20), progress: 80 },
+  { title:'Map Skills Worksheet',   subject:'Geography',   teacher:'Mr Peterson',  dueDate: daysFromNow(-2), progress: 10 },
+  { title:'Novel Study — Ch 1–4',   subject:'English',     teacher:'Ms Clarke',    dueDate: daysFromNow(5),  progress: 100 },
+];
+
+function daysFromNow(n) {
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+// Build class tile with expandable assignment list
+function renderClassTile(containerId, className, emoji, assignments) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const overall = Math.round(assignments.reduce((a,b) => a + b.progress, 0) / assignments.length);
+  const s = getAssignmentStatus(
+    assignments.filter(a => a.progress < 100).sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate))[0]?.dueDate || daysFromNow(99),
+    overall
+  );
+  const progressColor = s.status==='grey'?'#CBD5E1':s.status==='red'?'var(--rose)':s.status==='amber'?'var(--amber)':'var(--mint)';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:white;border-radius:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);overflow:hidden;';
+
+  // Class header (clickable)
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;';
+  header.innerHTML = `
+    <div style="font-size:26px;">${emoji}</div>
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${className}</div>
+      <div style="background:#F1F5F9;border-radius:10px;height:5px;">
+        <div style="border-radius:10px;height:5px;width:${overall}%;background:${progressColor};transition:width 0.5s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">${overall}% overall · ${assignments.filter(a=>a.progress<100).length} active</div>
+    </div>
+    <span class="assign-status-badge ${s.badgeClass}" style="flex-shrink:0;">${s.label}</span>
+    <div class="chevron" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;margin-left:4px;">▼</div>
+  `;
+
+  // Assignment list (collapsed by default)
+  const list = document.createElement('div');
+  list.style.cssText = 'padding:0 12px 0;max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.2s;';
+  assignments.forEach(a => list.appendChild(renderAssignmentTile(a)));
+
+  let open = false;
+  header.addEventListener('click', () => {
+    open = !open;
+    list.style.maxHeight   = open ? '1000px' : '0';
+    list.style.paddingBottom = open ? '12px' : '0';
+    header.querySelector('.chevron').style.transform = open ? 'rotate(180deg)' : '';
+  });
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(list);
+  container.appendChild(wrapper);
+}
 
 // ── THEME CONFIG ──
 const themes = {
@@ -877,6 +1033,27 @@ function startApp() {
   }
   // Request notification permission after onboarding
   requestNotificationPermission();
+
+  // ── Render assignment class tiles ──
+  const englishAssignments   = DEMO_ASSIGNMENTS.filter(a => a.subject === 'English');
+  const mathsAssignments     = DEMO_ASSIGNMENTS.filter(a => a.subject === 'Mathematics');
+  const scienceAssignments   = DEMO_ASSIGNMENTS.filter(a => a.subject === 'Science');
+  const geoAssignments       = DEMO_ASSIGNMENTS.filter(a => a.subject === 'Geography');
+
+  // Student view
+  renderClassTile('student-class-tiles', 'English',     '📖', englishAssignments);
+  renderClassTile('student-class-tiles', 'Mathematics', '📐', mathsAssignments);
+  renderClassTile('student-class-tiles', 'Science',     '🔬', scienceAssignments);
+  renderClassTile('student-class-tiles', 'Geography',   '🌏', geoAssignments);
+
+  // Parent view
+  renderClassTile('parent-class-tiles', 'English',     '📖', englishAssignments);
+  renderClassTile('parent-class-tiles', 'Mathematics', '📐', mathsAssignments);
+  renderClassTile('parent-class-tiles', 'Science',     '🔬', scienceAssignments);
+  renderClassTile('parent-class-tiles', 'Geography',   '🌏', geoAssignments);
+
+  // Teacher view — Ms Clarke only sees her class
+  renderClassTile('teacher-class-tiles', 'Year 9 English — Ms Clarke', '📖', englishAssignments);
 }
 
 function applyTheme(t) {
@@ -1163,3 +1340,4 @@ async function installApp() {
 </script>
 </body>
 </html>
+
