@@ -198,8 +198,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .subj-row-fill{border-radius:10px;height:5px;}
 
 /* VERIFICATION QUEUE */
-.verify-item{border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);}
-.verify-header{padding:12px 14px;display:flex;align-items:center;gap:10px;}
+/* verify-item CSS removed — replaced by unified .approval-item system */
 .verify-task-name{font-weight:700;font-size:14px;flex:1;}
 .verify-child-name{font-size:12px;margin-top:2px;opacity:0.8;}
 .verify-proof{width:100%;max-height:200px;object-fit:cover;display:block;}
@@ -630,13 +629,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
     </div>
 
-    <!-- VERIFICATION QUEUE -->
-    <div class="card">
-      <div class="card-title">📋 Proof Verification Queue</div>
-      <div id="parentVerifyQueue">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications</div>
-      </div>
-    </div>
+    <!-- VERIFICATION QUEUE - handled by unified approval card below -->
 
     <div class="card">
       <div class="card-title">➕ Add Task for Child</div>
@@ -756,14 +749,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="teacher-approval-queue"></div>
     </div>
 
-    <!-- PROOF VERIFICATION -->
-    <div class="card" id="teacherVerifyCard" style="display:none;">
-      <div class="card-title">📸 Proof Verification Queue</div>
-      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps submitted by students awaiting your approval. Parents can also approve — it clears from both queues.</p>
-      <div id="teacherVerifyQueue">
-        <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>
-      </div>
-    </div>
+    <!-- PROOF VERIFICATION — handled by unified approval card above -->
 
     <!-- NEW ASSIGNMENT -->
     <div class="card" id="newAssignmentCard" style="display:none;">
@@ -1838,7 +1824,6 @@ async function loadParentApp() {
       }
     }
   }
-  loadParentVerifyQueue().catch(()=>{});
   loadApprovalQueues().catch(()=>{});
   showScreen('app');
   setTimeout(updateNotifStatus, 1000);
@@ -1888,105 +1873,8 @@ async function loadChildStats(childId) {
   }).join('');
 }
 
-async function loadParentVerifyQueue() {
-  if(!currentChildren.length) return;
-  const childIds=currentChildren.map(c=>c.id);
-  const {data:pendingTasks} = await db.from('tasks')
-    .select('*, assignments(title, classes(name, subject, profiles(full_name))), children(name)')
-    .in('child_id',childIds)
-    .eq('verification_status','pending')
-    .order('proof_submitted_at',{ascending:true});
-  const el=document.getElementById('parentVerifyQueue');
-  if(!pendingTasks?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';return;}
-  el.innerHTML=pendingTasks.map(task=>renderVerifyItem(task,'parent')).join('');
-}
-
-function renderVerifyItem(task, role) {
-  const isImage = task.proof_url && (task.proof_url.match(/\.(jpg|jpeg|png|gif|webp)/i));
-  const proofEl = task.proof_url ? (isImage ?
-    `<img class="verify-proof" src="${task.proof_url}" alt="proof" onerror="this.style.display='none'">` :
-    `<div class="verify-doc">📄 <span>${task.proof_filename||'Document uploaded'}</span> <a href="${task.proof_url}" target="_blank" style="color:var(--violet);font-weight:600;margin-left:auto;">View ↗</a></div>`) :
-    `<div class="verify-doc" style="color:var(--gray-500);">No proof file attached</div>`;
-
-  // Build context line — class > assignment > teacher
-  const assignmentName = task.assignments?.title || 'Assignment';
-  const className = task.assignments?.classes?.name || task.assignments?.classes?.subject || '';
-  const teacherName = task.assignments?.classes?.profiles?.full_name || '';
-  const contextLine = [className, assignmentName, teacherName ? `Set by ${teacherName}` : ''].filter(Boolean).join(' · ');
-  const submittedDate = task.proof_submitted_at ? new Date(task.proof_submitted_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-
-  return `<div class="verify-item" id="verifyItem-${task.id}">
-    <div class="verify-header" style="background:var(--gray-50);">
-      <div style="flex:1;">
-        <div class="verify-task-name">${task.title}</div>
-        <div class="verify-child-name" style="color:var(--indigo);font-weight:600;margin-top:2px;">${task.children?.name||'Student'}</div>
-        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${contextLine}</div>
-        ${submittedDate ? `<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Submitted ${submittedDate}</div>` : ''}
-      </div>
-      <div style="font-size:28px;">📸</div>
-    </div>
-    ${proofEl}
-    <div class="verify-actions">
-      <button class="verify-approve-btn" onclick="approveVerification('${task.id}','${task.child_id}','${role}')">✅ Approve</button>
-      <button class="verify-reject-btn" onclick="showRejectInput('${task.id}')">❌ Reject</button>
-    </div>
-    <div style="padding:0 14px 10px;background:white;display:none;" id="rejectPanel-${task.id}">
-      <input class="reject-reason-input visible" type="text" placeholder="Reason for rejection (optional)" id="rejectReason-${task.id}">
-      <button class="confirm-reject-btn visible" onclick="confirmReject('${task.id}','${task.child_id}','${role}')">Confirm Rejection</button>
-    </div>
-  </div>`;
-}
-
-function showRejectInput(taskId) {
-  document.getElementById('rejectPanel-'+taskId).style.display='block';
-}
-
-async function approveVerification(taskId, childId, role) {
-  const btn=document.getElementById('verifyItem-'+taskId)?.querySelector('.verify-approve-btn');
-  if(btn){btn.disabled=true;btn.textContent='Approving...';}
-  const {error} = await db.rpc('approve_task_verification',{p_task_id:taskId,p_approver_id:currentUser.id});
-  if(error) {
-    await db.from('tasks').update({verification_status:'approved',verified_by:currentUser.id,verified_at:new Date().toISOString(),completed:true,completed_at:new Date().toISOString()}).eq('id',taskId);
-    await updateTrustScoreManual(childId,'approved');
-  }
-  // Remove from both queues (teacher and parent may both show this item)
-  document.querySelectorAll(`#verifyItem-${taskId}`).forEach(el => el.remove());
-  showToast('✅ Proof approved! Stars awarded.');
-
-  // If teacher approved — notify parent via in-app notification
-  if(role === 'teacher') {
-    try {
-      const {data:task} = await dbQuery(db.from('tasks').select('title, child_id, assignments(title, classes(name))').eq('id',taskId).maybeSingle());
-      if(task) {
-        const {data:children} = await dbQuery(db.from('children').select('*, families(parent_id)').eq('id',task.child_id).limit(1));
-        const parentId = children?.[0]?.families?.parent_id;
-        if(parentId) {
-          const className = task.assignments?.classes?.name || '';
-          const assignTitle = task.assignments?.title || '';
-          await dbQuery(db.from('notifications').insert({
-            recipient_id: parentId,
-            sender_id: currentUser.id,
-            child_id: task.child_id,
-            type: 'proof_approved',
-            title: '✅ Step approved by teacher',
-            body: `"${task.title}" approved${assignTitle?' in '+assignTitle:''}${className?' ('+className+')':''}`
-          }));
-          await sendPushToUser(parentId, '✅ Step approved by teacher', `"${task.title}" has been approved${className?' in '+className:''}`);
-        }
-      }
-    } catch(e) { console.log('Cross-notify error:', e.message); }
-  }
-
-  if(role==='parent') await loadChildStats(selectedChildId);
-}
-
-async function confirmReject(taskId, childId, role) {
-  const reason=document.getElementById('rejectReason-'+taskId)?.value||'';
-  await db.from('tasks').update({verification_status:'rejected',verified_by:currentUser.id,verified_at:new Date().toISOString(),completed:false,rejection_reason:reason,proof_url:null,proof_submitted_at:null}).eq('id',taskId);
-  await updateTrustScoreManual(childId,'rejected');
-  document.getElementById('verifyItem-'+taskId)?.remove();
-  showToast('❌ Proof rejected. Child notified.');
-}
+// loadParentVerifyQueue, loadTeacherVerifyQueue, renderVerifyItem, approveVerification, confirmReject
+// removed — replaced by unified loadApprovalQueues / resolveApproval / renderApprovalQueue
 
 async function updateTrustScoreManual(childId, action) {
   const {data:child} = await db.from('children').select('trust_score').eq('id',childId).maybeSingle();
@@ -2233,14 +2121,13 @@ async function selectClass(classId) {
 
   // Show class-specific cards
   document.getElementById('classAssignmentsCard').style.display='block';
-  document.getElementById('teacherVerifyCard').style.display='block';
   document.getElementById('newAssignmentCard').style.display='block';
   document.getElementById('archiveClassCard').style.display='block';
   document.getElementById('classSetupCard').style.display='none';
 
   // Load data
   await loadTeacherClassAssignments(classId);
-  loadTeacherVerifyQueue(classId).catch(()=>{});
+  loadApprovalQueues().catch(()=>{});
 
   // Get student count
   const {data:members} = await dbQuery(db.from('class_members').select('id').eq('class_id',classId), 5000, []);
@@ -2365,23 +2252,6 @@ function showCreateClass() {
   document.getElementById('className').value='';
   document.getElementById('classSubject').value='';
   document.getElementById('classYear').value='';
-}
-
-async function loadTeacherVerifyQueue(classId) {
-  const {data:assignments} = await db.from('assignments').select('id').eq('created_by',currentUser.id);
-  if(!assignments?.length) {
-    document.getElementById('teacherVerifyQueue').innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';
-    return;
-  }
-  const assignmentIds=assignments.map(a=>a.id);
-  const {data:pendingTasks} = await db.from('tasks')
-    .select('*, assignments(title, classes(name, subject, profiles(full_name))), children(name)')
-    .in('assignment_id',assignmentIds)
-    .eq('verification_status','pending')
-    .order('proof_submitted_at',{ascending:true});
-  const el=document.getElementById('teacherVerifyQueue');
-  if(!pendingTasks?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';return;}
-  el.innerHTML=pendingTasks.map(task=>renderVerifyItem(task,'teacher')).join('');
 }
 
 async function createClass() {
@@ -2694,24 +2564,20 @@ function celebrateStep(stepEl) {
 async function refreshCurrentView() {
   const btn = document.getElementById('refreshBtn');
   if(btn) { btn.style.animation = 'spin 0.6s linear'; btn.textContent = '↻'; }
-  
   try {
     if(currentProfile.role === 'student') {
       await loadStudentAssignments(currentProfile.age_group);
     } else if(currentProfile.role === 'parent') {
       if(selectedChildId) await loadChildStats(selectedChildId);
-      await loadParentVerifyQueue();
+      await loadApprovalQueues();
     } else if(currentProfile.role === 'teacher') {
-      if(selectedClassId) {
-        await loadClassProgress(selectedClassId);
-        await loadTeacherVerifyQueue(selectedClassId);
-      }
+      if(selectedClassId) await loadTeacherClassAssignments(selectedClassId);
+      await loadApprovalQueues();
     }
     showToast('✅ Updated!');
   } catch(e) {
     showToast('❌ Refresh failed — try again');
   }
-  
   if(btn) { btn.style.animation = ''; }
 }
 
@@ -2947,6 +2813,14 @@ function renderApprovalQueue(role, tasks) {
       : '';
     const contextParts = [className, assignTitle, teacherName ? `Set by ${teacherName}` : ''].filter(Boolean);
 
+    // Proof attachment — compact link only, no inline image
+    const isImage = task.proof_url && task.proof_url.match(/\.(jpg|jpeg|png|gif|webp)/i);
+    const proofLink = task.proof_url
+      ? `<a href="${task.proof_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--violet);text-decoration:none;margin-bottom:10px;">
+          ${isImage ? '🖼️' : '📄'} View ${isImage ? 'Photo' : 'Document'} ↗
+        </a>`
+      : '';
+
     return `<div class="approval-item" id="approval-${role}-${task.id}">
       <div class="approval-who">
         <div class="approval-avatar">${initial}</div>
@@ -2955,6 +2829,7 @@ function renderApprovalQueue(role, tasks) {
       </div>
       <div class="approval-step">✏️ ${task.title}</div>
       <div class="approval-context">${contextParts.join(' · ')}</div>
+      ${proofLink}
       <div class="approval-actions">
         <button class="approval-approve" onclick="resolveApproval('${task.id}','${task.child_id}','approve','${role}')">✓ Approve</button>
         <button class="approval-reject"  onclick="resolveApproval('${task.id}','${task.child_id}','reject','${role}')">✕ Reject</button>
@@ -3089,7 +2964,7 @@ async function archiveClass(classId, className, confirmEl) {
 function showArchiveClassConfirm(classId, className) {
   const existing = document.getElementById('archiveConfirm-'+classId);
   if(existing) { existing.classList.toggle('visible'); return; }
-  const card = document.getElementById('teacherVerifyCard');
+  const card = document.getElementById('archiveClassCard');
   if(!card) return;
   const box = document.createElement('div');
   box.className = 'confirm-archive visible';
