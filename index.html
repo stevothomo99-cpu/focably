@@ -2285,7 +2285,7 @@ async function loadTeacherClassAssignments(classId) {
             </div>
           </div>
           <div style="font-size:12px;font-weight:900;color:${statusColor};">${pct}%</div>
-          <button class="archive-btn" onclick="event.stopPropagation();archiveAssignmentGroup('${group.key}','${group.title.replace(/'/g,"\\'")}',${JSON.stringify(instances.map(a=>a.id))})" title="Archive assignment">🗄️</button>
+          <button class="archive-btn" data-archive-key="${group.key}" data-archive-title="${group.title.replace(/"/g,'&quot;')}" data-archive-ids="${instances.map(a=>a.id).join(',')}" onclick="event.stopPropagation();handleArchiveClick(this)" title="Archive assignment">🗄️</button>
         </div>
         <div style="background:var(--gray-200);border-radius:10px;height:5px;margin-top:8px;"><div style="background:${statusColor};border-radius:10px;height:5px;width:${pct}%;transition:width 0.6s;"></div></div>
       </div>
@@ -3011,6 +3011,16 @@ async function archiveAssignment(taskId, title, assignmentId) {
 }
 
 // Archive all instances of an assignment (same title/due, published to multiple students)
+function handleArchiveClick(btn) {
+  const key = btn.getAttribute('data-archive-key');
+  const title = btn.getAttribute('data-archive-title');
+  const ids = (btn.getAttribute('data-archive-ids')||'').split(',').filter(Boolean);
+  if(!ids.length) { showToast('Nothing to archive'); return; }
+  if(confirm(`Archive "${title}"?\n\nIt will be hidden from active assignments. You can restore it later from the Archive menu.`)) {
+    archiveAssignmentGroup(key, title, ids);
+  }
+}
+
 async function archiveAssignmentGroup(groupKey, title, assignmentIds) {
   // Archive all instances in Supabase
   for(const id of assignmentIds) {
