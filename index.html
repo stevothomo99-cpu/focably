@@ -2259,8 +2259,9 @@ async function loadTeacherClassAssignments(classId) {
   const assignmentGroups = {};
   assignments.forEach(a => {
     const key = a.title + '_' + (a.due_date||'');
-    if(!assignmentGroups[key]) assignmentGroups[key] = {title:a.title, due:a.due_date, desc:a.description, instances:[]};
-    assignmentGroups[key].instances.push(a);
+    const safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+    if(!assignmentGroups[safeKey]) assignmentGroups[safeKey] = {title:a.title, due:a.due_date, desc:a.description, key:safeKey, instances:[]};
+    assignmentGroups[safeKey].instances.push(a);
   });
 
   // ASSIGNMENT VIEW
@@ -2292,7 +2293,7 @@ async function loadTeacherClassAssignments(classId) {
       </div>`;
     }).join('');
 
-    return `<div style="border-radius:12px;border:1.5px solid var(--gray-200);overflow:hidden;margin-bottom:10px;">
+    return `<div style="border-radius:12px;border:1.5px solid var(--gray-200);overflow:hidden;margin-bottom:10px;" id="assignTile-${group.key}">
       <div style="padding:12px;cursor:pointer;background:var(--gray-50);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;">
@@ -2303,6 +2304,7 @@ async function loadTeacherClassAssignments(classId) {
             </div>
           </div>
           <div style="font-size:12px;font-weight:900;color:${statusColor};">${pct}%</div>
+          <button class="archive-btn" onclick="event.stopPropagation();archiveAssignmentGroup('${group.key}','${group.title.replace(/'/g,"\\'")}',${JSON.stringify(instances.map(a=>a.id))})" title="Archive assignment">🗄️</button>
         </div>
         <div style="background:var(--gray-200);border-radius:10px;height:5px;margin-top:8px;"><div style="background:${statusColor};border-radius:10px;height:5px;width:${pct}%;transition:width 0.6s;"></div></div>
       </div>
@@ -2875,18 +2877,31 @@ const archivedAssignments = [];
 const archivedClasses = [];
 
 async function archiveAssignment(taskId, title, assignmentId) {
-  // Mark assignment archived in Supabase
   await dbQuery(db.from('assignments').update({status:'archived'}).eq('id', assignmentId));
   archivedAssignments.push({title, assignmentId, archivedAt: new Date().toLocaleDateString('en-AU')});
-  // Animate out the tile
   const tile = document.getElementById('assignTile-'+assignmentId);
   if(tile) {
     tile.style.transition='opacity 0.3s';
     tile.style.opacity='0';
     setTimeout(()=>{tile.remove(); refreshArchivedPanel();},300);
-  } else {
-    refreshArchivedPanel();
+  } else { refreshArchivedPanel(); }
+  showToast(`🗄️ "${title}" archived`);
+}
+
+// Archive all instances of an assignment (same title/due, published to multiple students)
+async function archiveAssignmentGroup(groupKey, title, assignmentIds) {
+  // Archive all instances in Supabase
+  for(const id of assignmentIds) {
+    await dbQuery(db.from('assignments').update({status:'archived'}).eq('id', id));
   }
+  archivedAssignments.push({title, groupKey, assignmentIds, archivedAt: new Date().toLocaleDateString('en-AU')});
+  // Animate tile out
+  const tile = document.getElementById('assignTile-'+groupKey);
+  if(tile) {
+    tile.style.transition='opacity 0.3s, max-height 0.3s';
+    tile.style.opacity='0';
+    setTimeout(()=>{tile.remove(); refreshArchivedPanel();},300);
+  } else { refreshArchivedPanel(); }
   showToast(`🗄️ "${title}" archived`);
 }
 
@@ -2958,9 +2973,13 @@ async function restoreClass(i) {
 
 async function restoreAssignment(i) {
   const a = archivedAssignments.splice(i,1)[0];
-  await dbQuery(db.from('assignments').update({status:'active'}).eq('id',a.assignmentId));
+  const ids = a.assignmentIds || (a.assignmentId ? [a.assignmentId] : []);
+  for(const id of ids) {
+    await dbQuery(db.from('assignments').update({status:'active'}).eq('id',id));
+  }
   refreshArchivedPanel();
   showToast(`✅ "${a.title}" restored`);
+  await loadTeacherClassAssignments(selectedClassId);
 }
 
 let archivePanelOpen = false;
