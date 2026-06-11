@@ -15,10 +15,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --indigo:#1E1B4B; --violet:#7C3AED; --violet-light:#A78BFA;
-  --mint:#10B981; --mint-light:#6EE7B7; --amber:#F59E0B; --amber-light:#FCD34D;
-  --rose:#F43F5E; --gray-50:#F8F7FF; --gray-100:#EDE9FE; --gray-200:#DDD6FE;
-  --gray-500:#6B7280; --gray-700:#374151;
+  --indigo:#1E1B4B; --indigo-deep:#0F172A; --indigo-mid:#2D1B69;
+  --violet:#7C3AED; --violet-dark:#5B21B6; --violet-light:#A78BFA;
+  --mint:#10B981; --mint-dark:#059669; --mint-light:#6EE7B7; --mint-bg:#F0FDF4;
+  --amber:#F59E0B; --amber-light:#FCD34D;
+  --rose:#F43F5E;
+  --gray-50:#F8F7FF; --gray-100:#EDE9FE; --gray-200:#DDD6FE;
+  --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#6B7280; --gray-700:#374151;
+  --green-dark:#064E3B; --green-mid:#065F46;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;}
@@ -339,6 +343,41 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .step-add-btn:hover { border-color:var(--violet); color:var(--violet); background:var(--gray-100); }
 .ai-steps-btn { padding:9px 14px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--violet),#5B21B6); color:white; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
 .step-proof-toggle { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--gray-500); margin-top:4px; }
+
+/* ── APPROVAL QUEUE ── */
+.approval-item{border-radius:12px;padding:12px;margin-bottom:10px;background:var(--gray-50);border:1.5px solid var(--gray-200);}
+.approval-item:last-child{margin-bottom:0;}
+.approval-who{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.approval-avatar{width:28px;height:28px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:var(--violet);flex-shrink:0;}
+.approval-student{font-weight:700;font-size:13px;}
+.approval-time{font-size:11px;color:var(--gray-500);margin-left:auto;}
+.approval-step{font-size:13px;font-weight:600;color:var(--indigo);margin-bottom:3px;}
+.approval-context{font-size:11px;color:var(--gray-500);margin-bottom:10px;line-height:1.6;}
+.approval-context strong{color:var(--gray-700);}
+.approval-actions{display:flex;gap:8px;}
+.approval-approve{flex:1;padding:8px;border-radius:8px;border:none;background:var(--mint);color:white;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;}
+.approval-approve:hover{background:var(--mint-dark);}
+.approval-reject{flex:1;padding:8px;border-radius:8px;border:1.5px solid #FECDD3;background:white;color:var(--rose);font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;}
+.approval-reject:hover{background:#FFF1F2;}
+.approval-empty{font-size:13px;color:var(--gray-500);font-style:italic;text-align:center;padding:8px 0;}
+
+/* ── ARCHIVE ── */
+.archive-btn{padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all 0.2s;flex-shrink:0;}
+.archive-btn:hover{border-color:var(--rose);color:var(--rose);}
+.archive-class-btn{width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;}
+.archive-class-btn:hover{border-color:var(--rose);color:var(--rose);background:#FFF1F2;}
+.archived-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--gray-50);margin-bottom:6px;opacity:0.75;}
+.archived-item-title{font-size:13px;font-weight:600;color:var(--gray-700);text-decoration:line-through;}
+.archived-item-meta{font-size:11px;color:var(--gray-500);margin-top:1px;}
+.restore-btn{padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all 0.2s;}
+.restore-btn:hover{border-color:var(--mint);color:var(--mint);}
+.confirm-archive{background:#FFF1F2;border-radius:10px;padding:12px;margin-top:8px;border:1.5px solid #FECDD3;display:none;}
+.confirm-archive.visible{display:block;}
+.confirm-archive p{font-size:13px;color:var(--indigo);margin-bottom:10px;line-height:1.4;}
+.confirm-row{display:flex;gap:8px;}
+.confirm-yes{flex:1;padding:8px;border-radius:8px;border:none;background:var(--rose);color:white;font-weight:700;font-size:13px;cursor:pointer;}
+.confirm-no{flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-weight:700;font-size:13px;cursor:pointer;}
+
 
 </style>
 </head>
@@ -712,7 +751,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <!-- PROOF VERIFICATION -->
     <div class="card" id="teacherVerifyCard" style="display:none;">
       <div class="card-title">📸 Proof Verification Queue</div>
-      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Only tasks you created appear here.</p>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps submitted by students awaiting your approval. Parents can also approve — it clears from both queues.</p>
       <div id="teacherVerifyQueue">
         <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>
       </div>
@@ -758,7 +797,34 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
     </div>
 
-  </div>class="bottom-nav">
+    <!-- ARCHIVE CLASS -->
+    <div class="card" id="archiveClassCard" style="display:none;">
+      <div class="card-title">🗄️ Archive This Class</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">End of year? Archive the class to hide it from active views. Students will receive a Year Complete notification.</p>
+      <button class="archive-class-btn" id="archiveClassBtn" onclick="showArchiveClassConfirm(selectedClassId, document.getElementById('teacherSubline')?.textContent || 'This Class')">🗄️ Archive This Class</button>
+    </div>
+
+    <!-- ARCHIVED SECTION -->
+    <div id="archived-section" style="display:none;">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleArchivePanel()">
+          <div class="card-title" style="margin-bottom:0;">🗄️ Archived</div>
+          <div id="archive-chevron" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
+        </div>
+        <div id="archive-panel" style="max-height:0;overflow:hidden;transition:max-height 0.35s ease;">
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Archived Classes</div>
+            <div id="archived-classes-list"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin:12px 0 8px;">Archived Assignments</div>
+            <div id="archived-assignments-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
     <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
     <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
     <div class="nav-item"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
@@ -1817,7 +1883,7 @@ async function loadParentVerifyQueue() {
   if(!currentChildren.length) return;
   const childIds=currentChildren.map(c=>c.id);
   const {data:pendingTasks} = await db.from('tasks')
-    .select('*, assignments(title,subject), children(name)')
+    .select('*, assignments(title, classes(name, subject, profiles(full_name))), children(name)')
     .in('child_id',childIds)
     .eq('verification_status','pending')
     .order('proof_submitted_at',{ascending:true});
@@ -1832,12 +1898,21 @@ function renderVerifyItem(task, role) {
     `<img class="verify-proof" src="${task.proof_url}" alt="proof" onerror="this.style.display='none'">` :
     `<div class="verify-doc">📄 <span>${task.proof_filename||'Document uploaded'}</span> <a href="${task.proof_url}" target="_blank" style="color:var(--violet);font-weight:600;margin-left:auto;">View ↗</a></div>`) :
     `<div class="verify-doc" style="color:var(--gray-500);">No proof file attached</div>`;
+
+  // Build context line — class > assignment > teacher
+  const assignmentName = task.assignments?.title || 'Assignment';
+  const className = task.assignments?.classes?.name || task.assignments?.classes?.subject || '';
+  const teacherName = task.assignments?.classes?.profiles?.full_name || '';
+  const contextLine = [className, assignmentName, teacherName ? `Set by ${teacherName}` : ''].filter(Boolean).join(' · ');
+  const submittedDate = task.proof_submitted_at ? new Date(task.proof_submitted_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+
   return `<div class="verify-item" id="verifyItem-${task.id}">
     <div class="verify-header" style="background:var(--gray-50);">
-      <div>
+      <div style="flex:1;">
         <div class="verify-task-name">${task.title}</div>
-        <div class="verify-child-name" style="color:var(--gray-500);">${task.children?.name||'Student'} · ${task.assignments?.title||'Assignment'}</div>
-        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Submitted ${task.proof_submitted_at?new Date(task.proof_submitted_at).toLocaleDateString('en-AU'):''}</div>
+        <div class="verify-child-name" style="color:var(--indigo);font-weight:600;margin-top:2px;">${task.children?.name||'Student'}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${contextLine}</div>
+        ${submittedDate ? `<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Submitted ${submittedDate}</div>` : ''}
       </div>
       <div style="font-size:28px;">📸</div>
     </div>
@@ -1862,12 +1937,37 @@ async function approveVerification(taskId, childId, role) {
   if(btn){btn.disabled=true;btn.textContent='Approving...';}
   const {error} = await db.rpc('approve_task_verification',{p_task_id:taskId,p_approver_id:currentUser.id});
   if(error) {
-    // Fallback manual update if RPC not available
     await db.from('tasks').update({verification_status:'approved',verified_by:currentUser.id,verified_at:new Date().toISOString(),completed:true,completed_at:new Date().toISOString()}).eq('id',taskId);
     await updateTrustScoreManual(childId,'approved');
   }
-  document.getElementById('verifyItem-'+taskId)?.remove();
+  // Remove from both queues (teacher and parent may both show this item)
+  document.querySelectorAll(`#verifyItem-${taskId}`).forEach(el => el.remove());
   showToast('✅ Proof approved! Stars awarded.');
+
+  // If teacher approved — notify parent via in-app notification
+  if(role === 'teacher') {
+    try {
+      const {data:task} = await dbQuery(db.from('tasks').select('title, child_id, assignments(title, classes(name))').eq('id',taskId).maybeSingle());
+      if(task) {
+        const {data:children} = await dbQuery(db.from('children').select('*, families(parent_id)').eq('id',task.child_id).limit(1));
+        const parentId = children?.[0]?.families?.parent_id;
+        if(parentId) {
+          const className = task.assignments?.classes?.name || '';
+          const assignTitle = task.assignments?.title || '';
+          await dbQuery(db.from('notifications').insert({
+            recipient_id: parentId,
+            sender_id: currentUser.id,
+            child_id: task.child_id,
+            type: 'proof_approved',
+            title: '✅ Step approved by teacher',
+            body: `"${task.title}" approved${assignTitle?' in '+assignTitle:''}${className?' ('+className+')':''}`
+          }));
+          await sendPushToUser(parentId, '✅ Step approved by teacher', `"${task.title}" has been approved${className?' in '+className:''}`);
+        }
+      }
+    } catch(e) { console.log('Cross-notify error:', e.message); }
+  }
+
   if(role==='parent') await loadChildStats(selectedChildId);
 }
 
@@ -2125,6 +2225,7 @@ async function selectClass(classId) {
   document.getElementById('classAssignmentsCard').style.display='block';
   document.getElementById('teacherVerifyCard').style.display='block';
   document.getElementById('newAssignmentCard').style.display='block';
+  document.getElementById('archiveClassCard').style.display='block';
   document.getElementById('classSetupCard').style.display='none';
 
   // Load data
@@ -2253,12 +2354,14 @@ function showCreateClass() {
 }
 
 async function loadTeacherVerifyQueue(classId) {
-  // Get assignments by this teacher
   const {data:assignments} = await db.from('assignments').select('id').eq('created_by',currentUser.id);
-  if(!assignments?.length) return;
+  if(!assignments?.length) {
+    document.getElementById('teacherVerifyQueue').innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending verifications ✅</div>';
+    return;
+  }
   const assignmentIds=assignments.map(a=>a.id);
   const {data:pendingTasks} = await db.from('tasks')
-    .select('*, assignments(title), children(name)')
+    .select('*, assignments(title, classes(name, subject, profiles(full_name))), children(name)')
     .in('assignment_id',assignmentIds)
     .eq('verification_status','pending')
     .order('proof_submitted_at',{ascending:true});
@@ -2766,6 +2869,108 @@ async function sendPushToUser(userId, title, body) {
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install AchievED</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
 async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 AchievED installed!');}
+
+// ── ARCHIVE — JS state (swap for Supabase when ready) ──
+const archivedAssignments = [];
+const archivedClasses = [];
+
+async function archiveAssignment(taskId, title, assignmentId) {
+  // Mark assignment archived in Supabase
+  await dbQuery(db.from('assignments').update({status:'archived'}).eq('id', assignmentId));
+  archivedAssignments.push({title, assignmentId, archivedAt: new Date().toLocaleDateString('en-AU')});
+  // Animate out the tile
+  const tile = document.getElementById('assignTile-'+assignmentId);
+  if(tile) {
+    tile.style.transition='opacity 0.3s';
+    tile.style.opacity='0';
+    setTimeout(()=>{tile.remove(); refreshArchivedPanel();},300);
+  } else {
+    refreshArchivedPanel();
+  }
+  showToast(`🗄️ "${title}" archived`);
+}
+
+async function archiveClass(classId, className, confirmEl) {
+  confirmEl.classList.remove('visible');
+  // Mark class archived in Supabase
+  await dbQuery(db.from('classes').update({status:'archived'}).eq('id', classId));
+  archivedClasses.push({classId, className, archivedAt: new Date().toLocaleDateString('en-AU')});
+  // Notify all students via notification
+  try {
+    const {data:members} = await dbQuery(db.from('class_members').select('children(profile_id)').eq('class_id', classId));
+    const studentIds = (members||[]).map(m=>m.children?.profile_id).filter(Boolean);
+    for(const sid of studentIds) {
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: sid,
+        sender_id: currentUser.id,
+        type: 'class_archived',
+        title: '🎓 Year Complete!',
+        body: `${className} has been completed for this year. Well done!`
+      }));
+      await sendPushToUser(sid, '🎓 Year Complete!', `${className} has been completed for this year. Well done!`);
+    }
+  } catch(e) { console.log('Archive notify error:', e.message); }
+  refreshArchivedPanel();
+  showToast(`🎓 ${className} archived — students notified!`);
+  // Reload teacher app to reflect change
+  setTimeout(()=>loadTeacherApp(), 500);
+}
+
+function showArchiveClassConfirm(classId, className) {
+  const existing = document.getElementById('archiveConfirm-'+classId);
+  if(existing) { existing.classList.toggle('visible'); return; }
+  const card = document.getElementById('teacherVerifyCard');
+  if(!card) return;
+  const box = document.createElement('div');
+  box.className = 'confirm-archive visible';
+  box.id = 'archiveConfirm-'+classId;
+  box.innerHTML = `
+    <p>Archive <strong>${className}</strong>? All assignments will be hidden and students will receive a <strong>Year Complete 🎓</strong> notification.</p>
+    <div class="confirm-row">
+      <button class="confirm-yes" onclick="archiveClass('${classId}','${className}',this.closest('.confirm-archive'))">Yes, Archive</button>
+      <button class="confirm-no" onclick="this.closest('.confirm-archive').classList.remove('visible')">Cancel</button>
+    </div>`;
+  card.appendChild(box);
+}
+
+function refreshArchivedPanel() {
+  const section = document.getElementById('archived-section');
+  if(!section) return;
+  const hasAny = archivedAssignments.length > 0 || archivedClasses.length > 0;
+  section.style.display = hasAny ? 'block' : 'none';
+  const cc = document.getElementById('archived-classes-list');
+  const ac = document.getElementById('archived-assignments-list');
+  if(cc) cc.innerHTML = archivedClasses.length
+    ? archivedClasses.map((c,i)=>`<div class="archived-item"><div style="font-size:18px;">📚</div><div style="flex:1;"><div class="archived-item-title">${c.className}</div><div class="archived-item-meta">Archived ${c.archivedAt}</div></div><button class="restore-btn" onclick="restoreClass(${i})">Restore</button></div>`).join('')
+    : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;">None yet</div>';
+  if(ac) ac.innerHTML = archivedAssignments.length
+    ? archivedAssignments.map((a,i)=>`<div class="archived-item"><div style="font-size:18px;">📄</div><div style="flex:1;"><div class="archived-item-title">${a.title}</div><div class="archived-item-meta">Archived ${a.archivedAt}</div></div><button class="restore-btn" onclick="restoreAssignment(${i})">Restore</button></div>`).join('')
+    : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;">None yet</div>';
+}
+
+async function restoreClass(i) {
+  const c = archivedClasses.splice(i,1)[0];
+  await dbQuery(db.from('classes').update({status:'active'}).eq('id',c.classId));
+  refreshArchivedPanel();
+  showToast(`✅ ${c.className} restored`);
+  loadTeacherApp();
+}
+
+async function restoreAssignment(i) {
+  const a = archivedAssignments.splice(i,1)[0];
+  await dbQuery(db.from('assignments').update({status:'active'}).eq('id',a.assignmentId));
+  refreshArchivedPanel();
+  showToast(`✅ "${a.title}" restored`);
+}
+
+let archivePanelOpen = false;
+function toggleArchivePanel() {
+  archivePanelOpen = !archivePanelOpen;
+  const panel = document.getElementById('archive-panel');
+  const chevron = document.getElementById('archive-chevron');
+  if(panel) panel.style.maxHeight = archivePanelOpen ? '2000px' : '0';
+  if(chevron) chevron.style.transform = archivePanelOpen ? 'rotate(180deg)' : '';
+}
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
