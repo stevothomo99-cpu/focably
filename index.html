@@ -585,19 +585,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="classTilesContainer"></div>
 
       <div class="card">
-        <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into manageable steps!</p>
-        <textarea class="form-input" id="questInput" rows="3" placeholder="e.g. Write a book report about Charlotte's Web, due next week..."></textarea>
-        <button class="ai-btn" id="aiBtn" onclick="breakdownTask()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">
-          <span>✨</span><span id="aiBtnText">Get My Quest Steps</span>
-        </button>
-        <div class="ai-result" id="aiResult">
-          <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
-          <div id="aiSteps"></div>
-        </div>
-      </div>
-
-      <div class="card">
         <div class="card-title">🏆 Treasure Chest</div>
         <div style="text-align:center;padding:8px 0 4px;">
           <div style="font-size:46px;" id="chestEmoji">📦</div>
@@ -645,19 +632,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
 
       <div id="hsClassTilesContainer"></div>
-
-      <div class="card">
-        <div class="card-title">🤖 AI Task Breakdown</div>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Paste any assignment and AchievED will break it into steps.</p>
-        <textarea class="form-input" id="hsInput" rows="3" placeholder="e.g. Write a 500-word essay on climate change, due Thursday..."></textarea>
-        <button class="ai-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">
-          <span>✨</span><span id="hsAiBtnText">Break into Steps</span>
-        </button>
-        <div class="ai-result" id="hsAiResult">
-          <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
-          <div id="hsAiSteps"></div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -687,7 +661,27 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <!-- VERIFICATION QUEUE - handled by unified approval card below -->
 
     <div class="card">
-      <div class="card-title">➕ Add Task for Child</div>
+      <div class="card-title">📊 Subject Progress</div>
+      <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
+    </div>
+
+    <div id="parent-approval-card" class="card" style="display:none;">
+      <div class="card-title">✅ Step Approvals</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps your child has completed that need sign-off. Teachers can also approve — it clears from both queues.</p>
+      <div id="parent-approval-queue"></div>
+    </div>
+  </div>
+
+  <!-- ── PARENT DRAWER SCREENS ── -->
+
+  <!-- ADD TASK SCREEN -->
+  <div id="screen-add-task" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Add Task for Child</div>
+    </div>
+    <div class="card">
+      <div class="card-title">➕ Add Task</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Add homework or tasks directly without needing a teacher.</p>
       <div id="parentTaskChildSelect" style="margin-bottom:10px;"></div>
       <div class="form-grp"><label class="form-lbl">Task Title</label><input class="form-input" type="text" id="parentTaskTitle" placeholder="e.g. Read Chapter 4"></div>
@@ -698,7 +692,14 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div class="form-grp"><label class="form-lbl">Notes (optional)</label><textarea class="form-input" rows="2" id="parentTaskDesc" placeholder="Any extra details..."></textarea></div>
       <button class="publish-btn" onclick="parentAddTask()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Add Task</button>
     </div>
+  </div>
 
+  <!-- FAMILY INVITE SCREEN -->
+  <div id="screen-family-invite" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Family Invite Code</div>
+    </div>
     <div class="card">
       <div class="card-title">📬 Family Invite Code</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Share this with your child to link their account.</p>
@@ -708,7 +709,14 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <button class="copy-btn" onclick="copyInviteCode()">Copy Code</button>
       </div>
     </div>
+  </div>
 
+  <!-- JOIN CLASS SCREEN -->
+  <div id="screen-join-class" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Join a Class</div>
+    </div>
     <div class="card">
       <div class="card-title">🏫 Join a Class</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Got a class code from a teacher? Enter it below to add your child to their class.</p>
@@ -722,16 +730,36 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
       <div id="joinedClasses" style="margin-top:12px;"></div>
     </div>
+  </div>
 
-    <div class="card">
-      <div class="card-title">📊 Subject Progress</div>
-      <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
+  <!-- STUDENT AI BREAKDOWN SCREEN -->
+  <div id="screen-ai-breakdown" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);" id="aiScreenTitle">Break Any Task</div>
     </div>
-
-    <div id="parent-approval-card" class="card" style="display:none;">
-      <div class="card-title">✅ Step Approvals</div>
-      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps your child has completed that need sign-off. Teachers can also approve — it clears from both queues.</p>
-      <div id="parent-approval-queue"></div>
+    <div class="card">
+      <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into manageable steps!</p>
+      <textarea class="form-input" id="questInput" rows="3" placeholder="e.g. Write a book report about Charlotte's Web, due next week..."></textarea>
+      <button class="ai-btn" id="aiBtn" onclick="breakdownTask()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">
+        <span>✨</span><span id="aiBtnText">Get My Quest Steps</span>
+      </button>
+      <div class="ai-result" id="aiResult">
+        <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
+        <div id="aiSteps"></div>
+      </div>
+      <!-- HS variant inputs (shared screen, swapped by JS) -->
+      <div id="hsAiWrap" style="display:none;">
+        <textarea class="form-input" id="hsInput" rows="3" placeholder="e.g. Write a 500-word essay on climate change, due Thursday..."></textarea>
+        <button class="ai-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">
+          <span>✨</span><span id="hsAiBtnText">Break into Steps</span>
+        </button>
+        <div class="ai-result" id="hsAiResult">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
+          <div id="hsAiSteps"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2044,8 +2072,9 @@ async function parentAddTask() {
   document.getElementById('parentTaskSubject').value = '';
   document.getElementById('parentTaskDesc').value = '';
   document.getElementById('parentTaskDue').value = '';
-  // Refresh stats
+  // Refresh stats and return to main parent view
   await loadChildStats(childId);
+  closeDrawerScreen();
 }
 
 async function joinClass() {
@@ -3116,6 +3145,16 @@ function renderDrawerItems() {
       { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
       { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
     ];
+  } else if(role === 'parent') {
+    items = [
+      { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
+      { icon:'📬', label:'Family Invite Code', action:`openDrawerScreen('family-invite')`, disabled: false },
+      { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
+    ];
+  } else if(role === 'student') {
+    items = [
+      { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
+    ];
   }
 
   container.innerHTML = items.map(item => `
@@ -3129,15 +3168,17 @@ function renderDrawerItems() {
   `).join('');
 }
 
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown'];
+
 function openDrawerScreen(screen) {
   closeDrawer();
-  // Hide all views
+  // Hide all role views
   ['student','parent','teacher'].forEach(r => {
     const el = document.getElementById('view-'+r);
     if(el) el.style.display = 'none';
   });
   // Hide all drawer screens
-  ['new-assignment','archive'].forEach(s => {
+  ALL_DRAWER_SCREENS.forEach(s => {
     const el = document.getElementById('screen-'+s);
     if(el) el.style.display = 'none';
   });
@@ -3154,6 +3195,34 @@ function openDrawerScreen(screen) {
       if(selectedClassId) dd.value = selectedClassId;
     }
   }
+  // Child selects for parent screens are populated at app load (loadParentApp)
+
+  // AI breakdown: show primary (quest) or HS variant based on student age
+  if(screen === 'ai-breakdown') {
+    const isHS = currentProfile?.age_group === 'highschool';
+    const questWrap = document.getElementById('questInput')?.parentElement;
+    const hsWrap = document.getElementById('hsAiWrap');
+    const aiBtn = document.getElementById('aiBtn');
+    const aiResult = document.getElementById('aiResult');
+    const cardTitle = document.getElementById('aiCardTitle');
+    const cardSub = document.getElementById('aiCardSub');
+    const screenTitle = document.getElementById('aiScreenTitle');
+    if(isHS) {
+      // Hide primary inputs, show HS
+      document.getElementById('questInput').style.display = 'none';
+      if(aiBtn) aiBtn.style.display = 'none';
+      if(aiResult) aiResult.style.display = 'none';
+      if(hsWrap) hsWrap.style.display = 'block';
+      if(cardTitle) cardTitle.textContent = '🤖 AI Task Breakdown';
+      if(cardSub) cardSub.textContent = 'Paste any assignment and AchievED will break it into steps.';
+      if(screenTitle) screenTitle.textContent = 'Break into Steps';
+    } else {
+      document.getElementById('questInput').style.display = 'block';
+      if(aiBtn) aiBtn.style.display = 'flex';
+      if(hsWrap) hsWrap.style.display = 'none';
+      if(screenTitle) screenTitle.textContent = 'Break Any Task';
+    }
+  }
 }
 
 function onAssignmentClassChange(classId) {
@@ -3162,12 +3231,15 @@ function onAssignmentClassChange(classId) {
 }
 
 function closeDrawerScreen() {
-  // Hide drawer screens, return to teacher view
-  ['new-assignment','archive'].forEach(s => {
+  // Hide all drawer screens
+  ALL_DRAWER_SCREENS.forEach(s => {
     const el = document.getElementById('screen-'+s);
     if(el) el.style.display = 'none';
   });
-  document.getElementById('view-teacher').style.display = 'block';
+  // Return to the user's own role view
+  const role = currentProfile?.role || 'teacher';
+  const view = document.getElementById('view-'+role);
+  if(view) view.style.display = 'block';
 }
 
 function showCreateClassFromDrawer() {
