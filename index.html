@@ -1169,10 +1169,7 @@ async function completeOnboarding() {
 async function loadStudentApp() {
   isNavigating = true;
   appReady = true;
-  // Show app screen immediately — don't wait for data
   showScreen('app');
-  document.getElementById('rbParent').style.display='none';
-  document.getElementById('rbTeacher').style.display='none';
   switchRole('student');
   const age=currentProfile.age_group, theme=currentProfile.theme||'fantasy';
   if(age==='primary'){
@@ -1836,7 +1833,6 @@ async function linkToFamily() {
 async function loadParentApp() {
   showScreen('app');
   appReady = true;
-  document.getElementById('rbTeacher').style.display='none';
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
   let {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
@@ -2098,7 +2094,6 @@ let teacherViewMode = 'assignments';
 async function loadTeacherApp() {
   showScreen('app');
   appReady = true;
-  document.getElementById('rbParent').style.display='none';
   switchRole('teacher');
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
 
@@ -2146,7 +2141,8 @@ function renderClassDropdown() {
     dropdown.innerHTML = teacherClasses.map(c =>
       `<option value="${c.id}">${c.name} — ${c.subject} ${c.year_group||''}</option>`
     ).join('');
-    document.getElementById('classSelector').style.display='block';
+    const sel = document.getElementById('classSelector');
+    if(sel) sel.style.display='block';
   }
   // Always populate assignment class dropdown
   const assignDropdown = document.getElementById('assignmentClass');
