@@ -2769,10 +2769,11 @@ async function loadApprovalQueues() {
     );
     renderApprovalQueue('parent', tasks||[]);
   }
-  // Teacher queue — tasks for assignments they created
+  // Teacher queue — tasks for assignments in the currently selected class only
   if(currentProfile?.role === 'teacher') {
+    if(!selectedClassId) { renderApprovalQueue('teacher', []); return; }
     const {data:assignments} = await dbQuery(
-      db.from('assignments').select('id').eq('created_by', currentUser.id),
+      db.from('assignments').select('id').eq('class_id', selectedClassId).eq('status', 'active'),
       8000, []
     );
     if(assignments?.length) {
@@ -2787,6 +2788,8 @@ async function loadApprovalQueues() {
         8000, []
       );
       renderApprovalQueue('teacher', tasks||[]);
+    } else {
+      renderApprovalQueue('teacher', []);
     }
   }
 }
