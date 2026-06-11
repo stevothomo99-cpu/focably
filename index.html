@@ -812,7 +812,13 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">New Assignment</div>
     </div>
     <div class="card">
-      <div class="card-title">📤 For <span id="publishClassLabel" style="color:var(--violet);">—</span></div>
+      <div class="card-title">📤 New Assignment</div>
+      <div class="form-grp">
+        <label class="form-lbl">Class</label>
+        <select class="form-input" id="assignmentClass" onchange="onAssignmentClassChange(this.value)" style="font-weight:600;">
+          <option value="">— Select a class —</option>
+        </select>
+      </div>
       <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="display:none;" onchange="handleAssignmentFile(this)">
       <div class="upload-zone" onclick="document.getElementById('assignmentFileInput').click()" id="assignmentUploadZone">
         <div style="font-size:28px;margin-bottom:6px;">📎</div>
@@ -2166,10 +2172,6 @@ async function selectClass(classId) {
   document.getElementById('classInfo').style.display='block';
   document.getElementById('classInviteCode').textContent = cls.invite_code;
 
-  // Update publish label
-  const lbl = document.getElementById('publishClassLabel');
-  if(lbl) lbl.textContent = cls.name;
-
   // Show class-specific cards
   document.getElementById('classAssignmentsCard').style.display='block';
   document.getElementById('classSetupCard').style.display='none';
@@ -3108,7 +3110,7 @@ function renderDrawerItems() {
 
   if(role === 'teacher') {
     items = [
-      { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !selectedClassId, note: !selectedClassId ? 'Select a class first' : '' },
+      { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !teacherClasses?.length, note: !teacherClasses?.length ? 'Create a class first' : '' },
       { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
       { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
     ];
@@ -3140,6 +3142,21 @@ function openDrawerScreen(screen) {
   // Show requested screen
   const target = document.getElementById('screen-'+screen);
   if(target) target.style.display = 'block';
+
+  // Populate class dropdown for new assignment, default to current class
+  if(screen === 'new-assignment') {
+    const dd = document.getElementById('assignmentClass');
+    if(dd) {
+      dd.innerHTML = '<option value="">— Select a class —</option>' +
+        teacherClasses.map(c => `<option value="${c.id}">${c.name} — ${c.subject||''} ${c.year_group||''}</option>`).join('');
+      if(selectedClassId) dd.value = selectedClassId;
+    }
+  }
+}
+
+function onAssignmentClassChange(classId) {
+  // Update the active publish target without affecting the main screen's selected class
+  if(classId) selectedClassId = classId;
 }
 
 function closeDrawerScreen() {
