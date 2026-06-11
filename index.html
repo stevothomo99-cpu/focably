@@ -2933,19 +2933,24 @@ function renderApprovalQueue(role, tasks) {
 async function resolveApproval(taskId, childId, action, fromRole) {
   // Update Supabase
   if(action === 'approve') {
-    const {error} = await db.rpc('approve_task_verification', {p_task_id: taskId, p_approver_id: currentUser.id});
-    if(error) {
-      await dbQuery(db.from('tasks').update({
-        verification_status: 'approved', verified_by: currentUser.id,
-        verified_at: new Date().toISOString(), completed: true,
-        completed_at: new Date().toISOString()
-      }).eq('id', taskId));
-      await updateTrustScoreManual(childId, 'approved');
-    }
+    // Always write the definitive task state so the student view updates,
+    // regardless of whether the RPC exists or what it does internally.
+    const {error:updErr} = await dbQuery(db.from('tasks').update({
+      verification_status: 'approved',
+      verified_by: currentUser.id,
+      verified_at: new Date().toISOString(),
+      completed: true,
+      completed_at: new Date().toISOString()
+    }).eq('id', taskId));
+    if(updErr) console.log('approve update error:', updErr.message);
+    // Run the RPC too (for trust score / star award side effects), but don't depend on it
+    try { await db.rpc('approve_task_verification', {p_task_id: taskId, p_approver_id: currentUser.id}); }
+    catch(e) { await updateTrustScoreManual(childId, 'approved'); }
   } else {
     await dbQuery(db.from('tasks').update({
       verification_status: 'rejected', verified_by: currentUser.id,
-      verified_at: new Date().toISOString(), completed: false
+      verified_at: new Date().toISOString(), completed: false,
+      proof_url: null, proof_submitted_at: null
     }).eq('id', taskId));
     await updateTrustScoreManual(childId, 'rejected');
   }
@@ -2992,6 +2997,25 @@ async function resolveApproval(taskId, childId, action, fromRole) {
       }
     } catch(e) { console.log('Approval notify error:', e.message); }
   }
+
+  // Notify the student themselves (so their app reflects the change)
+  try {
+    const {data:child} = await dbQuery(db.from('children').select('profile_id').eq('id', childId).maybeSingle());
+    const studentId = child?.profile_id;
+    if(studentId) {
+      const {data:t} = await dbQuery(db.from('tasks').select('title').eq('id', taskId).maybeSingle());
+      const sTitle = action === 'approve' ? '✅ Step approved!' : '✏️ Step needs another go';
+      const sBody = action === 'approve'
+        ? `"${t?.title||'Your task'}" was approved — stars earned! ⭐`
+        : `"${t?.title||'Your task'}" was sent back — give it another try.`;
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: studentId, sender_id: currentUser.id,
+        child_id: childId, type: action === 'approve' ? 'proof_approved' : 'proof_rejected',
+        title: sTitle, body: sBody
+      }));
+      await sendPushToUser(studentId, sTitle, sBody);
+    }
+  } catch(e) { console.log('Student notify error:', e.message); }
 }
 
 // ── ARCHIVE — JS state (swap for Supabase when ready) ──
