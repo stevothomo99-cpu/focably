@@ -680,14 +680,15 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
     </div>
 
-    <div class="card">
-      <div class="card-title">🏆 Reward Approvals</div>
-      <div id="rewardApprovals"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No pending approvals</div></div>
+    <div id="parent-approval-card" class="card" style="display:none;">
+      <div class="card-title">✅ Step Approvals</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps your child has completed that need sign-off. Teachers can also approve — it clears from both queues.</p>
+      <div id="parent-approval-queue"></div>
     </div>
   </div>
 
   <!-- TEACHER VIEW -->
-  <div <div id="view-teacher" class="scroll-content" style="display:none;">
+  <div id="view-teacher" class="scroll-content" style="display:none;">
 
     <!-- TEACHER HEADER -->
     <div class="teacher-header">
@@ -746,6 +747,13 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="teacherStudentsView" style="display:none;">
         <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students enrolled yet</div>
       </div>
+    </div>
+
+    <!-- STEP APPROVALS (shared with parent) -->
+    <div id="teacher-approval-card" class="card" style="display:none;">
+      <div class="card-title">✅ Step Approvals</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps awaiting sign-off. Parents can also approve — it clears from both queues.</p>
+      <div id="teacher-approval-queue"></div>
     </div>
 
     <!-- PROOF VERIFICATION -->
@@ -1831,6 +1839,7 @@ async function loadParentApp() {
     }
   }
   loadParentVerifyQueue().catch(()=>{});
+  loadApprovalQueues().catch(()=>{});
   showScreen('app');
   setTimeout(updateNotifStatus, 1000);
 }
@@ -2168,6 +2177,7 @@ async function loadTeacherApp() {
     console.error('loadTeacherApp error:', e.message);
     document.getElementById('classSetupCard').style.display='block';
   }
+  loadApprovalQueues().catch(()=>{});
 }
 
 function setTeacherView(mode) {
@@ -2256,11 +2266,12 @@ async function loadTeacherClassAssignments(classId) {
   }
 
   // GROUP BY ASSIGNMENT (unique titles — same assignment published to multiple students)
+  const currentCls = teacherClasses.find(c => c.id === classId) || null;
   const assignmentGroups = {};
   assignments.forEach(a => {
     const key = a.title + '_' + (a.due_date||'');
     const safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
-    if(!assignmentGroups[safeKey]) assignmentGroups[safeKey] = {title:a.title, due:a.due_date, desc:a.description, key:safeKey, instances:[]};
+    if(!assignmentGroups[safeKey]) assignmentGroups[safeKey] = {title:a.title, due:a.due_date, desc:a.description, key:safeKey, cls: currentCls, instances:[]};
     assignmentGroups[safeKey].instances.push(a);
   });
 
@@ -2298,6 +2309,7 @@ async function loadTeacherClassAssignments(classId) {
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;">
             <div style="font-weight:700;font-size:14px;color:var(--indigo);">${group.title}</div>
+            ${group.cls ? `<div style="font-size:11px;font-weight:700;color:var(--violet);margin-top:2px;">📚 ${group.cls.name||group.cls.subject||''}</div>` : ''}
             <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
               <span style="font-size:11px;color:${isOverdue?'var(--rose)':'var(--gray-500)'};">📅 ${dueStr}</span>
               <span style="font-size:11px;font-weight:700;color:${statusColor};">${completedStudents}/${totalStudents} students done</span>
@@ -2871,6 +2883,149 @@ async function sendPushToUser(userId, title, body) {
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install AchievED</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
 async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 AchievED installed!');}
+
+// ── SHARED APPROVAL QUEUE ──
+// Pulls from Supabase tasks where verification_required=true and verification_status='pending'
+// Renders to both parent and teacher queues; approving/rejecting from either clears both.
+
+async function loadApprovalQueues() {
+  // Parent queue — tasks for their children
+  if(currentProfile?.role === 'parent' && currentChildren?.length) {
+    const childIds = currentChildren.map(c => c.id);
+    const {data:tasks} = await dbQuery(
+      db.from('tasks')
+        .select('*, assignments(title, class_id, classes(name, subject, profiles(full_name))), children(name)')
+        .in('child_id', childIds)
+        .eq('verification_required', true)
+        .eq('verification_status', 'pending')
+        .order('proof_submitted_at', {ascending: true}),
+      8000, []
+    );
+    renderApprovalQueue('parent', tasks||[]);
+  }
+  // Teacher queue — tasks for assignments they created
+  if(currentProfile?.role === 'teacher') {
+    const {data:assignments} = await dbQuery(
+      db.from('assignments').select('id').eq('created_by', currentUser.id),
+      8000, []
+    );
+    if(assignments?.length) {
+      const ids = assignments.map(a => a.id);
+      const {data:tasks} = await dbQuery(
+        db.from('tasks')
+          .select('*, assignments(title, class_id, classes(name, subject, profiles(full_name))), children(name)')
+          .in('assignment_id', ids)
+          .eq('verification_required', true)
+          .eq('verification_status', 'pending')
+          .order('proof_submitted_at', {ascending: true}),
+        8000, []
+      );
+      renderApprovalQueue('teacher', tasks||[]);
+    }
+  }
+}
+
+function renderApprovalQueue(role, tasks) {
+  const card = document.getElementById(`${role}-approval-card`);
+  const queue = document.getElementById(`${role}-approval-queue`);
+  if(!card || !queue) return;
+
+  if(!tasks.length) {
+    card.style.display = 'none';
+    queue.innerHTML = '';
+    return;
+  }
+  card.style.display = 'block';
+  queue.innerHTML = tasks.map(task => {
+    const student = task.children?.name || 'Student';
+    const initial = student.charAt(0).toUpperCase();
+    const assignTitle = task.assignments?.title || 'Assignment';
+    const className = task.assignments?.classes?.name || task.assignments?.classes?.subject || '';
+    const teacherName = task.assignments?.classes?.profiles?.full_name || '';
+    const submitted = task.proof_submitted_at
+      ? new Date(task.proof_submitted_at).toLocaleDateString('en-AU', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})
+      : '';
+    const contextParts = [className, assignTitle, teacherName ? `Set by ${teacherName}` : ''].filter(Boolean);
+
+    return `<div class="approval-item" id="approval-${role}-${task.id}">
+      <div class="approval-who">
+        <div class="approval-avatar">${initial}</div>
+        <div class="approval-student">${student}</div>
+        <div class="approval-time">${submitted}</div>
+      </div>
+      <div class="approval-step">✏️ ${task.title}</div>
+      <div class="approval-context">${contextParts.join(' · ')}</div>
+      <div class="approval-actions">
+        <button class="approval-approve" onclick="resolveApproval('${task.id}','${task.child_id}','approve','${role}')">✓ Approve</button>
+        <button class="approval-reject"  onclick="resolveApproval('${task.id}','${task.child_id}','reject','${role}')">✕ Reject</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function resolveApproval(taskId, childId, action, fromRole) {
+  // Update Supabase
+  if(action === 'approve') {
+    const {error} = await db.rpc('approve_task_verification', {p_task_id: taskId, p_approver_id: currentUser.id});
+    if(error) {
+      await dbQuery(db.from('tasks').update({
+        verification_status: 'approved', verified_by: currentUser.id,
+        verified_at: new Date().toISOString(), completed: true,
+        completed_at: new Date().toISOString()
+      }).eq('id', taskId));
+      await updateTrustScoreManual(childId, 'approved');
+    }
+  } else {
+    await dbQuery(db.from('tasks').update({
+      verification_status: 'rejected', verified_by: currentUser.id,
+      verified_at: new Date().toISOString(), completed: false
+    }).eq('id', taskId));
+    await updateTrustScoreManual(childId, 'rejected');
+  }
+
+  // Remove from BOTH queues
+  ['parent','teacher'].forEach(role => {
+    const el = document.getElementById(`approval-${role}-${taskId}`);
+    if(el) {
+      el.style.transition = 'opacity 0.3s';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.remove();
+        // Hide card if queue now empty
+        const queue = document.getElementById(`${role}-approval-queue`);
+        const card = document.getElementById(`${role}-approval-card`);
+        if(queue && card && !queue.querySelector('.approval-item')) card.style.display = 'none';
+      }, 300);
+    }
+  });
+
+  showToast(action === 'approve' ? '✅ Step approved!' : '✕ Step rejected');
+
+  // If teacher approved/rejected — notify parent
+  if(fromRole === 'teacher') {
+    try {
+      const {data:task} = await dbQuery(
+        db.from('tasks').select('title, assignments(title, classes(name))').eq('id', taskId).maybeSingle()
+      );
+      const {data:children} = await dbQuery(
+        db.from('children').select('*, families(parent_id)').eq('id', childId).limit(1)
+      );
+      const parentId = children?.[0]?.families?.parent_id;
+      if(parentId && task) {
+        const cls = task.assignments?.classes?.name || '';
+        const aTitle = task.assignments?.title || '';
+        const notifTitle = action === 'approve' ? '✅ Step approved by teacher' : '✕ Step needs more work';
+        const notifBody = `"${task.title}"${aTitle ? ' — ' + aTitle : ''}${cls ? ' (' + cls + ')' : ''}`;
+        await dbQuery(db.from('notifications').insert({
+          recipient_id: parentId, sender_id: currentUser.id,
+          child_id: childId, type: action === 'approve' ? 'proof_approved' : 'proof_rejected',
+          title: notifTitle, body: notifBody
+        }));
+        await sendPushToUser(parentId, notifTitle, notifBody);
+      }
+    } catch(e) { console.log('Approval notify error:', e.message); }
+  }
+}
 
 // ── ARCHIVE — JS state (swap for Supabase when ready) ──
 const archivedAssignments = [];
