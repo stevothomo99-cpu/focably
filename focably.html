@@ -389,6 +389,26 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
   cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; transition:all 0.2s;
 }
 .restore-btn:hover { border-color:var(--mint); color:var(--mint); }
+
+/* ── APPROVAL QUEUE ── */
+.approval-item {
+  border-radius:12px; padding:12px; margin-bottom:10px;
+  background:var(--gray-50); border:1.5px solid var(--gray-200);
+}
+.approval-item:last-child { margin-bottom:0; }
+.approval-who { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.approval-avatar { width:28px; height:28px; border-radius:50%; background:var(--gray-100); display:flex; align-items:center; justify-content:center; font-family:'Nunito',sans-serif; font-weight:900; font-size:12px; color:var(--violet); flex-shrink:0; }
+.approval-student { font-weight:700; font-size:13px; }
+.approval-time { font-size:11px; color:var(--gray-500); margin-left:auto; }
+.approval-step { font-size:13px; font-weight:600; color:var(--indigo); margin-bottom:3px; }
+.approval-context { font-size:11px; color:var(--gray-500); margin-bottom:10px; line-height:1.5; }
+.approval-context strong { color:var(--gray-700); }
+.approval-actions { display:flex; gap:8px; }
+.approval-approve { flex:1; padding:8px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.approval-approve:hover { background:var(--mint-dark); }
+.approval-reject  { flex:1; padding:8px; border-radius:8px; border:1.5px solid #FECDD3; background:white; color:var(--rose); font-weight:700; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.approval-reject:hover  { background:#FFF1F2; }
+.approval-empty { font-size:13px; color:var(--gray-500); font-style:italic; text-align:center; padding:8px 0; }
 .confirm-archive {
   background:#FFF1F2; border-radius:10px; padding:12px; margin-top:8px;
   border:1.5px solid #FECDD3; display:none;
@@ -768,14 +788,9 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
       <div id="parent-class-tiles"></div>
     </div>
 
-    <div class="card">
-      <div class="card-title">🏆 Reward Approvals</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Georgie has unlocked a reward — waiting for your go-ahead.</p>
-      <div style="display:flex;align-items:center;gap:12px;background:var(--gray-50);border-radius:12px;padding:12px;">
-        <div style="font-size:28px;">🎮</div>
-        <div style="flex:1"><div style="font-weight:700;font-size:14px;">30 min Screen Time</div><div style="font-size:12px;color:var(--gray-500);">10 stars redeemed · earned today</div></div>
-        <button onclick="approveReward(this)" style="padding:7px 14px;border-radius:20px;border:none;background:var(--mint);color:white;font-weight:700;font-size:12px;cursor:pointer;">Approve ✓</button>
-      </div>
+    <div id="parent-approval-card" class="card" style="display:none;">
+      <div class="card-title">✅ Step Approvals</div>
+      <div id="parent-approval-queue"></div>
     </div>
   </div>
 
@@ -851,6 +866,11 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <button class="nudge-btn" style="background:#F3F4F6;border-color:#E5E7EB;color:var(--gray-500);cursor:default;">Done!</button>
       </div>
     </div>
+    <div id="teacher-approval-card" class="card" style="display:none;">
+      <div class="card-title">✅ Step Approvals</div>
+      <div id="teacher-approval-queue"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">📚 My Classes — Assignment Overview</div>
       <div id="teacher-class-tiles"></div>
@@ -1248,6 +1268,9 @@ function startApp() {
   // Request notification permission after onboarding
   requestNotificationPermission();
 
+  // ── Render approval queues ──
+  renderApprovalQueues();
+
   // ── Render assignment class tiles ──
   const englishAssignments   = DEMO_ASSIGNMENTS.filter(a => a.subject === 'English');
   const mathsAssignments     = DEMO_ASSIGNMENTS.filter(a => a.subject === 'Mathematics');
@@ -1450,11 +1473,145 @@ function publishAssignment() {
   document.getElementById('aTitle').value = '';
 }
 
-function approveReward(btn) {
-  btn.textContent = '✓ Approved!';
-  btn.style.background = 'var(--indigo)';
-  btn.disabled = true;
-  showToast('🎮 Reward approved for Georgie!');
+// ── SHARED APPROVAL QUEUE — swap for Supabase when ready ──
+// Each item: { id, student, studentInitial, step, assignment, subject, class, teacher, stars, submittedAt }
+const APPROVAL_QUEUE = [
+  {
+    id: 1,
+    student: 'Georgie S.',
+    studentInitial: 'G',
+    step: 'Write introduction paragraph',
+    assignment: 'Climate Change Essay',
+    subject: 'English',
+    cls: 'Year 9 English',
+    teacher: 'Ms Clarke',
+    stars: 2,
+    submittedAt: 'Today, 3:45pm'
+  },
+  {
+    id: 2,
+    student: 'Jamie T.',
+    studentInitial: 'J',
+    step: 'Completed ecosystem diagram',
+    assignment: 'Ecosystem Report',
+    subject: 'Science',
+    cls: 'Year 9 Science',
+    teacher: 'Ms Rivera',
+    stars: 1,
+    submittedAt: 'Today, 1:10pm'
+  }
+];
+
+// Parent notifications list — injected dynamically when teacher approves/rejects
+const parentNotifications = [];
+
+function renderApprovalQueues() {
+  const teacherCard   = document.getElementById('teacher-approval-card');
+  const parentCard    = document.getElementById('parent-approval-card');
+  const teacherQueue  = document.getElementById('teacher-approval-queue');
+  const parentQueue   = document.getElementById('parent-approval-queue');
+  if (!teacherQueue || !parentQueue) return;
+
+  const pending = APPROVAL_QUEUE.filter(i => !i.resolved);
+
+  // Show/hide cards
+  teacherCard.style.display = pending.length > 0 ? 'block' : 'none';
+  parentCard.style.display  = pending.length > 0 ? 'block' : 'none';
+
+  teacherQueue.innerHTML = '';
+  parentQueue.innerHTML  = '';
+
+  if (pending.length === 0) return;
+
+  pending.forEach(item => {
+    [teacherQueue, parentQueue].forEach((container, isParent) => {
+      const el = document.createElement('div');
+      el.className = 'approval-item';
+      el.id = `approval-${item.id}-${isParent ? 'parent' : 'teacher'}`;
+      el.innerHTML = `
+        <div class="approval-who">
+          <div class="approval-avatar">${item.studentInitial}</div>
+          <div class="approval-student">${item.student}</div>
+          <div class="approval-time">${item.submittedAt}</div>
+        </div>
+        <div class="approval-step">✏️ ${item.step}</div>
+        <div class="approval-context">
+          <strong>${item.assignment}</strong> · ${item.cls}<br>
+          Set by <strong>${item.teacher}</strong> · ${item.subject} · ⭐ ${item.stars} star${item.stars > 1 ? 's' : ''}
+        </div>
+        <div class="approval-actions">
+          <button class="approval-approve" onclick="resolveApproval(${item.id}, 'approve', ${isParent})">✓ Approve</button>
+          <button class="approval-reject"  onclick="resolveApproval(${item.id}, 'reject',  ${isParent})">✕ Reject</button>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  });
+}
+
+function resolveApproval(id, action, fromParent) {
+  const item = APPROVAL_QUEUE.find(i => i.id === id);
+  if (!item || item.resolved) return;
+  item.resolved = true;
+
+  const who = fromParent ? 'Parent' : 'Ms Clarke';
+  const verb = action === 'approve' ? 'approved' : 'rejected';
+
+  // Toast for whoever acted
+  showToast(action === 'approve'
+    ? `✅ "${item.step}" approved for ${item.student}!`
+    : `✕ "${item.step}" rejected — ${item.student} will be notified`
+  );
+
+  // If teacher approved — add a notification for parent
+  if (!fromParent && action === 'approve') {
+    injectParentNotification(
+      `✅ <strong>${item.step}</strong> approved by ${item.teacher}`,
+      `${item.assignment} · ${item.cls} · Just now`,
+      'mint'
+    );
+  }
+
+  // If teacher rejected — also notify parent
+  if (!fromParent && action === 'reject') {
+    injectParentNotification(
+      `✕ <strong>${item.step}</strong> needs more work (${item.teacher})`,
+      `${item.assignment} · ${item.cls} · Just now`,
+      'rose'
+    );
+  }
+
+  // Animate out both queue items
+  ['teacher','parent'].forEach(role => {
+    const el = document.getElementById(`approval-${id}-${role}`);
+    if (el) {
+      el.style.transition = 'opacity 0.3s, max-height 0.3s, margin 0.3s, padding 0.3s';
+      el.style.opacity = '0';
+      el.style.maxHeight = el.offsetHeight + 'px';
+      setTimeout(() => {
+        el.style.maxHeight = '0';
+        el.style.marginBottom = '0';
+        el.style.padding = '0';
+        setTimeout(() => { el.remove(); renderApprovalQueues(); }, 300);
+      }, 300);
+    }
+  });
+}
+
+function injectParentNotification(text, meta, colour) {
+  const alertsCard = document.querySelector('#view-parent .card .card-title');
+  if (!alertsCard || alertsCard.textContent !== '🔔 Alerts') return;
+  const container = alertsCard.closest('.card');
+  const el = document.createElement('div');
+  el.className = 'alert-item';
+  el.style.cssText = `background:var(--${colour === 'mint' ? 'mint' : 'rose'}-bg, ${colour === 'mint' ? '#F0FDF4' : '#FFF1F2'});border-radius:10px;margin-bottom:8px;`;
+  el.innerHTML = `
+    <div class="alert-dot" style="background:var(--${colour})"></div>
+    <div><div class="alert-text">${text}</div><div class="alert-time">${meta}</div></div>
+  `;
+  // Insert after card-title
+  const firstAlert = container.querySelector('.alert-item');
+  firstAlert ? container.insertBefore(el, firstAlert) : container.appendChild(el);
 }
 
 function showToast(msg) {
