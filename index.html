@@ -487,6 +487,30 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
 <!-- MAIN APP -->
 <div class="screen" id="screen-app" style="display:none;">
+
+  <!-- HAMBURGER DRAWER OVERLAY -->
+  <div id="drawerOverlay" onclick="closeDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;"></div>
+
+  <!-- HAMBURGER DRAWER PANEL -->
+  <div id="drawerPanel" style="position:fixed;top:0;right:-280px;width:260px;height:100%;background:white;z-index:301;box-shadow:-4px 0 24px rgba(30,27,75,0.18);transition:right 0.28s ease;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- Drawer header -->
+    <div style="background:var(--indigo);padding:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div id="drawerName" style="font-family:'Nunito',sans-serif;font-weight:900;font-size:16px;color:white;">—</div>
+        <div id="drawerRole" style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:1px;">—</div>
+      </div>
+      <button onclick="closeDrawer()" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;">×</button>
+    </div>
+    <!-- Drawer items — rendered by JS per role -->
+    <div id="drawerItems" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
+    <!-- Sign out always at bottom -->
+    <div style="border-top:1px solid var(--gray-100);padding:8px 0;">
+      <div onclick="signOut();closeDrawer();" style="display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;color:var(--rose);font-size:14px;font-weight:600;">
+        <span style="font-size:18px;">👋</span> Sign Out
+      </div>
+    </div>
+  </div>
+
   <div class="top-nav">
     <div class="logo">Achiev<span>ED</span></div>
     <div style="display:flex;align-items:center;gap:6px;">
@@ -496,7 +520,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           🔔
           <span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--rose);border:1.5px solid var(--indigo);"></span>
         </button>
-        <!-- DROPDOWN PANEL -->
         <div id="notifPanel" style="display:none;position:absolute;top:40px;right:0;width:300px;background:white;border-radius:16px;box-shadow:0 8px 32px rgba(30,27,75,0.18);z-index:200;overflow:hidden;">
           <div style="padding:12px 16px;background:var(--indigo);display:flex;align-items:center;justify-content:space-between;">
             <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;color:white;">Notifications</div>
@@ -507,12 +530,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           </div>
         </div>
       </div>
-      <button onclick="refreshCurrentView()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" id="refreshBtn" title="Refresh">↻</button>
-      <div class="role-switcher">
-        <button class="role-btn active" id="rbStudent" onclick="switchRole('student')">🎒 Me</button>
-        <button class="role-btn" id="rbParent" onclick="switchRole('parent')">👨‍👩‍👧 Parent</button>
-        <button class="role-btn" id="rbTeacher" onclick="switchRole('teacher')">📚 Teacher</button>
-      </div>
+      <!-- HAMBURGER -->
+      <button onclick="openDrawer()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;" title="Menu">
+        <span style="width:14px;height:2px;background:white;border-radius:2px;display:block;"></span>
+        <span style="width:14px;height:2px;background:white;border-radius:2px;display:block;"></span>
+        <span style="width:14px;height:2px;background:white;border-radius:2px;display:block;"></span>
+      </button>
     </div>
   </div>
 
@@ -736,13 +759,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         </div>
         <div style="font-size:12px;color:var(--gray-500);text-align:center;" id="classStudentCount">Share with parents to enrol students</div>
       </div>
-      <div id="classSelector" style="display:none;"></div>
       <div id="addAnotherClass" style="display:none;margin-top:10px;">
         <button onclick="showCreateClass()" style="width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--gray-200);background:transparent;color:var(--violet);font-size:13px;font-weight:600;cursor:pointer;">+ Add Another Class</button>
       </div>
     </div>
 
-    <!-- CREATE CLASS -->
+    <!-- CREATE CLASS (shown when no class yet) -->
     <div class="card" id="classSetupCard" style="display:none;">
       <div class="card-title">🏫 Create a Class</div>
       <div id="classSetup">
@@ -779,11 +801,18 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="teacher-approval-queue"></div>
     </div>
 
-    <!-- PROOF VERIFICATION — handled by unified approval card above -->
+  </div>
 
-    <!-- NEW ASSIGNMENT -->
-    <div class="card" id="newAssignmentCard" style="display:none;">
-      <div class="card-title">📤 New Assignment for <span id="publishClassLabel" style="color:var(--violet);">—</span></div>
+  <!-- ── DRAWER SCREENS (teacher actions) ── -->
+
+  <!-- NEW ASSIGNMENT SCREEN -->
+  <div id="screen-new-assignment" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">New Assignment</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📤 For <span id="publishClassLabel" style="color:var(--violet);">—</span></div>
       <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="display:none;" onchange="handleAssignmentFile(this)">
       <div class="upload-zone" onclick="document.getElementById('assignmentFileInput').click()" id="assignmentUploadZone">
         <div style="font-size:28px;margin-bottom:6px;">📎</div>
@@ -820,16 +849,22 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
     </div>
+  </div>
 
-    <!-- ARCHIVE CLASS -->
-    <div class="card" id="archiveClassCard" style="display:none;">
+  <!-- ARCHIVE SCREEN -->
+  <div id="screen-archive" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Archive</div>
+    </div>
+    <!-- Archive this class -->
+    <div class="card" id="archiveClassCard">
       <div class="card-title">🗄️ Archive This Class</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">End of year? Archive the class to hide it from active views. Students will receive a Year Complete notification.</p>
       <button class="archive-class-btn" id="archiveClassBtn" onclick="showArchiveClassConfirm(selectedClassId, document.getElementById('teacherSubline')?.textContent || 'This Class')">🗄️ Archive This Class</button>
     </div>
-
-    <!-- ARCHIVED SECTION -->
-    <div id="archived-section" style="display:none;">
+    <!-- Archived items -->
+    <div id="archived-section">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleArchivePanel()">
           <div class="card-title" style="margin-bottom:0;">🗄️ Archived</div>
@@ -845,7 +880,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         </div>
       </div>
     </div>
-
   </div>
 
   <div class="bottom-nav">
@@ -853,7 +887,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
     <div class="nav-item"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
     <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Messages</div></div>
-    <div class="nav-item" onclick="signOut()"><div class="nav-icon">⚙️</div><div class="nav-label">Sign Out</div></div>
+    <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
   </div>
 </div>
 
@@ -2142,8 +2176,6 @@ async function selectClass(classId) {
 
   // Show class-specific cards
   document.getElementById('classAssignmentsCard').style.display='block';
-  document.getElementById('newAssignmentCard').style.display='block';
-  document.getElementById('archiveClassCard').style.display='block';
   document.getElementById('classSetupCard').style.display='none';
 
   // Load data
@@ -2455,6 +2487,9 @@ async function publishAssignment() {
   document.getElementById('requireProofToggle').checked=false;
   teacherSteps = [];
   renderTeacherSteps();
+  // Return to main teacher view and refresh assignments
+  closeDrawerScreen();
+  await loadTeacherClassAssignments(selectedClassId);
 }
 
 async function sendNudge(childId,childName) {
@@ -2604,10 +2639,14 @@ async function refreshCurrentView() {
 
 // ── ROLE SWITCHER ──
 function switchRole(role) {
-  ['student','parent','teacher'].forEach(r=>{
-    document.getElementById('view-'+r).style.display=r===role?'block':'none';
-    const btn=document.getElementById('rb'+r.charAt(0).toUpperCase()+r.slice(1));
-    if(btn) btn.classList.toggle('active',r===role);
+  // Hide drawer screens too
+  ['new-assignment','archive'].forEach(s => {
+    const el = document.getElementById('screen-'+s);
+    if(el) el.style.display = 'none';
+  });
+  ['student','parent','teacher'].forEach(r => {
+    const v = document.getElementById('view-'+r);
+    if(v) v.style.display = r===role ? 'block' : 'none';
   });
 }
 
@@ -3045,7 +3084,82 @@ function toggleArchivePanel() {
   if(chevron) chevron.style.transform = archivePanelOpen ? 'rotate(180deg)' : '';
 }
 
-// ── IN-APP NOTIFICATION SYSTEM ──
+// ── HAMBURGER DRAWER ──
+function openDrawer() {
+  const panel = document.getElementById('drawerPanel');
+  const overlay = document.getElementById('drawerOverlay');
+  // Populate drawer header
+  const name = currentProfile?.full_name?.split(' ')[0] || '—';
+  const role = currentProfile?.role ? currentProfile.role.charAt(0).toUpperCase() + currentProfile.role.slice(1) : '—';
+  document.getElementById('drawerName').textContent = name;
+  document.getElementById('drawerRole').textContent = role;
+  // Render role-specific items
+  renderDrawerItems();
+  overlay.style.display = 'block';
+  panel.style.right = '0';
+  closeNotifPanel();
+}
+
+function closeDrawer() {
+  document.getElementById('drawerPanel').style.right = '-280px';
+  document.getElementById('drawerOverlay').style.display = 'none';
+}
+
+function renderDrawerItems() {
+  const container = document.getElementById('drawerItems');
+  const role = currentProfile?.role;
+  let items = [];
+
+  if(role === 'teacher') {
+    items = [
+      { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !selectedClassId, note: !selectedClassId ? 'Select a class first' : '' },
+      { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
+      { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
+    ];
+  }
+
+  container.innerHTML = items.map(item => `
+    <div onclick="${item.disabled ? '' : item.action}" style="display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:${item.disabled?'default':'pointer'};opacity:${item.disabled?'0.4':'1'};border-bottom:0.5px solid var(--gray-100);">
+      <span style="font-size:18px;">${item.icon}</span>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--indigo);">${item.label}</div>
+        ${item.note ? `<div style="font-size:11px;color:var(--gray-500);">${item.note}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDrawerScreen(screen) {
+  closeDrawer();
+  // Hide all views
+  ['student','parent','teacher'].forEach(r => {
+    const el = document.getElementById('view-'+r);
+    if(el) el.style.display = 'none';
+  });
+  // Hide all drawer screens
+  ['new-assignment','archive'].forEach(s => {
+    const el = document.getElementById('screen-'+s);
+    if(el) el.style.display = 'none';
+  });
+  // Show requested screen
+  const target = document.getElementById('screen-'+screen);
+  if(target) target.style.display = 'block';
+}
+
+function closeDrawerScreen() {
+  // Hide drawer screens, return to teacher view
+  ['new-assignment','archive'].forEach(s => {
+    const el = document.getElementById('screen-'+s);
+    if(el) el.style.display = 'none';
+  });
+  document.getElementById('view-teacher').style.display = 'block';
+}
+
+function showCreateClassFromDrawer() {
+  closeDrawer();
+  document.getElementById('classSetupCard').style.display = 'block';
+  document.getElementById('classSetupCard').scrollIntoView({behavior:'smooth'});
+}
 let notifPanelOpen = false;
 let notifPollInterval = null;
 let unreadCount = 0;
