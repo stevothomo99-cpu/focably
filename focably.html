@@ -18,10 +18,15 @@
 <style>
 :root {
   --indigo: #1E1B4B;
+  --indigo-deep: #0F172A;
+  --indigo-mid: #2D1B69;
   --violet: #7C3AED;
+  --violet-dark: #5B21B6;
   --violet-light: #A78BFA;
   --mint: #10B981;
+  --mint-dark: #059669;
   --mint-light: #6EE7B7;
+  --mint-bg: #F0FDF4;
   --amber: #F59E0B;
   --amber-light: #FCD34D;
   --rose: #F43F5E;
@@ -29,8 +34,12 @@
   --gray-50: #F8F7FF;
   --gray-100: #EDE9FE;
   --gray-200: #DDD6FE;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
   --gray-500: #6B7280;
   --gray-700: #374151;
+  --green-dark: #064E3B;
+  --green-mid: #065F46;
   --theme-primary: #7C3AED;
   --theme-secondary: #A78BFA;
   --theme-bg: #EDE9FE;
@@ -94,7 +103,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
    ONBOARDING SCREEN
 ════════════════════════════════════ */
 #screen-onboarding {
-  background:linear-gradient(160deg, var(--indigo) 0%, #2D1B69 100%);
+  background:linear-gradient(160deg, var(--indigo) 0%, var(--indigo-mid) 100%);
   min-height:100vh; display:flex; flex-direction:column;
   align-items:center; justify-content:center; padding:30px 20px; text-align:center;
 }
@@ -125,7 +134,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .theme-card.selected { border-color:var(--amber); background:rgba(245,158,11,0.2); }
 .start-btn {
   width:100%; max-width:340px; padding:16px; border-radius:14px; border:none;
-  background:linear-gradient(135deg, var(--violet), #5B21B6); color:white;
+  background:linear-gradient(135deg, var(--violet), var(--violet-dark)); color:white;
   font-family:'Nunito',sans-serif; font-weight:900; font-size:17px; cursor:pointer;
   transition:all 0.2s; display:none;
 }
@@ -245,7 +254,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .hs-prog-lbl { font-size:11px; color:var(--gray-500); text-align:right; margin-bottom:10px; }
 .hs-task { display:flex; align-items:flex-start; gap:10px; padding:9px 11px; border-radius:10px; background:var(--gray-50); border:1.5px solid transparent; transition:all 0.2s; cursor:pointer; margin-bottom:7px; }
 .hs-task:hover { border-color:var(--violet-light); }
-.hs-task.done { background:#F0FDF4; border-color:var(--mint-light); }
+.hs-task.done { background:var(--mint-bg); border-color:var(--mint-light); }
 .hs-check { width:22px; height:22px; border-radius:50%; border:2.5px solid var(--gray-200); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all 0.2s; background:white; font-size:11px; }
 .hs-task.done .hs-check { background:var(--mint); border-color:var(--mint); color:white; }
 .hs-task-text { font-size:13px; font-weight:500; line-height:1.4; flex:1; }
@@ -256,7 +265,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
    PARENT VIEW
 ════════════════════════════════════ */
 .parent-header {
-  background:linear-gradient(135deg, #0F172A, var(--indigo));
+  background:linear-gradient(135deg, var(--indigo-deep), var(--indigo));
   border-radius:20px; padding:20px; margin-bottom:12px; color:white;
 }
 .parent-greeting { font-size:13px; opacity:0.7; margin-bottom:3px; }
@@ -286,14 +295,14 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
    TEACHER VIEW
 ════════════════════════════════════ */
 .teacher-header {
-  background:linear-gradient(135deg, #064E3B, #065F46);
+  background:linear-gradient(135deg, var(--green-dark), var(--green-mid));
   border-radius:20px; padding:20px; margin-bottom:12px; color:white;
 }
 .teacher-greeting { font-size:13px; opacity:0.7; margin-bottom:3px; }
 .teacher-name { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; margin-bottom:3px; }
 .teacher-subline { font-size:13px; opacity:0.75; }
 .upload-zone { border:2px dashed var(--gray-200); border-radius:14px; padding:22px; text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:12px; background:white; }
-.upload-zone:hover { border-color:var(--mint); background:#F0FDF4; }
+.upload-zone:hover { border-color:var(--mint); background:var(--mint-bg); }
 .upload-zone .u-icon { font-size:30px; margin-bottom:6px; }
 .upload-zone .u-title { font-weight:700; font-size:14px; margin-bottom:3px; }
 .upload-zone .u-sub { font-size:12px; color:var(--gray-500); }
@@ -302,7 +311,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .form-input { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--gray-200); font-size:13px; font-family:'Inter',sans-serif; color:var(--indigo); transition:border-color 0.2s; outline:none; background:white; }
 .form-input:focus { border-color:var(--mint); }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.publish-btn { width:100%; padding:13px; border-radius:12px; background:linear-gradient(135deg, var(--mint), #059669); border:none; color:white; font-size:15px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
+.publish-btn { width:100%; padding:13px; border-radius:12px; background:linear-gradient(135deg, var(--mint), var(--mint-dark)); border:none; color:white; font-size:15px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
 .publish-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(16,185,129,0.4); }
 .student-prog-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--gray-100); }
 .student-prog-row:last-child { border-bottom:none; }
@@ -333,7 +342,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .assign-tile.status-green  { border-left-color: var(--mint); }
 .assign-tile.status-amber  { border-left-color: var(--amber); }
 .assign-tile.status-red    { border-left-color: var(--rose); }
-.assign-tile.status-grey   { border-left-color: #CBD5E1; opacity: 0.7; }
+.assign-tile.status-grey   { border-left-color: var(--gray-300); opacity: 0.7; }
 
 .assign-status-badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -343,7 +352,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .badge-green  { background: #ECFDF5; color: var(--mint); }
 .badge-amber  { background: #FFFBEB; color: var(--amber); }
 .badge-red    { background: #FFF1F2; color: var(--rose); }
-.badge-grey   { background: #F1F5F9; color: #94A3B8; }
+.badge-grey   { background: #F1F5F9; color: var(--gray-400); }
 
 .assign-tile-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
 .assign-tile-title  { font-weight:700; font-size:14px; color:var(--indigo); flex:1; margin-right:8px; }
@@ -358,7 +367,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 
 <!-- ════════════ ONBOARDING ════════════ -->
 <div class="screen" id="screen-onboarding">
-  <div style="background:linear-gradient(160deg,#1E1B4B 0%,#2D1B69 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;text-align:center;">
+  <div style="background:linear-gradient(160deg,var(--indigo) 0%,var(--indigo-mid) 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;text-align:center;">
     <div class="onboard-logo">Foc<span>ably</span></div>
     <div class="onboard-tagline">School done your way 🚀</div>
 
@@ -512,7 +521,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
         <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into steps you can conquer!</p>
         <textarea class="form-input" id="questInput" rows="3" placeholder="e.g. Write a book report about Charlotte's Web, due next week..."></textarea>
-        <button class="ai-quest-btn" id="aiQuestBtn" onclick="breakdownQuest()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">
+        <button class="ai-quest-btn" id="aiQuestBtn" onclick="breakdownQuest()" style="background:linear-gradient(135deg,var(--violet),var(--violet-dark));">
           <span>✨</span> <span id="aiBtnText">Get My Quest Steps</span>
         </button>
         <div class="ai-result-quest" id="aiQuestResult" style="background:var(--gray-50);border-left:3px solid var(--violet);">
@@ -585,7 +594,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
           <div class="hs-subj-icon" style="background:#EDE9FE;">📐</div>
           <div><div class="hs-subj-name">Mathematics</div><div class="hs-subj-due">Due Friday · Mr Henderson</div></div>
         </div>
-        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--violet);width:60%"></div></div>
+        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--rose);width:60%"></div></div>
         <div class="hs-prog-lbl">3 of 5 tasks done</div>
         <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Read pages 42–45 on fractions</div><div class="hs-task-xp">+10 XP</div></div>
         <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Complete exercise 3A (Q1–10)</div><div class="hs-task-xp">+15 XP</div></div>
@@ -599,7 +608,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
           <div class="hs-subj-icon" style="background:#FEF3C7;">📖</div>
           <div><div class="hs-subj-name">English</div><div class="hs-subj-due">Due Monday · Ms Clarke</div></div>
         </div>
-        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--amber);width:25%"></div></div>
+        <div class="hs-prog-track"><div class="hs-prog-fill" style="background:var(--rose);width:25%"></div></div>
         <div class="hs-prog-lbl">1 of 4 tasks done</div>
         <div class="hs-task done" onclick="toggleHSTask(this)"><div class="hs-check">✓</div><div class="hs-task-text">Read Chapter 3 of set text</div><div class="hs-task-xp">+10 XP</div></div>
         <div class="hs-task" onclick="toggleHSTask(this)"><div class="hs-check"></div><div class="hs-task-text">Write introduction paragraph</div><div class="hs-task-xp">+20 XP</div></div>
@@ -617,7 +626,7 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <div class="card-title">🤖 AI Task Breakdown</div>
         <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;">Paste any assignment and Focably will break it into steps.</p>
         <textarea class="form-input" id="hsInput" rows="3" placeholder="e.g. Write a 500-word essay on climate change, due next Thursday..."></textarea>
-        <button class="ai-quest-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">
+        <button class="ai-quest-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),var(--violet-dark));">
           <span>✨</span> <span id="hsAiBtnText">Break into Steps</span>
         </button>
         <div class="ai-result-quest" id="hsAiResult" style="background:var(--gray-50);border-left:3px solid var(--violet);">
@@ -669,17 +678,17 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <div class="subj-row-icon" style="background:#EDE9FE;">📐</div>
         <div class="subj-row-info">
           <div class="subj-row-name">Mathematics</div>
-          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--violet);width:60%"></div></div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--rose);width:60%"></div></div>
         </div>
-        <div class="subj-row-pct" style="color:var(--violet)">60%</div>
+        <div class="subj-row-pct" style="color:var(--rose)">60%</div>
       </div>
       <div class="subj-row">
         <div class="subj-row-icon" style="background:#FEF3C7;">📖</div>
         <div class="subj-row-info">
           <div class="subj-row-name">English</div>
-          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--amber);width:25%"></div></div>
+          <div class="subj-row-track"><div class="subj-row-fill" style="background:var(--rose);width:25%"></div></div>
         </div>
-        <div class="subj-row-pct" style="color:var(--amber)">25%</div>
+        <div class="subj-row-pct" style="color:var(--rose)">25%</div>
       </div>
       <div class="subj-row">
         <div class="subj-row-icon" style="background:#ECFDF5;">🔬</div>
@@ -797,9 +806,9 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
         <button class="nudge-btn" onclick="showToast('👋 Nudge sent to Jamie\'s parent!')">Nudge 👋</button>
       </div>
       <div class="student-prog-row">
-        <div class="s-avatar" style="background:#FEF3C7;color:var(--amber)">S</div>
-        <div class="s-prog-info"><div class="s-prog-name">Sam K.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--violet);width:100%"></div></div></div>
-        <div class="s-prog-pct" style="color:var(--violet)">100% ✓</div>
+        <div class="s-avatar" style="background:#F1F5F9;color:var(--gray-400)">S</div>
+        <div class="s-prog-info"><div class="s-prog-name">Sam K.</div><div class="s-prog-track"><div class="s-prog-fill" style="background:var(--gray-300);width:100%"></div></div></div>
+        <div class="s-prog-pct" style="color:var(--gray-400)">100% ✓</div>
         <button class="nudge-btn" style="background:#F3F4F6;border-color:#E5E7EB;color:var(--gray-500);cursor:default;">Done!</button>
       </div>
     </div>
@@ -848,7 +857,7 @@ function getAssignmentStatus(dueDateStr, progressPct) {
 // assignment = { title, subject, dueDate, progress, teacher }
 function renderAssignmentTile(assignment) {
   const s = getAssignmentStatus(assignment.dueDate, assignment.progress);
-  const progressColor = s.status === 'grey' ? '#CBD5E1'
+  const progressColor = s.status === 'grey'  ? 'var(--gray-300)'
                       : s.status === 'red'   ? 'var(--rose)'
                       : s.status === 'amber' ? 'var(--amber)'
                       : 'var(--mint)';
@@ -1340,4 +1349,5 @@ async function installApp() {
 </script>
 </body>
 </html>
+
 
