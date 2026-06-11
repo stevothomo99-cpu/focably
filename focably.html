@@ -358,6 +358,46 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .assign-tile-meta   { font-size:12px; color:var(--gray-500); margin-bottom:6px; }
 .assign-tile-progress-track { background:var(--gray-100); border-radius:10px; height:5px; }
 .assign-tile-progress-fill  { border-radius:10px; height:5px; transition:width 0.5s; }
+
+/* ── ARCHIVE ── */
+.archive-btn {
+  padding:4px 10px; border-radius:20px; border:1.5px solid var(--gray-200);
+  background:white; color:var(--gray-500); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap;
+  transition:all 0.2s; flex-shrink:0;
+}
+.archive-btn:hover { border-color:var(--rose); color:var(--rose); }
+.archive-class-btn {
+  width:100%; padding:10px; border-radius:10px; border:1.5px solid var(--gray-200);
+  background:white; color:var(--gray-500); font-size:13px; font-weight:600;
+  cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:6px; margin-top:8px;
+}
+.archive-class-btn:hover { border-color:var(--rose); color:var(--rose); background:#FFF1F2; }
+.archived-item {
+  display:flex; align-items:center; gap:10px; padding:9px 12px;
+  border-radius:10px; background:var(--gray-50); margin-bottom:6px;
+  opacity:0.7;
+}
+.archived-item-icon { font-size:18px; }
+.archived-item-info { flex:1; }
+.archived-item-title { font-size:13px; font-weight:600; color:var(--gray-700); text-decoration:line-through; }
+.archived-item-meta  { font-size:11px; color:var(--gray-500); margin-top:1px; }
+.restore-btn {
+  padding:4px 10px; border-radius:20px; border:1.5px solid var(--gray-200);
+  background:white; color:var(--gray-500); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; transition:all 0.2s;
+}
+.restore-btn:hover { border-color:var(--mint); color:var(--mint); }
+.confirm-archive {
+  background:#FFF1F2; border-radius:10px; padding:12px; margin-top:8px;
+  border:1.5px solid #FECDD3; display:none;
+}
+.confirm-archive.visible { display:block; }
+.confirm-archive p { font-size:13px; color:var(--indigo); margin-bottom:10px; line-height:1.4; }
+.confirm-row { display:flex; gap:8px; }
+.confirm-yes { flex:1; padding:8px; border-radius:8px; border:none; background:var(--rose); color:white; font-weight:700; font-size:13px; cursor:pointer; }
+.confirm-no  { flex:1; padding:8px; border-radius:8px; border:1.5px solid var(--gray-200); background:white; color:var(--gray-500); font-weight:700; font-size:13px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -816,6 +856,24 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
       <div id="teacher-class-tiles"></div>
     </div>
 
+    <!-- Archived section -->
+    <div id="archived-section" style="display:none;">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleArchivePanel()">
+          <div class="card-title" style="margin-bottom:0;">🗄️ Archived</div>
+          <div id="archive-chevron" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
+        </div>
+        <div id="archive-panel" style="max-height:0;overflow:hidden;transition:max-height 0.35s ease;">
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Archived Classes</div>
+            <div id="archived-classes"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin:12px 0 8px;">Archived Assignments</div>
+            <div id="archived-assignments"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="bottom-nav">
@@ -858,15 +916,25 @@ function getAssignmentStatus(dueDateStr, progressPct) {
   return { status, borderClass, badgeClass, label: activeLabel, completed: false };
 }
 
+// ── ARCHIVE STATE — swap these for Supabase calls when ready ──
+const archivedAssignments = []; // { title, subject, teacher, dueDate, progress, archivedAt }
+const archivedClasses     = []; // { className, emoji, archivedAt }
+
 // Render an assignment tile into a container element
-// assignment = { title, subject, dueDate, progress, teacher }
-function renderAssignmentTile(assignment) {
+// isTeacher flag adds the Archive button
+function renderAssignmentTile(assignment, isTeacher = false) {
   const s = getAssignmentStatus(assignment.dueDate, assignment.progress);
   const progressColor = s.status === 'red'   ? 'var(--rose)'
                       : s.status === 'amber' ? 'var(--amber)'
                       : 'var(--mint)';
   const tile = document.createElement('div');
   tile.className = `assign-tile ${s.borderClass}${s.completed ? ' assign-done' : ''}`;
+  if (s.completed) tile.style.opacity = '0.6';
+
+  const archiveBtn = isTeacher
+    ? `<button class="archive-btn" onclick="archiveAssignment(this, '${assignment.title}', '${assignment.subject}', '${assignment.teacher}', '${assignment.dueDate}', ${assignment.progress})">Archive</button>`
+    : '';
+
   tile.innerHTML = `
     <div class="assign-tile-header">
       <div class="assign-tile-title" style="${s.completed ? 'text-decoration:line-through;opacity:0.5;' : ''}">${assignment.title}</div>
@@ -876,10 +944,108 @@ function renderAssignmentTile(assignment) {
     <div class="assign-tile-progress-track">
       <div class="assign-tile-progress-fill" style="width:${assignment.progress}%;background:${progressColor};${s.completed ? 'opacity:0.4;' : ''}"></div>
     </div>
-    <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-top:3px;">${s.completed ? '✓ Done' : assignment.progress + '% complete'}</div>
+    <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-top:3px;display:flex;align-items:center;justify-content:space-between;">
+      <span>${s.completed ? '✓ Done' : assignment.progress + '% complete'}</span>
+      ${archiveBtn}
+    </div>
   `;
-  if (s.completed) tile.style.opacity = '0.6';
   return tile;
+}
+
+function archiveAssignment(btn, title, subject, teacher, dueDate, progress) {
+  // Animate out
+  const tile = btn.closest('.assign-tile');
+  tile.style.transition = 'opacity 0.3s, max-height 0.3s';
+  tile.style.opacity = '0';
+  tile.style.maxHeight = '0';
+  tile.style.overflow = 'hidden';
+  setTimeout(() => {
+    tile.remove();
+    archivedAssignments.push({ title, subject, teacher, dueDate, progress, archivedAt: new Date().toLocaleDateString('en-AU') });
+    refreshArchivedPanel();
+    showToast(`🗄️ "${title}" archived`);
+  }, 300);
+}
+
+function archiveClass(className, emoji, wrapperEl, confirmEl) {
+  confirmEl.classList.remove('visible');
+  wrapperEl.style.transition = 'opacity 0.3s';
+  wrapperEl.style.opacity = '0';
+  setTimeout(() => {
+    wrapperEl.remove();
+    archivedClasses.push({ className, emoji, archivedAt: new Date().toLocaleDateString('en-AU') });
+    refreshArchivedPanel();
+    showToast(`🎓 ${className} archived — students notified!`);
+  }, 300);
+}
+
+function refreshArchivedPanel() {
+  const section = document.getElementById('archived-section');
+  const classContainer = document.getElementById('archived-classes');
+  const assignContainer = document.getElementById('archived-assignments');
+  if (!section) return;
+
+  const hasAny = archivedAssignments.length > 0 || archivedClasses.length > 0;
+  section.style.display = hasAny ? 'block' : 'none';
+
+  // Render archived classes
+  classContainer.innerHTML = archivedClasses.length === 0
+    ? '<div style="font-size:12px;color:var(--gray-400);font-style:italic;margin-bottom:4px;">None yet</div>'
+    : '';
+  archivedClasses.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'archived-item';
+    el.innerHTML = `
+      <div class="archived-item-icon">${c.emoji}</div>
+      <div class="archived-item-info">
+        <div class="archived-item-title">${c.className}</div>
+        <div class="archived-item-meta">Archived ${c.archivedAt}</div>
+      </div>
+      <button class="restore-btn" onclick="restoreClass(${i})">Restore</button>
+    `;
+    classContainer.appendChild(el);
+  });
+
+  // Render archived assignments
+  assignContainer.innerHTML = archivedAssignments.length === 0
+    ? '<div style="font-size:12px;color:var(--gray-400);font-style:italic;">None yet</div>'
+    : '';
+  archivedAssignments.forEach((a, i) => {
+    const el = document.createElement('div');
+    el.className = 'archived-item';
+    el.innerHTML = `
+      <div class="archived-item-icon">📄</div>
+      <div class="archived-item-info">
+        <div class="archived-item-title">${a.title}</div>
+        <div class="archived-item-meta">${a.subject} · ${a.teacher} · Archived ${a.archivedAt}</div>
+      </div>
+      <button class="restore-btn" onclick="restoreAssignment(${i})">Restore</button>
+    `;
+    assignContainer.appendChild(el);
+  });
+}
+
+function restoreClass(i) {
+  const c = archivedClasses.splice(i, 1)[0];
+  refreshArchivedPanel();
+  showToast(`✅ ${c.className} restored`);
+  // TODO: re-render class tile — for now prompt user to refresh
+}
+
+function restoreAssignment(i) {
+  const a = archivedAssignments.splice(i, 1)[0];
+  refreshArchivedPanel();
+  showToast(`✅ "${a.title}" restored`);
+  // TODO: re-insert assignment tile into correct class
+}
+
+let archivePanelOpen = false;
+function toggleArchivePanel() {
+  archivePanelOpen = !archivePanelOpen;
+  const panel = document.getElementById('archive-panel');
+  const chevron = document.getElementById('archive-chevron');
+  panel.style.maxHeight = archivePanelOpen ? '2000px' : '0';
+  chevron.style.transform = archivePanelOpen ? 'rotate(180deg)' : '';
 }
 
 function formatDate(dateStr) {
@@ -903,7 +1069,8 @@ function daysFromNow(n) {
 }
 
 // Build class tile with expandable assignment list
-function renderClassTile(containerId, className, emoji, assignments) {
+// isTeacher flag adds Archive Class button
+function renderClassTile(containerId, className, emoji, assignments, isTeacher = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -912,12 +1079,12 @@ function renderClassTile(containerId, className, emoji, assignments) {
     assignments.filter(a => a.progress < 100).sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate))[0]?.dueDate || daysFromNow(99),
     overall
   );
-  const progressColor = s.status==='grey'?'#CBD5E1':s.status==='red'?'var(--rose)':s.status==='amber'?'var(--amber)':'var(--mint)';
+  const progressColor = s.status==='red'?'var(--rose)':s.status==='amber'?'var(--amber)':'var(--mint)';
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'background:white;border-radius:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);overflow:hidden;';
 
-  // Class header (clickable)
+  // Class header (clickable to expand)
   const header = document.createElement('div');
   header.style.cssText = 'padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;';
   header.innerHTML = `
@@ -936,16 +1103,49 @@ function renderClassTile(containerId, className, emoji, assignments) {
   // Assignment list (collapsed by default)
   const list = document.createElement('div');
   list.style.cssText = 'padding:0 12px 0;max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.2s;';
-  assignments.forEach(a => list.appendChild(renderAssignmentTile(a)));
+  assignments.forEach(a => list.appendChild(renderAssignmentTile(a, isTeacher)));
+
+  // Archive class section (teacher only)
+  if (isTeacher) {
+    const archiveWrap = document.createElement('div');
+    archiveWrap.style.cssText = 'padding:0 12px;max-height:0;overflow:hidden;transition:max-height 0.35s ease,padding 0.2s;';
+
+    const confirmBox = document.createElement('div');
+    confirmBox.className = 'confirm-archive';
+    confirmBox.innerHTML = `
+      <p>Archive <strong>${className}</strong>? All assignments will be hidden from active views and students will receive a <strong>Year Complete</strong> notification.</p>
+      <div class="confirm-row">
+        <button class="confirm-yes" onclick="archiveClass('${className}', '${emoji}', this.closest('[data-wrapper]'), this.closest('.confirm-archive'))">Yes, Archive</button>
+        <button class="confirm-no" onclick="this.closest('.confirm-archive').classList.remove('visible')">Cancel</button>
+      </div>
+    `;
+
+    const archiveClassBtn = document.createElement('button');
+    archiveClassBtn.className = 'archive-class-btn';
+    archiveClassBtn.innerHTML = '🗄️ Archive This Class';
+    archiveClassBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      confirmBox.classList.toggle('visible');
+    });
+
+    archiveWrap.appendChild(archiveClassBtn);
+    archiveWrap.appendChild(confirmBox);
+    list.appendChild(archiveWrap);
+  }
 
   let open = false;
   header.addEventListener('click', () => {
     open = !open;
-    list.style.maxHeight   = open ? '1000px' : '0';
-    list.style.paddingBottom = open ? '12px' : '0';
+    list.style.maxHeight        = open ? '1200px' : '0';
+    list.style.paddingBottom    = open ? '12px'   : '0';
     header.querySelector('.chevron').style.transform = open ? 'rotate(180deg)' : '';
+    if (isTeacher) {
+      const aw = list.querySelector('div[style*="padding:0 12px"]');
+      if (aw) { aw.style.maxHeight = open ? '400px' : '0'; aw.style.paddingBottom = open ? '12px' : '0'; }
+    }
   });
 
+  wrapper.dataset.wrapper = 'true';
   wrapper.appendChild(header);
   wrapper.appendChild(list);
   container.appendChild(wrapper);
@@ -1067,7 +1267,7 @@ function startApp() {
   renderClassTile('parent-class-tiles', 'Geography',   '🌏', geoAssignments);
 
   // Teacher view — Ms Clarke only sees her class
-  renderClassTile('teacher-class-tiles', 'Year 9 English — Ms Clarke', '📖', englishAssignments);
+  renderClassTile('teacher-class-tiles', 'Year 9 English — Ms Clarke', '📖', englishAssignments, true);
 }
 
 function applyTheme(t) {
