@@ -1938,7 +1938,7 @@ async function loadParentApp() {
 function renderChildTabs() {
   const tabs=document.getElementById('childTabs');
   if(!currentChildren.length){tabs.innerHTML='<div class="child-tab active">No children yet</div>';return;}
-  tabs.innerHTML=currentChildren.map((c,i)=>`<div class="child-tab ${i===0?'active':''}" onclick="selectChild('${c.id}',this)">${c.name}</div>`).join('')+'<div class="child-tab">+ Add</div>';
+  tabs.innerHTML=currentChildren.map((c,i)=>`<div class="child-tab ${i===0?'active':''}" onclick="selectChild('${c.id}',this)">${c.name}</div>`).join('')+'<div class="child-tab" onclick="openDrawerScreen(\'family-invite\')" title="Add another child">+ Add</div>';
 }
 
 async function selectChild(childId,el) {
