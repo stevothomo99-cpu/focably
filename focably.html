@@ -342,7 +342,6 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 .assign-tile.status-green  { border-left-color: var(--mint); }
 .assign-tile.status-amber  { border-left-color: var(--amber); }
 .assign-tile.status-red    { border-left-color: var(--rose); }
-.assign-tile.status-grey   { border-left-color: var(--gray-300); opacity: 0.7; }
 
 .assign-status-badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -841,39 +840,45 @@ const xpMax = 500;
 // Returns { status, badgeClass, borderClass, label }
 // status rules: complete → grey | ≤7 days → red | ≤14 days → amber | 15+ days → green
 function getAssignmentStatus(dueDateStr, progressPct) {
-  if (progressPct >= 100) {
-    return { status:'grey',  borderClass:'status-grey',  badgeClass:'badge-grey',  label:'Completed' };
-  }
   const now  = new Date(); now.setHours(0,0,0,0);
   const due  = new Date(dueDateStr); due.setHours(0,0,0,0);
   const days = Math.round((due - now) / (1000*60*60*24));
-  if (days < 0)  return { status:'red',   borderClass:'status-red',   badgeClass:'badge-red',   label:'Overdue' };
-  if (days <= 7) return { status:'red',   borderClass:'status-red',   badgeClass:'badge-red',   label:`Due in ${days}d` };
-  if (days <= 14)return { status:'amber', borderClass:'status-amber', badgeClass:'badge-amber', label:`Due in ${days}d` };
-  return           { status:'green', borderClass:'status-green', badgeClass:'badge-green', label:`Due in ${days}d` };
+
+  // Determine base colour from due date regardless of completion
+  let status, borderClass, badgeClass, activeLabel;
+  if (days < 0)       { status='red';   borderClass='status-red';   badgeClass='badge-red';   activeLabel='Overdue'; }
+  else if (days <= 7) { status='red';   borderClass='status-red';   badgeClass='badge-red';   activeLabel=`Due in ${days}d`; }
+  else if (days <= 14){ status='amber'; borderClass='status-amber'; badgeClass='badge-amber'; activeLabel=`Due in ${days}d`; }
+  else                { status='green'; borderClass='status-green'; badgeClass='badge-green'; activeLabel=`Due in ${days}d`; }
+
+  // Completed: keep the colour family but flag it
+  if (progressPct >= 100) {
+    return { status, borderClass, badgeClass, label:'Completed', completed: true };
+  }
+  return { status, borderClass, badgeClass, label: activeLabel, completed: false };
 }
 
 // Render an assignment tile into a container element
 // assignment = { title, subject, dueDate, progress, teacher }
 function renderAssignmentTile(assignment) {
   const s = getAssignmentStatus(assignment.dueDate, assignment.progress);
-  const progressColor = s.status === 'grey'  ? 'var(--gray-300)'
-                      : s.status === 'red'   ? 'var(--rose)'
+  const progressColor = s.status === 'red'   ? 'var(--rose)'
                       : s.status === 'amber' ? 'var(--amber)'
                       : 'var(--mint)';
   const tile = document.createElement('div');
-  tile.className = `assign-tile ${s.borderClass}`;
+  tile.className = `assign-tile ${s.borderClass}${s.completed ? ' assign-done' : ''}`;
   tile.innerHTML = `
     <div class="assign-tile-header">
-      <div class="assign-tile-title">${assignment.title}</div>
+      <div class="assign-tile-title" style="${s.completed ? 'text-decoration:line-through;opacity:0.5;' : ''}">${assignment.title}</div>
       <span class="assign-status-badge ${s.badgeClass}">${s.label}</span>
     </div>
     <div class="assign-tile-meta">${assignment.teacher} · Due ${formatDate(assignment.dueDate)}</div>
     <div class="assign-tile-progress-track">
-      <div class="assign-tile-progress-fill" style="width:${assignment.progress}%;background:${progressColor}"></div>
+      <div class="assign-tile-progress-fill" style="width:${assignment.progress}%;background:${progressColor};${s.completed ? 'opacity:0.4;' : ''}"></div>
     </div>
-    <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-top:3px;">${assignment.progress}% complete</div>
+    <div style="font-size:11px;color:var(--gray-500);text-align:right;margin-top:3px;">${s.completed ? '✓ Done' : assignment.progress + '% complete'}</div>
   `;
+  if (s.completed) tile.style.opacity = '0.6';
   return tile;
 }
 
@@ -1349,5 +1354,6 @@ async function installApp() {
 </script>
 </body>
 </html>
+
 
 
