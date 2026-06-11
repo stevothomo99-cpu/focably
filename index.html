@@ -199,6 +199,19 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
 /* VERIFICATION QUEUE */
 /* verify-item CSS removed — replaced by unified .approval-item system */
+
+/* ── NOTIFICATIONS ── */
+.notif-item{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--gray-100);cursor:pointer;transition:background 0.15s;}
+.notif-item:last-child{border-bottom:none;}
+.notif-item:hover{background:var(--gray-50);}
+.notif-item.unread{background:#F5F3FF;}
+.notif-item.unread:hover{background:#EDE9FE;}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--violet);flex-shrink:0;margin-top:5px;}
+.notif-dot.read{background:transparent;}
+.notif-body{flex:1;}
+.notif-title{font-size:13px;font-weight:700;color:var(--indigo);margin-bottom:2px;line-height:1.3;}
+.notif-meta{font-size:11px;color:var(--gray-500);}
+.notif-action{font-size:11px;font-weight:700;color:var(--violet);margin-top:4px;}
 .verify-task-name{font-weight:700;font-size:14px;flex:1;}
 .verify-child-name{font-size:12px;margin-top:2px;opacity:0.8;}
 .verify-proof{width:100%;max-height:200px;object-fit:cover;display:block;}
@@ -477,6 +490,23 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   <div class="top-nav">
     <div class="logo">Achiev<span>ED</span></div>
     <div style="display:flex;align-items:center;gap:6px;">
+      <!-- NOTIFICATION BELL -->
+      <div style="position:relative;" id="notifBellWrap">
+        <button onclick="toggleNotifPanel()" id="notifBellBtn" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;" title="Notifications">
+          🔔
+          <span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--rose);border:1.5px solid var(--indigo);"></span>
+        </button>
+        <!-- DROPDOWN PANEL -->
+        <div id="notifPanel" style="display:none;position:absolute;top:40px;right:0;width:300px;background:white;border-radius:16px;box-shadow:0 8px 32px rgba(30,27,75,0.18);z-index:200;overflow:hidden;">
+          <div style="padding:12px 16px;background:var(--indigo);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;color:white;">Notifications</div>
+            <button onclick="markAllNotifsRead()" id="markAllBtn" style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.7);background:none;border:none;cursor:pointer;display:none;">Mark all read</button>
+          </div>
+          <div id="notifList" style="max-height:360px;overflow-y:auto;">
+            <div style="padding:20px;text-align:center;font-size:13px;color:var(--gray-500);">No notifications yet</div>
+          </div>
+        </div>
+      </div>
       <button onclick="refreshCurrentView()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" id="refreshBtn" title="Refresh">↻</button>
       <div class="role-switcher">
         <button class="role-btn active" id="rbStudent" onclick="switchRole('student')">🎒 Me</button>
@@ -1124,6 +1154,7 @@ async function loadStudentApp() {
   // Load assignments in background — don't block app display
   loadStudentAssignments(age).catch(e => console.log('Assignment load error:', e.message));
   requestNotificationPermission();
+  startNotifPolling();
 }
 
 async function loadStudentAssignments(ageGroup) {
@@ -1713,21 +1744,9 @@ async function submitProof(taskId) {
       proof_submitted_at: new Date().toISOString(),
       completed: false
     }).eq('id', taskId);
-    // Notify parent
-    const {data:task} = await db.from('tasks').select('child_id,title').eq('id',taskId).maybeSingle();
-    if(task) {
-      const {data:child} = await db.from('children').select('*, families(parent_id)').eq('id',task.child_id).maybeSingle();
-      if(child?.families?.parent_id) {
-        await db.from('notifications').insert({
-          recipient_id: child.families.parent_id,
-          sender_id: currentUser.id,
-          child_id: task.child_id,
-          type: 'task_complete',
-          title: '📸 Proof submitted!',
-          body: `${currentProfile.full_name} submitted proof for: "${task.title}"`
-        });
-      }
-    }
+    // Notify both parent and teacher
+    const {data:task} = await db.from('tasks').select('child_id').eq('id',taskId).maybeSingle();
+    if(task) await notifyProofSubmitted(taskId, task.child_id);
     currentProofFile = null;
     showToast('✅ Proof submitted! Waiting for approval.');
     // Update just this step in place — don't reload whole page
@@ -1827,6 +1846,7 @@ async function loadParentApp() {
   loadApprovalQueues().catch(()=>{});
   showScreen('app');
   setTimeout(updateNotifStatus, 1000);
+  startNotifPolling();
 }
 
 function renderChildTabs() {
@@ -2066,6 +2086,7 @@ async function loadTeacherApp() {
     document.getElementById('classSetupCard').style.display='block';
   }
   loadApprovalQueues().catch(()=>{});
+  startNotifPolling();
 }
 
 function setTeacherView(mode) {
@@ -3022,6 +3043,193 @@ function toggleArchivePanel() {
   const chevron = document.getElementById('archive-chevron');
   if(panel) panel.style.maxHeight = archivePanelOpen ? '2000px' : '0';
   if(chevron) chevron.style.transform = archivePanelOpen ? 'rotate(180deg)' : '';
+}
+
+// ── IN-APP NOTIFICATION SYSTEM ──
+let notifPanelOpen = false;
+let notifPollInterval = null;
+let unreadCount = 0;
+
+async function loadNotifications() {
+  if(!currentUser) return;
+  const {data:notifs} = await dbQuery(
+    db.from('notifications')
+      .select('*')
+      .eq('recipient_id', currentUser.id)
+      .order('created_at', {ascending: false})
+      .limit(20),
+    8000, []
+  );
+  renderNotifications(notifs||[]);
+}
+
+function renderNotifications(notifs) {
+  const list = document.getElementById('notifList');
+  const badge = document.getElementById('notifBadge');
+  const markAllBtn = document.getElementById('markAllBtn');
+  if(!list) return;
+
+  unreadCount = notifs.filter(n => !n.read_at).length;
+
+  // Update badge
+  if(unreadCount > 0) {
+    badge.style.display = 'block';
+    markAllBtn.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+    markAllBtn.style.display = 'none';
+  }
+
+  if(!notifs.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:var(--gray-500);">No notifications yet</div>';
+    return;
+  }
+
+  const typeConfig = {
+    proof_approved:  { icon:'✅', action:'View Approvals' },
+    proof_rejected:  { icon:'✕',  action:'View Approvals' },
+    proof_submitted: { icon:'📸', action:'View Approvals' },
+    task_complete:   { icon:'⭐', action:'View Progress'  },
+    nudge:           { icon:'👋', action:'View Tasks'     },
+    class_archived:  { icon:'🎓', action:null             },
+    default:         { icon:'🔔', action:null             },
+  };
+
+  list.innerHTML = notifs.map(n => {
+    const cfg = typeConfig[n.type] || typeConfig.default;
+    const timeAgo = formatTimeAgo(n.created_at);
+    const isUnread = !n.read_at;
+    const actionHtml = cfg.action
+      ? `<div class="notif-action" onclick="handleNotifAction('${n.type}','${n.id}')">→ ${cfg.action}</div>`
+      : '';
+    return `<div class="notif-item ${isUnread?'unread':''}" id="notif-${n.id}" onclick="markNotifRead('${n.id}')">
+      <div class="notif-dot ${isUnread?'':'read'}"></div>
+      <div class="notif-body">
+        <div class="notif-title">${cfg.icon} ${n.title||''}</div>
+        <div class="notif-meta">${n.body||''}</div>
+        <div class="notif-meta">${timeAgo}</div>
+        ${actionHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatTimeAgo(isoStr) {
+  if(!isoStr) return '';
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if(diff < 60)  return 'Just now';
+  if(diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if(diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+async function markNotifRead(notifId) {
+  await dbQuery(db.from('notifications').update({read_at: new Date().toISOString()}).eq('id', notifId));
+  const el = document.getElementById('notif-'+notifId);
+  if(el) { el.classList.remove('unread'); el.querySelector('.notif-dot')?.classList.add('read'); }
+  unreadCount = Math.max(0, unreadCount - 1);
+  if(unreadCount === 0) {
+    document.getElementById('notifBadge').style.display = 'none';
+    document.getElementById('markAllBtn').style.display = 'none';
+  }
+}
+
+async function markAllNotifsRead() {
+  await dbQuery(db.from('notifications').update({read_at: new Date().toISOString()}).eq('recipient_id', currentUser.id).is('read_at', null));
+  document.querySelectorAll('.notif-item.unread').forEach(el => {
+    el.classList.remove('unread');
+    el.querySelector('.notif-dot')?.classList.add('read');
+  });
+  unreadCount = 0;
+  document.getElementById('notifBadge').style.display = 'none';
+  document.getElementById('markAllBtn').style.display = 'none';
+}
+
+function handleNotifAction(type, notifId) {
+  markNotifRead(notifId);
+  closeNotifPanel();
+  // Route to the right place
+  if(['proof_approved','proof_rejected','proof_submitted'].includes(type)) {
+    // Switch to the right role and scroll to approval card
+    if(currentProfile.role === 'parent') {
+      switchRole('parent');
+      setTimeout(() => document.getElementById('parent-approval-card')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    } else if(currentProfile.role === 'teacher') {
+      switchRole('teacher');
+      setTimeout(() => document.getElementById('teacher-approval-card')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    }
+  } else if(type === 'task_complete' || type === 'nudge') {
+    if(currentProfile.role === 'parent') switchRole('parent');
+    else switchRole('student');
+  }
+}
+
+function toggleNotifPanel() {
+  notifPanelOpen = !notifPanelOpen;
+  const panel = document.getElementById('notifPanel');
+  if(notifPanelOpen) {
+    panel.style.display = 'block';
+    loadNotifications(); // Refresh on open
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function closeNotifPanel() {
+  notifPanelOpen = false;
+  const panel = document.getElementById('notifPanel');
+  if(panel) panel.style.display = 'none';
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', (e) => {
+  if(notifPanelOpen && !document.getElementById('notifBellWrap')?.contains(e.target)) {
+    closeNotifPanel();
+  }
+});
+
+// Poll for new notifications every 60s while app is open
+function startNotifPolling() {
+  loadNotifications();
+  if(notifPollInterval) clearInterval(notifPollInterval);
+  notifPollInterval = setInterval(loadNotifications, 60000);
+}
+
+// Also send notification when student submits proof — notify both parent AND teacher
+async function notifyProofSubmitted(taskId, childId) {
+  try {
+    const {data:task} = await dbQuery(
+      db.from('tasks').select('title, assignment_id, assignments(title, created_by, classes(name))').eq('id', taskId).maybeSingle()
+    );
+    if(!task) return;
+    const cls = task.assignments?.classes?.name || '';
+    const aTitle = task.assignments?.title || '';
+    const childName = currentProfile?.full_name || 'Student';
+    const notifTitle = '📸 Proof submitted';
+    const notifBody = `${childName} submitted proof for "${task.title}"${aTitle?' — '+aTitle:''}${cls?' ('+cls+')':''}`;
+
+    // Notify teacher
+    const teacherId = task.assignments?.created_by;
+    if(teacherId) {
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: teacherId, sender_id: currentUser.id,
+        child_id: childId, type: 'proof_submitted',
+        title: notifTitle, body: notifBody
+      }));
+      await sendPushToUser(teacherId, notifTitle, notifBody);
+    }
+    // Notify parent
+    const {data:children} = await dbQuery(db.from('children').select('*, families(parent_id)').eq('id', childId).limit(1));
+    const parentId = children?.[0]?.families?.parent_id;
+    if(parentId && parentId !== teacherId) {
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: parentId, sender_id: currentUser.id,
+        child_id: childId, type: 'proof_submitted',
+        title: notifTitle, body: notifBody
+      }));
+      await sendPushToUser(parentId, notifTitle, notifBody);
+    }
+  } catch(e) { console.log('notifyProofSubmitted error:', e.message); }
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
