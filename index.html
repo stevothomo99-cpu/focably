@@ -690,6 +690,26 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div class="form-grp"><label class="form-lbl">Due Date</label><input class="form-input" type="date" id="parentTaskDue"></div>
       </div>
       <div class="form-grp"><label class="form-lbl">Notes (optional)</label><textarea class="form-input" rows="2" id="parentTaskDesc" placeholder="Any extra details..."></textarea></div>
+
+      <!-- Visibility -->
+      <div class="form-grp">
+        <label class="form-lbl">Visibility</label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="visPrivateBtn" onclick="setTaskVisibility('private')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--violet);background:var(--violet);color:white;font-size:13px;font-weight:700;cursor:pointer;">🔒 Private</button>
+          <button type="button" id="visClassBtn" onclick="setTaskVisibility('class')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">🏫 Tag to Class</button>
+        </div>
+        <div id="visHint" style="font-size:11px;color:var(--gray-500);margin-top:6px;">🔒 Private — home task only, never visible to teachers.</div>
+      </div>
+
+      <!-- Class picker (shown only when Tag to Class) -->
+      <div class="form-grp" id="taskClassPickerWrap" style="display:none;">
+        <label class="form-lbl">Which Class?</label>
+        <select class="form-input" id="taskClassPicker">
+          <option value="">— Select a class —</option>
+        </select>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">This task will also appear on the teacher's class list, marked as added by you.</div>
+      </div>
+
       <button class="publish-btn" onclick="parentAddTask()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Add Task</button>
     </div>
   </div>
@@ -2076,6 +2096,49 @@ async function uploadAssignmentFile(assignmentId) {
   return fileUrl;
 }
 
+// ── PARENT TASK VISIBILITY ──
+let taskVisibility = 'private'; // 'private' | 'class'
+
+function setTaskVisibility(mode) {
+  taskVisibility = mode;
+  const privBtn = document.getElementById('visPrivateBtn');
+  const clsBtn = document.getElementById('visClassBtn');
+  const wrap = document.getElementById('taskClassPickerWrap');
+  const hint = document.getElementById('visHint');
+  if(mode === 'private') {
+    privBtn.style.background='var(--violet)'; privBtn.style.color='white'; privBtn.style.borderColor='var(--violet)';
+    clsBtn.style.background='white'; clsBtn.style.color='var(--gray-500)'; clsBtn.style.borderColor='var(--gray-200)';
+    wrap.style.display='none';
+    hint.textContent='🔒 Private — home task only, never visible to teachers.';
+  } else {
+    clsBtn.style.background='var(--violet)'; clsBtn.style.color='white'; clsBtn.style.borderColor='var(--violet)';
+    privBtn.style.background='white'; privBtn.style.color='var(--gray-500)'; privBtn.style.borderColor='var(--gray-200)';
+    wrap.style.display='block';
+    hint.textContent='🏫 Tagged — also appears on the teacher\'s class list (marked added by you).';
+  }
+}
+
+async function populateTaskClassPicker() {
+  const picker = document.getElementById('taskClassPicker');
+  if(!picker) return;
+  // Determine selected child
+  const childSelectEl = document.getElementById('parentTaskChildSelect')?.querySelector('select');
+  const childId = childSelectEl?.value || currentChildren?.[0]?.id;
+  if(!childId) { picker.innerHTML = '<option value="">No classes — child not enrolled</option>'; return; }
+  // Fetch the child's enrolled classes
+  const {data:members} = await dbQuery(
+    db.from('class_members').select('classes(id, name, subject)').eq('child_id', childId),
+    6000, []
+  );
+  const classes = (members||[]).map(m=>m.classes).filter(Boolean);
+  if(!classes.length) {
+    picker.innerHTML = '<option value="">No enrolled classes yet</option>';
+  } else {
+    picker.innerHTML = '<option value="">— Select a class —</option>' +
+      classes.map(c => `<option value="${c.id}">${c.name}${c.subject?' — '+c.subject:''}</option>`).join('');
+  }
+}
+
 async function parentAddTask() {
   const title = document.getElementById('parentTaskTitle').value.trim();
   const subject = document.getElementById('parentTaskSubject').value.trim();
@@ -2088,11 +2151,20 @@ async function parentAddTask() {
   const childId = childSelectEl?.value || currentChildren?.[0]?.id;
   if(!childId){ showToast('No child linked yet'); return; }
 
+  // Visibility — private (no class) or tagged to an enrolled class
+  let taggedClassId = null;
+  if(taskVisibility === 'class') {
+    taggedClassId = document.getElementById('taskClassPicker')?.value || '';
+    if(!taggedClassId){ showToast('🏫 Pick a class, or switch to Private'); return; }
+  }
+
   // Create assignment
   const {data:assignment, error:aErr} = await dbQuery(
     db.from('assignments').insert({
       created_by: currentUser.id,
       child_id: childId,
+      class_id: taggedClassId,            // null = private/home task
+      parent_created: true,                // flag so teacher view can mark it
       title, subject: subject||'General',
       description: desc,
       due_date: due||null,
@@ -2129,11 +2201,15 @@ async function parentAddTask() {
     await dbQuery(db.from('tasks').insert(tasks));
   }
 
-  showToast('✅ Task added for '+currentChildren.find(c=>c.id===childId)?.name+'!');
+  const childName = currentChildren.find(c=>c.id===childId)?.name || 'child';
+  showToast(taggedClassId ? `✅ Task added & shared with class!` : `✅ Private task added for ${childName}!`);
   document.getElementById('parentTaskTitle').value = '';
   document.getElementById('parentTaskSubject').value = '';
   document.getElementById('parentTaskDesc').value = '';
   document.getElementById('parentTaskDue').value = '';
+  setTaskVisibility('private');
+  const picker = document.getElementById('taskClassPicker');
+  if(picker) picker.value = '';
   // Refresh stats and return to main parent view
   await loadChildStats(childId);
   closeDrawerScreen();
@@ -2283,7 +2359,7 @@ async function selectClass(classId) {
 async function loadTeacherClassAssignments(classId) {
   // Load assignments for this class with task completion data
   const {data:assignments} = await dbQuery(
-    db.from('assignments').select('*, tasks(*), children(name)').eq('class_id', classId).eq('status','active').order('due_date',{ascending:true}),
+    db.from('assignments').select('*, tasks(*), children(name), parent_created').eq('class_id', classId).eq('status','active').order('due_date',{ascending:true}),
     8000, []
   );
 
@@ -2302,7 +2378,7 @@ async function loadTeacherClassAssignments(classId) {
   assignments.forEach(a => {
     const key = a.title + '_' + (a.due_date||'');
     const safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
-    if(!assignmentGroups[safeKey]) assignmentGroups[safeKey] = {title:a.title, due:a.due_date, desc:a.description, key:safeKey, cls: currentCls, instances:[]};
+    if(!assignmentGroups[safeKey]) assignmentGroups[safeKey] = {title:a.title, due:a.due_date, desc:a.description, key:safeKey, cls: currentCls, parentCreated: !!a.parent_created, instances:[]};
     assignmentGroups[safeKey].instances.push(a);
   });
 
@@ -2335,11 +2411,18 @@ async function loadTeacherClassAssignments(classId) {
       </div>`;
     }).join('');
 
-    return `<div style="border-radius:12px;border:1.5px solid var(--gray-200);overflow:hidden;margin-bottom:10px;" id="assignTile-${group.key}">
+    const parentBadge = group.parentCreated
+      ? `<span style="font-size:10px;font-weight:700;color:var(--violet);background:var(--gray-100);padding:1px 7px;border-radius:20px;margin-left:6px;">👨‍👩‍👧 Added by parent</span>`
+      : '';
+    const archiveBtn = group.parentCreated
+      ? `<span style="font-size:14px;opacity:0.3;" title="Parent-created — managed by the parent">🔒</span>`
+      : `<button class="archive-btn" data-archive-key="${group.key}" data-archive-title="${group.title.replace(/"/g,'&quot;')}" data-archive-ids="${instances.map(a=>a.id).join(',')}" onclick="event.stopPropagation();handleArchiveClick(this)" title="Archive assignment">🗄️</button>`;
+
+    return `<div style="border-radius:12px;border:1.5px solid ${group.parentCreated?'var(--gray-100)':'var(--gray-200)'};overflow:hidden;margin-bottom:10px;" id="assignTile-${group.key}">
       <div style="padding:12px;cursor:pointer;background:var(--gray-50);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;">
-            <div style="font-weight:700;font-size:14px;color:var(--indigo);">${group.title}</div>
+            <div style="font-weight:700;font-size:14px;color:var(--indigo);">${group.title}${parentBadge}</div>
             ${group.cls ? `<div style="font-size:11px;font-weight:700;color:var(--violet);margin-top:2px;">📚 ${group.cls.name||group.cls.subject||''}</div>` : ''}
             <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
               <span style="font-size:11px;color:${isOverdue?'var(--rose)':'var(--gray-500)'};">📅 ${dueStr}</span>
@@ -2347,7 +2430,7 @@ async function loadTeacherClassAssignments(classId) {
             </div>
           </div>
           <div style="font-size:12px;font-weight:900;color:${statusColor};">${pct}%</div>
-          <button class="archive-btn" data-archive-key="${group.key}" data-archive-title="${group.title.replace(/"/g,'&quot;')}" data-archive-ids="${instances.map(a=>a.id).join(',')}" onclick="event.stopPropagation();handleArchiveClick(this)" title="Archive assignment">🗄️</button>
+          ${archiveBtn}
         </div>
         <div style="background:var(--gray-200);border-radius:10px;height:5px;margin-top:8px;"><div style="background:${statusColor};border-radius:10px;height:5px;width:${pct}%;transition:width 0.6s;"></div></div>
       </div>
@@ -3292,6 +3375,12 @@ function openDrawerScreen(screen) {
     }
   }
   // Child selects for parent screens are populated at app load (loadParentApp)
+
+  // Add Task: reset visibility to Private and populate enrolled-class picker
+  if(screen === 'add-task') {
+    setTaskVisibility('private');
+    populateTaskClassPicker();
+  }
 
   // AI breakdown: show primary (quest) or HS variant based on student age
   if(screen === 'ai-breakdown') {
