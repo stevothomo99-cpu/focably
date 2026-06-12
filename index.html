@@ -852,12 +852,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
     <!-- ASSIGNMENTS FOR SELECTED CLASS -->
     <div class="card" id="classAssignmentsCard" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
         <div class="card-title" style="margin-bottom:0;">📋 Assignments</div>
-        <div style="display:flex;gap:6px;">
-          <button onclick="setTeacherView('assignments')" id="viewAssignmentsBtn" style="padding:5px 12px;border-radius:20px;border:none;background:var(--violet);color:white;font-size:11px;font-weight:700;cursor:pointer;">By Assignment</button>
-          <button onclick="setTeacherView('students')" id="viewStudentsBtn" style="padding:5px 12px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:700;cursor:pointer;">By Student</button>
-        </div>
+        <select id="teacherViewSelect" onchange="setTeacherView(this.value)" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--indigo);font-size:12px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;outline:none;">
+          <option value="assignments">View: By Assignment</option>
+          <option value="students">View: By Student</option>
+        </select>
       </div>
       <div id="teacherAssignmentsView">
         <div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet for this class</div>
@@ -2380,16 +2380,12 @@ function setTeacherView(mode) {
   teacherViewMode = mode;
   const aView = document.getElementById('teacherAssignmentsView');
   const sView = document.getElementById('teacherStudentsView');
-  const aBtn = document.getElementById('viewAssignmentsBtn');
-  const sBtn = document.getElementById('viewStudentsBtn');
+  const sel = document.getElementById('teacherViewSelect');
+  if(sel && sel.value !== mode) sel.value = mode;
   if(mode === 'assignments') {
     aView.style.display='block'; sView.style.display='none';
-    aBtn.style.background=`var(--violet)`; aBtn.style.color='white'; aBtn.style.border='none';
-    sBtn.style.background='white'; sBtn.style.color='var(--gray-500)'; sBtn.style.border='1.5px solid var(--gray-200)';
   } else {
     aView.style.display='none'; sView.style.display='block';
-    sBtn.style.background=`var(--violet)`; sBtn.style.color='white'; sBtn.style.border='none';
-    aBtn.style.background='white'; aBtn.style.color='var(--gray-500)'; aBtn.style.border='1.5px solid var(--gray-200)';
   }
 }
 
@@ -2540,22 +2536,50 @@ async function loadTeacherClassAssignments(classId) {
     studentMap[name].assignments.push(a);
   });
 
-  sView.innerHTML = Object.values(studentMap).map(student => {
+  sView.innerHTML = Object.values(studentMap).map((student, si) => {
     const totalTasks = student.assignments.flatMap(a=>a.tasks||[]).length;
     const doneTasks = student.assignments.flatMap(a=>a.tasks||[]).filter(t=>t.completed).length;
     const pct = totalTasks ? Math.round((doneTasks/totalTasks)*100) : 0;
     const initial = student.name.charAt(0).toUpperCase();
     const colors = ['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
     const tColors = ['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
-    const ci = Object.keys(studentMap).indexOf(student.name) % 4;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-100);">
-      <div style="width:36px;height:36px;border-radius:50%;background:${colors[ci]};color:${tColors[ci]};display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;">${initial}</div>
-      <div style="flex:1;">
-        <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${student.name}</div>
-        <div style="background:var(--gray-100);border-radius:10px;height:5px;"><div style="background:${pct===100?'var(--mint)':'var(--violet)'};border-radius:10px;height:5px;width:${pct}%;"></div></div>
+    const ci = si % 4;
+
+    // Per-assignment rows for this student
+    const today = new Date().toISOString().split('T')[0];
+    const assignRows = student.assignments.map(a => {
+      const t = a.tasks||[];
+      const d = t.filter(x=>x.completed).length;
+      const apct = t.length ? Math.round((d/t.length)*100) : 0;
+      const overdue = a.due_date && a.due_date < today && apct < 100;
+      const col = apct>=100 ? 'var(--mint)' : overdue ? 'var(--rose)' : 'var(--violet)';
+      const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
+      const pend = t.filter(x=>x.verification_status==='pending').length;
+      const pendBadge = pend ? `<span style="font-size:10px;font-weight:700;color:var(--amber);background:#FFFBEB;padding:1px 6px;border-radius:20px;margin-left:6px;">⏳ ${pend}</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;color:var(--indigo);">${a.title}${pendBadge}</div>
+          <div style="font-size:10px;color:${overdue?'var(--rose)':'var(--gray-500)'};margin:2px 0 4px;">📅 ${dueStr} · ${d}/${t.length} steps</div>
+          <div style="background:var(--gray-100);border-radius:10px;height:4px;"><div style="background:${col};border-radius:10px;height:4px;width:${apct}%;"></div></div>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:${col};min-width:32px;text-align:right;">${apct}%</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="border-bottom:1px solid var(--gray-100);margin-bottom:4px;">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.pstu-chev').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)'" style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;">
+        <div style="width:36px;height:36px;border-radius:50%;background:${colors[ci]};color:${tColors[ci]};display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;">${initial}</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${student.name}</div>
+          <div style="background:var(--gray-100);border-radius:10px;height:5px;"><div style="background:${pct===100?'var(--mint)':'var(--violet)'};border-radius:10px;height:5px;width:${pct}%;"></div></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:${pct===100?'var(--mint)':'var(--gray-500)'};">${doneTasks}/${totalTasks}</div>
+        <div class="pstu-chev" style="font-size:11px;color:var(--gray-400);transition:transform 0.25s;">▼</div>
       </div>
-      <div style="font-size:12px;font-weight:700;color:${pct===100?'var(--mint)':'var(--gray-500)'};">${doneTasks}/${totalTasks}</div>
-      <button class="nudge-btn" onclick="sendNudge('','${student.name}')">Nudge 👋</button>
+      <div style="display:none;padding:0 0 12px 46px;">
+        ${assignRows || '<div style="font-size:12px;color:var(--gray-400);font-style:italic;padding:4px 0;">No assignments</div>'}
+        <button class="nudge-btn" onclick="event.stopPropagation();sendNudge('','${student.name}')" style="margin-top:4px;">Nudge 👋</button>
+      </div>
     </div>`;
   }).join('');
 }
