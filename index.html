@@ -743,6 +743,42 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   </div>
 
   <!-- JOIN CLASS SCREEN -->
+  <!-- CREATE SCHOOL SCREEN (teacher) -->
+  <div id="screen-create-school" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Create a School</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏫 Set Up Your School</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Create a school account so other teachers can join and share the same subscription.</p>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:4px;">School Name</div>
+        <input class="form-input" type="text" id="newSchoolName" placeholder="e.g. Sunshine Coast Grammar">
+      </div>
+      <button class="publish-btn" onclick="createSchool()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">Create School ✓</button>
+    </div>
+  </div>
+
+  <!-- JOIN SCHOOL SCREEN (teacher) -->
+  <div id="screen-join-school" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Join a School</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔗 Join Your School</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Ask your school admin for the school invite code and enter it below.</p>
+      <div class="link-box">
+        <div style="font-size:13px;font-weight:600;color:var(--gray-700);">School Invite Code</div>
+        <div class="link-input-row">
+          <input class="link-input" type="text" id="schoolCodeInput" placeholder="ABC123" maxlength="6">
+          <button class="link-btn" onclick="joinSchool()" style="background:var(--mint);">Join ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="screen-join-class" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
@@ -810,6 +846,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="teacher-header">
       <div style="font-size:13px;opacity:0.7;margin-bottom:3px;">Welcome back,</div>
       <div class="teacher-name" id="teacherName">Loading...</div>
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:4px;display:none;" id="teacherSchoolBadge"></div>
       <div style="font-size:13px;opacity:0.75;" id="teacherSubline">Select a class to get started</div>
     </div>
 
@@ -977,7 +1014,7 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
-let currentUser = null, currentProfile = null, currentFamily = null;
+let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
@@ -2309,6 +2346,81 @@ async function parentAddTask() {
   closeDrawerScreen();
 }
 
+// ── School setup functions ──────────────────────────────────────────────────
+
+function openSchoolSetup() {
+  closeDrawer();
+  // If teacher has no school, offer create or join sub-options
+  // We'll show a simple choice by opening a mini-screen; for now direct to create
+  // (join is available if they have a code from another admin)
+  const choice = confirm('Do you want to CREATE a new school?\n\nOK = Create new school\nCancel = Join an existing school with a code');
+  if(choice) {
+    openDrawerScreen('create-school');
+  } else {
+    openDrawerScreen('join-school');
+  }
+}
+
+async function createSchool() {
+  const name = document.getElementById('newSchoolName').value.trim();
+  if(!name) { showToast('Enter your school name'); return; }
+  // Generate a simple 6-char invite code
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  const expires = new Date(Date.now() + 30*24*60*60*1000).toISOString(); // 30 days
+  // Create the school
+  const {data:school, error} = await dbQuery(
+    db.from('schools').insert({name, invite_code:code, invite_code_expires_at:expires}).select().maybeSingle(),
+    8000, null
+  );
+  if(error || !school) { showToast('❌ Error creating school: '+(error?.message||'unknown')); return; }
+  // Link this teacher as admin
+  const {error:profErr} = await dbQuery(
+    db.from('profiles').update({school_id:school.id, school_role:'admin'}).eq('id',currentUser.id),
+    8000, null
+  );
+  if(profErr) { showToast('❌ Error linking to school: '+profErr.message); return; }
+  currentProfile.school_id = school.id;
+  currentProfile.school_role = 'admin';
+  currentSchool = school;
+  // Update badge
+  const badge = document.getElementById('teacherSchoolBadge');
+  if(badge) { badge.textContent = '🏫 '+school.name+' (Admin)'; badge.style.display='block'; }
+  showToast('✅ School created! Invite code: '+code);
+  closeDrawerScreen();
+}
+
+async function joinSchool() {
+  const code = document.getElementById('schoolCodeInput').value.trim().toUpperCase();
+  if(code.length !== 6) { showToast('Enter the 6-character school code'); return; }
+  // Look up school by invite code
+  const {data:school, error} = await dbQuery(
+    db.from('schools').select('*').eq('invite_code',code).maybeSingle(),
+    8000, null
+  );
+  if(error || !school) { showToast('❌ School code not found'); return; }
+  // Check expiry
+  if(school.invite_code_expires_at && new Date(school.invite_code_expires_at) < new Date()) {
+    showToast('❌ This code has expired — ask your admin to generate a new one'); return;
+  }
+  // Link teacher as member
+  const {error:profErr} = await dbQuery(
+    db.from('profiles').update({school_id:school.id, school_role:'member'}).eq('id',currentUser.id),
+    8000, null
+  );
+  if(profErr) { showToast('❌ Error joining school: '+profErr.message); return; }
+  currentProfile.school_id = school.id;
+  currentProfile.school_role = 'member';
+  currentSchool = school;
+  const badge = document.getElementById('teacherSchoolBadge');
+  if(badge) { badge.textContent = '🏫 '+school.name; badge.style.display='block'; }
+  showToast('✅ Joined '+school.name+'!');
+  closeDrawerScreen();
+}
+
+// ── End school functions ────────────────────────────────────────────────────
+
 async function joinClass() {
   const code = document.getElementById('classCodeInput').value.trim().toUpperCase();
   if(code.length !== 6) { showToast('Enter the 6-character class code'); return; }
@@ -2370,6 +2482,19 @@ async function loadTeacherApp() {
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
   const navName = document.getElementById('navUserName');
   if(navName) navName.textContent = currentProfile.full_name?.split(' ')[0] || '';
+
+  // Load school if teacher belongs to one
+  currentSchool = null;
+  if(currentProfile.school_id) {
+    const {data:school} = await dbQuery(db.from('schools').select('*').eq('id',currentProfile.school_id).maybeSingle(), 5000, null);
+    currentSchool = school || null;
+  }
+  // Show/update school badge in teacher header
+  const schoolBadge = document.getElementById('teacherSchoolBadge');
+  if(schoolBadge) {
+    schoolBadge.textContent = currentSchool ? '🏫 '+currentSchool.name : '👤 Individual Teacher';
+    schoolBadge.style.display = 'block';
+  }
 
   try {
     const {data:classes} = await dbQuery(db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true}), 8000, []);
@@ -2618,7 +2743,7 @@ function showCreateClass() {
 async function createClass() {
   const name=document.getElementById('className').value.trim(),subject=document.getElementById('classSubject').value.trim(),year=document.getElementById('classYear').value.trim();
   if(!name||!subject){showToast('Enter class name and subject');return;}
-  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year}).select().maybeSingle();
+  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year,school_id:currentProfile.school_id||null}).select().maybeSingle();
   if(error){showToast('❌ Error creating class: '+error.message);return;}
   teacherClasses.push(data);
   selectedClassId = data.id;
@@ -3453,10 +3578,14 @@ function renderDrawerItems() {
   let items = [];
 
   if(role === 'teacher') {
+    const schoolItem = currentProfile?.school_id
+      ? { icon:'🏫', label: currentSchool ? currentSchool.name : 'My School', action:`openDrawerScreen('join-school')`, disabled: true, note:'Already in a school' }
+      : { icon:'🏫', label:'Set Up / Join a School', action:`openSchoolSetup()`, disabled: false };
     items = [
       { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !teacherClasses?.length, note: !teacherClasses?.length ? 'Create a class first' : '' },
       { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
       { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
+      schoolItem,
     ];
   } else if(role === 'parent') {
     items = [
@@ -3482,7 +3611,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -3854,4 +3983,5 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
 </script>
 </body>
 </html>
+
 
