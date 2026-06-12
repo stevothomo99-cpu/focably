@@ -79,6 +79,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .theme-card:hover,.theme-card.selected{border-color:var(--amber);background:rgba(245,158,11,0.2);}
 .start-btn{width:100%;max-width:320px;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--violet),#5B21B6);color:white;font-family:'Nunito',sans-serif;font-weight:900;font-size:17px;cursor:pointer;transition:all 0.2s;display:none;margin-top:4px;}
 .start-btn.visible{display:block;}
+.avatar-section{width:100%;max-width:320px;margin-bottom:4px;display:none;}
+.avatar-section.visible{display:block;}
+.avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+.avatar-opt{font-size:26px;padding:8px 4px;border-radius:12px;border:2.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);cursor:pointer;text-align:center;transition:all 0.2s;line-height:1;}
+.avatar-opt:hover,.avatar-opt.selected{border-color:var(--amber);background:rgba(245,158,11,0.25);transform:scale(1.1);}
+.student-avatar{font-size:44px;line-height:1;margin-bottom:6px;display:block;}
 
 /* TOP NAV */
 .top-nav{background:var(--indigo);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -487,6 +493,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div class="theme-card" id="theme-adventure" onclick="selectTheme('adventure')"><span class="te">🗺️</span><span class="tn">Adventure</span></div>
       </div>
     </div>
+    <!-- AVATAR PICKER (shown after age selected) -->
+    <div class="avatar-section" id="avatarSection">
+      <div style="color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;margin-bottom:4px;text-align:center;">Pick your avatar</div>
+      <div style="color:rgba(255,255,255,0.55);font-size:12px;margin-bottom:14px;text-align:center;">You can change this later</div>
+      <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
     <button class="start-btn" id="startBtn" onclick="completeOnboarding()">Let's Go! 🎉</button>
   </div>
 </div>
@@ -608,6 +620,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <!-- HS MODE -->
     <div id="hs-mode" style="display:none;">
       <div class="hs-header">
+        <span class="student-avatar" id="hsAvatar">🎓</span>
         <div class="hs-name" id="hsName">Hey there! 👋</div>
         <div style="font-size:13px;opacity:0.75;margin-bottom:14px;">Keep up the great work</div>
         <div class="xp-section">
@@ -809,6 +822,20 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   </div>
 
   <!-- STUDENT AI BREAKDOWN SCREEN -->
+  <!-- CHANGE AVATAR SCREEN (student) -->
+  <div id="screen-change-avatar" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Change Avatar</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎭 Your Avatar</div>
+      <div style="text-align:center;font-size:56px;margin:8px 0 16px;" id="avatarPreview">🎓</div>
+      <div class="avatar-grid" id="changeAvatarGrid"></div>
+      <button class="publish-btn" onclick="saveAvatarChange()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-top:4px;">Save Avatar ✓</button>
+    </div>
+  </div>
+
   <div id="screen-ai-breakdown" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
@@ -1263,12 +1290,67 @@ async function loadProfile() {
 }
 
 // ── ONBOARDING ──
+const AVATARS_HS = ['🎧','🎮','🏀','⚽','🎨','🎸','📸','🌊','🚀','🦊','🐺','🦁','🐉','⚡','🔥','🌙','🎯','🏆','💡','🎭'];
+const AVATARS_PRIMARY = ['🧙','🦸','🐱','🐶','🦊','🐸','🦄','🐲','🚀','🌟','🎩','🦋','🐼','🦁','🤖','👾','🧸','🎪','🌈','⚡'];
+let selectedAvatar = null;
+
+function renderAvatarGrid(ageGroup) {
+  const emojis = ageGroup === 'primary' ? AVATARS_PRIMARY : AVATARS_HS;
+  const grid = document.getElementById('avatarGrid');
+  if(!grid) return;
+  grid.innerHTML = emojis.map(e =>
+    `<div class="avatar-opt" onclick="selectAvatar('${e}',this)">${e}</div>`
+  ).join('');
+  selectedAvatar = null;
+}
+
+function selectAvatar(emoji, el) {
+  selectedAvatar = emoji;
+  document.querySelectorAll('.avatar-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectChangeAvatar(emoji, el) {
+  selectedAvatar = emoji;
+  const preview = document.getElementById('avatarPreview');
+  if(preview) preview.textContent = emoji;
+  document.querySelectorAll('#changeAvatarGrid .avatar-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function saveAvatarChange() {
+  if(!selectedAvatar) { showToast('Pick an avatar first!'); return; }
+  const {error} = await dbQuery(db.from('profiles').update({avatar:selectedAvatar}).eq('id',currentUser.id), 5000, null);
+  if(error) { showToast('❌ Could not save avatar'); return; }
+  currentProfile.avatar = selectedAvatar;
+  // Update displayed avatar immediately
+  const age = currentProfile.age_group;
+  if(age === 'primary') {
+    const heroEl = document.getElementById('heroEmoji');
+    if(heroEl) heroEl.textContent = selectedAvatar;
+  } else {
+    const hsAvatarEl = document.getElementById('hsAvatar');
+    if(hsAvatarEl) hsAvatarEl.textContent = selectedAvatar;
+  }
+  showToast('✅ Avatar updated!');
+  closeDrawerScreen();
+}
+
 function selectAge(age) {
   selectedAge=age;
   document.getElementById('age-primary').classList.toggle('selected',age==='primary');
   document.getElementById('age-highschool').classList.toggle('selected',age==='highschool');
-  if(age==='primary'){document.getElementById('themeSection').style.display='block';document.getElementById('startBtn').classList.remove('visible');}
-  else{document.getElementById('themeSection').style.display='none';selectedTheme=null;document.getElementById('startBtn').classList.add('visible');}
+  // Show avatar picker for both age groups
+  const avatarSection = document.getElementById('avatarSection');
+  if(avatarSection) { avatarSection.classList.add('visible'); renderAvatarGrid(age); }
+  if(age==='primary'){
+    document.getElementById('themeSection').style.display='block';
+    document.getElementById('startBtn').classList.remove('visible');
+  } else {
+    document.getElementById('themeSection').style.display='none';
+    selectedTheme=null;
+    document.getElementById('startBtn').classList.add('visible');
+  }
 }
 function selectTheme(t) {
   selectedTheme=t;
@@ -1278,8 +1360,9 @@ function selectTheme(t) {
 async function completeOnboarding() {
   if(!selectedAge){showToast('Pick your age group!');return;}
   if(selectedAge==='primary'&&!selectedTheme){showToast('Pick a quest world!');return;}
-  await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme}).eq('id',currentUser.id);
-  currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme;
+  const avatar = selectedAvatar || (selectedAge==='primary' ? '🧙' : '🎓');
+  await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme,avatar}).eq('id',currentUser.id);
+  currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme; currentProfile.avatar=avatar;
   await loadStudentApp();
 }
 // ── STUDENT APP ──
@@ -1290,6 +1373,7 @@ async function loadStudentApp() {
   switchRole('student');
   const age=currentProfile.age_group, theme=currentProfile.theme||'fantasy';
   const firstName = currentProfile.full_name?.split(' ')[0] || '';
+  const avatar = currentProfile.avatar || (age==='primary' ? '🧙' : '🎓');
   // Set nav user name for all roles
   const navName = document.getElementById('navUserName');
   if(navName) navName.textContent = firstName;
@@ -1299,8 +1383,14 @@ async function loadStudentApp() {
   document.getElementById('linkAccountCard').style.display='none';
   if(age==='primary'){
     applyTheme(theme);
+    // Set avatar as heroEmoji for primary
+    const heroEl = document.getElementById('heroEmoji');
+    if(heroEl) heroEl.textContent = avatar;
   } else {
     document.getElementById('hsName').textContent=`Hey, ${firstName}! 👋`;
+    // Set avatar in HS header
+    const hsAvatarEl = document.getElementById('hsAvatar');
+    if(hsAvatarEl) hsAvatarEl.textContent = avatar;
   }
   isNavigating = false;
   // Load assignments — this will show the right panel once child record is confirmed
@@ -3596,6 +3686,7 @@ function renderDrawerItems() {
   } else if(role === 'student') {
     items = [
       { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
+      { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
     ];
   }
 
@@ -3611,7 +3702,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -3660,6 +3751,22 @@ function openDrawerScreen(screen) {
       if(disp) disp.style.display = 'none';
       if(genBtn) genBtn.textContent = '🔑 Generate Invite Code';
     }
+  }
+
+  // Change avatar: populate grid with correct emoji set and show current avatar
+  if(screen === 'change-avatar') {
+    const age = currentProfile?.age_group;
+    const current = currentProfile?.avatar || (age==='primary' ? '🧙' : '🎓');
+    const emojis = age === 'primary' ? AVATARS_PRIMARY : AVATARS_HS;
+    const preview = document.getElementById('avatarPreview');
+    if(preview) preview.textContent = current;
+    const grid = document.getElementById('changeAvatarGrid');
+    if(grid) {
+      grid.innerHTML = emojis.map(e =>
+        `<div class="avatar-opt${e===current?' selected':''}" onclick="selectChangeAvatar('${e}',this)">${e}</div>`
+      ).join('');
+    }
+    selectedAvatar = current;
   }
 
   // AI breakdown: show primary (quest) or HS variant based on student age
@@ -3983,5 +4090,6 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
 </script>
 </body>
 </html>
+
 
 
