@@ -519,6 +519,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
   <div class="top-nav">
     <div class="logo">Achiev<span>ED</span></div>
+    <div id="navUserName" style="flex:1;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:rgba(255,255,255,0.85);padding-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
     <div style="display:flex;align-items:center;gap:6px;">
       <!-- NOTIFICATION BELL -->
       <div style="position:relative;" id="notifBellWrap">
@@ -1133,7 +1134,7 @@ async function signUp() {
   }
 }
 async function signInGoogle() { await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}}); }
-async function signOut() { await db.auth.signOut(); showToast('👋 Signed out'); }
+async function signOut() { await db.auth.signOut(); const n=document.getElementById('navUserName'); if(n) n.textContent=''; showToast('👋 Signed out'); }
 
 function setLoadingStatus(msg) {
   const el = document.getElementById('loadingStatus');
@@ -1251,17 +1252,21 @@ async function loadStudentApp() {
   showScreen('app');
   switchRole('student');
   const age=currentProfile.age_group, theme=currentProfile.theme||'fantasy';
+  const firstName = currentProfile.full_name?.split(' ')[0] || '';
+  // Set nav user name for all roles
+  const navName = document.getElementById('navUserName');
+  if(navName) navName.textContent = firstName;
+  // Hide both mode panels — loadStudentAssignments will reveal the correct one
+  document.getElementById('primary-mode').style.display='none';
+  document.getElementById('hs-mode').style.display='none';
+  document.getElementById('linkAccountCard').style.display='none';
   if(age==='primary'){
-    document.getElementById('primary-mode').style.display='block';
-    document.getElementById('hs-mode').style.display='none';
     applyTheme(theme);
   } else {
-    document.getElementById('primary-mode').style.display='none';
-    document.getElementById('hs-mode').style.display='block';
-    document.getElementById('hsName').textContent=`Hey, ${currentProfile.full_name?.split(' ')[0]}! 👋`;
+    document.getElementById('hsName').textContent=`Hey, ${firstName}! 👋`;
   }
   isNavigating = false;
-  // Load assignments in background — don't block app display
+  // Load assignments — this will show the right panel once child record is confirmed
   loadStudentAssignments(age).catch(e => console.log('Assignment load error:', e.message));
   requestNotificationPermission();
   startNotifPolling();
@@ -1279,7 +1284,14 @@ async function loadStudentAssignments(ageGroup) {
     console.log('loadStudentAssignments: no child found — showing link card');
     document.getElementById('linkAccountCard').style.display='block';
     document.getElementById('primary-mode').style.display='none';
-    document.getElementById('hs-mode').style.display='none';
+    // For HS students, show the hs-mode header (greeting + XP ring) so they see their name,
+    // but clear any class tiles so it doesn't look broken
+    if(ageGroup==='highschool') {
+      document.getElementById('hs-mode').style.display='block';
+      document.getElementById('hsClassTilesContainer').innerHTML='';
+    } else {
+      document.getElementById('hs-mode').style.display='none';
+    }
     return;
   }
   document.getElementById('linkAccountCard').style.display='none';
@@ -1917,6 +1929,8 @@ async function loadParentApp() {
   appReady = true;
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
+  const navName = document.getElementById('navUserName');
+  if(navName) navName.textContent = currentProfile.full_name?.split(' ')[0] || '';
   let {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
   if(!family) {
     const {data:nf} = await dbQuery(db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().maybeSingle());
@@ -2354,6 +2368,8 @@ async function loadTeacherApp() {
   appReady = true;
   switchRole('teacher');
   document.getElementById('teacherName').textContent=(currentProfile.full_name||'Teacher')+' 👩‍🏫';
+  const navName = document.getElementById('navUserName');
+  if(navName) navName.textContent = currentProfile.full_name?.split(' ')[0] || '';
 
   try {
     const {data:classes} = await dbQuery(db.from('classes').select('*').eq('teacher_id',currentUser.id).order('created_at',{ascending:true}), 8000, []);
@@ -3838,3 +3854,4 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
 </script>
 </body>
 </html>
+
