@@ -428,6 +428,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </button>
       <div class="auth-switch">No account? <a onclick="showSignUp()">Sign up free</a></div>
     </div>
+    <div id="authForgotPassword" style="display:none;">
+      <div class="auth-title">Reset password</div>
+      <input class="auth-input" type="email" id="fpEmail" placeholder="Email address">
+      <button class="auth-btn" id="fpBtn" onclick="sendPasswordReset()">Send Reset Link</button>
+      <div class="auth-switch"><a onclick="showSignIn()">← Back to sign in</a></div>
+    </div>
     <div id="authSignUp" style="display:none;">
       <div class="auth-title">Create account</div>
       <div class="auth-role-row">
@@ -1039,16 +1045,16 @@ function showConfirmScreen(email) {
 
 // ── AUTH ──
 function showSignUp() { 
-  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('authSignUp').style.display='block'; clearError(); 
+  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const el=document.getElementById('authSignUp'); if(el)el.style.display='block'; clearError(); 
 }
 function showSignIn() { 
-  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('authSignIn').style.display='block'; clearError(); 
+  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const el=document.getElementById('authSignIn'); if(el)el.style.display='block'; clearError(); 
 }
 function showForgotPassword() {
-  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('authForgotPassword').style.display='block'; clearError();
+  ['authSignIn','authSignUp','authForgotPassword'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const el=document.getElementById('authForgotPassword'); if(el)el.style.display='block'; clearError();
 }
 async function sendPasswordReset() {
   const email = document.getElementById('fpEmail').value.trim();
