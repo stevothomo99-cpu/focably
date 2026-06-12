@@ -728,12 +728,16 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
     <div class="card">
       <div class="card-title">📬 Family Invite Code</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Share this with your child to link their account.</p>
-      <div class="invite-box">
-        <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Family Invite Code</div>
-        <div class="invite-code" id="familyInviteCode">——</div>
-        <button class="copy-btn" onclick="copyInviteCode()">Copy Code</button>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">Generate a one-time code to link your child's account. Each code is valid for <strong>48 hours</strong>.</p>
+      <div id="familyCodeDisplay" style="display:none;">
+        <div class="invite-box">
+          <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Family Invite Code</div>
+          <div class="invite-code" id="familyInviteCode">——</div>
+          <div id="familyCodeExpiry" style="font-size:12px;color:var(--gray-500);margin:6px 0 10px;"></div>
+          <button class="copy-btn" onclick="copyInviteCode()">Copy Code</button>
+        </div>
       </div>
+      <button id="familyGenBtn" class="publish-btn" onclick="generateFamilyCode()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">🔑 Generate Invite Code</button>
     </div>
   </div>
 
@@ -815,13 +819,17 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <option value="">— Select a class —</option>
       </select>
       <div id="classInfo" style="display:none;">
-        <div style="display:flex;align-items:center;gap:10px;background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:8px;">
-          <div style="flex:1;">
-            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;">Invite Code</div>
-            <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:24px;letter-spacing:4px;color:var(--violet);" id="classInviteCode">——</div>
+        <div id="classCodeDisplay" style="display:none;">
+          <div style="display:flex;align-items:center;gap:10px;background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:6px;">
+            <div style="flex:1;">
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;">Invite Code</div>
+              <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:24px;letter-spacing:4px;color:var(--violet);" id="classInviteCode">——</div>
+              <div id="classCodeExpiry" style="font-size:11px;color:var(--gray-500);margin-top:2px;"></div>
+            </div>
+            <button class="copy-btn" onclick="copyClassCode()">Copy</button>
           </div>
-          <button class="copy-btn" onclick="copyClassCode()">Copy</button>
         </div>
+        <button id="classGenBtn" onclick="generateClassCode()" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--violet);background:white;color:var(--violet);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">🔑 Generate Invite Code</button>
         <div style="font-size:12px;color:var(--gray-500);text-align:center;" id="classStudentCount">Share with parents to enrol students</div>
       </div>
       <div id="addAnotherClass" style="display:none;margin-top:10px;">
@@ -1878,6 +1886,9 @@ async function linkToFamily() {
   if(code.length!==6){showToast('Enter the 6-character code');return;}
   const {data:family} = await db.from('families').select('*').eq('invite_code',code).maybeSingle();
   if(!family){showToast('❌ Code not found — check with your parent');return;}
+  if(family.invite_code_expires_at && new Date(family.invite_code_expires_at) < new Date()){
+    showToast('⏰ This code has expired — ask for a new one');return;
+  }
   // Create child record linked to this family and profile
   const {data:existingRows} = await db.from('children').select('id').eq('profile_id',currentUser.id).limit(1);
   if(existingRows?.length){showToast('Already linked!');return;}
@@ -1912,7 +1923,6 @@ async function loadParentApp() {
     family=nf;
   }
   currentFamily=family;
-  document.getElementById('familyInviteCode').textContent=family?.invite_code||'——';
   const {data:children} = await dbQuery(db.from('children').select('*').eq('family_id',family.id), 8000, []);
   currentChildren=children||[];
   renderChildTabs();
@@ -2078,6 +2088,58 @@ async function approveReward(rewardId,btn) {
 }
 function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('familyInviteCode').textContent).then(()=>showToast('📋 Invite code copied!')); }
 
+// ── DYNAMIC INVITE CODES (48h expiry) ──
+function randomInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
+  let s = '';
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+function expiryLabel(expiresAt) {
+  if(!expiresAt) return '';
+  const ms = new Date(expiresAt) - new Date();
+  if(ms <= 0) return '⚠️ Expired — generate a new one';
+  const hrs = Math.floor(ms/3600000);
+  const mins = Math.floor((ms%3600000)/60000);
+  if(hrs >= 1) return `⏳ Valid for ${hrs}h ${mins}m`;
+  return `⏳ Valid for ${mins}m`;
+}
+
+async function generateFamilyCode() {
+  const btn = document.getElementById('familyGenBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Generating…'; }
+  if(!currentFamily){ showToast('No family found'); if(btn){btn.disabled=false;btn.textContent='🔑 Generate Invite Code';} return; }
+  const code = randomInviteCode();
+  const expires = new Date(Date.now() + 48*3600000).toISOString();
+  const {error} = await dbQuery(db.from('families').update({invite_code:code, invite_code_expires_at:expires}).eq('id', currentFamily.id));
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Generate New Code'; }
+  if(error){ showToast('❌ '+error.message); return; }
+  currentFamily.invite_code = code;
+  currentFamily.invite_code_expires_at = expires;
+  document.getElementById('familyInviteCode').textContent = code;
+  document.getElementById('familyCodeExpiry').textContent = expiryLabel(expires);
+  document.getElementById('familyCodeDisplay').style.display = 'block';
+  showToast('🔑 New code generated — valid 48h');
+}
+
+async function generateClassCode() {
+  const btn = document.getElementById('classGenBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Generating…'; }
+  if(!selectedClassId){ showToast('Select a class first'); if(btn){btn.disabled=false;btn.textContent='🔑 Generate Invite Code';} return; }
+  const code = randomInviteCode();
+  const expires = new Date(Date.now() + 48*3600000).toISOString();
+  const {error} = await dbQuery(db.from('classes').update({invite_code:code, invite_code_expires_at:expires}).eq('id', selectedClassId));
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Generate New Code'; }
+  if(error){ showToast('❌ '+error.message); return; }
+  const cls = teacherClasses.find(c=>c.id===selectedClassId);
+  if(cls){ cls.invite_code = code; cls.invite_code_expires_at = expires; }
+  document.getElementById('classInviteCode').textContent = code;
+  document.getElementById('classCodeExpiry').textContent = expiryLabel(expires);
+  document.getElementById('classCodeDisplay').style.display = 'block';
+  showToast('🔑 New class code — valid 48h');
+}
+
 // ── ASSIGNMENT FILE UPLOAD ──
 let pendingAssignmentFile = null;
 
@@ -2240,6 +2302,9 @@ async function joinClass() {
   // Find the class
   const {data:cls} = await db.from('classes').select('*, profiles(full_name)').eq('invite_code', code).maybeSingle();
   if(!cls) { showToast('❌ Class not found — check the code'); return; }
+  if(cls.invite_code_expires_at && new Date(cls.invite_code_expires_at) < new Date()){
+    showToast('⏰ This class code has expired — ask the teacher for a new one'); return;
+  }
 
   // Use selected child from dropdown or first child
   const childSelectEl = document.getElementById('joinClassChildId');
@@ -2355,9 +2420,20 @@ async function selectClass(classId) {
   // Update header
   document.getElementById('teacherSubline').textContent = `${cls.name} · ${cls.subject} ${cls.year_group||''}`;
 
-  // Show invite code
+  // Show invite code only if a valid (non-expired) one exists
   document.getElementById('classInfo').style.display='block';
-  document.getElementById('classInviteCode').textContent = cls.invite_code;
+  const codeValid = cls.invite_code && cls.invite_code_expires_at && new Date(cls.invite_code_expires_at) > new Date();
+  const classCodeDisplay = document.getElementById('classCodeDisplay');
+  const classGenBtn = document.getElementById('classGenBtn');
+  if(codeValid) {
+    document.getElementById('classInviteCode').textContent = cls.invite_code;
+    document.getElementById('classCodeExpiry').textContent = expiryLabel(cls.invite_code_expires_at);
+    classCodeDisplay.style.display = 'block';
+    if(classGenBtn) classGenBtn.textContent = '🔄 Generate New Code';
+  } else {
+    classCodeDisplay.style.display = 'none';
+    if(classGenBtn) classGenBtn.textContent = '🔑 Generate Invite Code';
+  }
 
   // Show class-specific cards
   document.getElementById('classAssignmentsCard').style.display='block';
@@ -3399,6 +3475,22 @@ function openDrawerScreen(screen) {
   if(screen === 'add-task') {
     setTaskVisibility('private');
     populateTaskClassPicker();
+  }
+
+  // Family invite: show existing code only if still valid, else just the generate button
+  if(screen === 'family-invite') {
+    const valid = currentFamily?.invite_code && currentFamily?.invite_code_expires_at && new Date(currentFamily.invite_code_expires_at) > new Date();
+    const disp = document.getElementById('familyCodeDisplay');
+    const genBtn = document.getElementById('familyGenBtn');
+    if(valid) {
+      document.getElementById('familyInviteCode').textContent = currentFamily.invite_code;
+      document.getElementById('familyCodeExpiry').textContent = expiryLabel(currentFamily.invite_code_expires_at);
+      if(disp) disp.style.display = 'block';
+      if(genBtn) genBtn.textContent = '🔄 Generate New Code';
+    } else {
+      if(disp) disp.style.display = 'none';
+      if(genBtn) genBtn.textContent = '🔑 Generate Invite Code';
+    }
   }
 
   // AI breakdown: show primary (quest) or HS variant based on student age
