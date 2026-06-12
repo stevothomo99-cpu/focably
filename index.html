@@ -695,6 +695,46 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   <!-- ── PARENT DRAWER SCREENS ── -->
 
   <!-- ADD TASK SCREEN -->
+  <!-- IMPORT ASSIGNMENT SCREEN (all roles) -->
+  <div id="screen-import-assignment" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Import Assignment</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📥 Paste &amp; Import</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Paste assignment details from Teams, email, Google Classroom — anywhere. We'll pull out the key details automatically.</p>
+      <textarea class="form-input" id="importPasteInput" rows="6" placeholder="Paste the assignment text here…&#10;&#10;e.g. Science — Chapter 5 Review&#10;Due: Friday 20 June&#10;Read pages 45–60 and answer questions 1–5 in your workbook."></textarea>
+      <button class="publish-btn" id="importParseBtn" onclick="parseImportedAssignment()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);margin-top:4px;">✨ Extract Details</button>
+    </div>
+
+    <!-- Confirmation card — hidden until parse completes -->
+    <div class="card" id="importConfirmCard" style="display:none;margin-top:0;">
+      <div class="card-title">✏️ Confirm &amp; Save</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Check the details below and edit anything that looks off, then save.</p>
+
+      <!-- Child selector — shown for parent role only -->
+      <div id="importChildSelectWrap" style="display:none;margin-bottom:10px;"></div>
+
+      <div class="form-grp"><label class="form-lbl">Title</label><input class="form-input" type="text" id="importTitle" placeholder="Assignment title"></div>
+      <div class="form-row">
+        <div class="form-grp"><label class="form-lbl">Subject</label><input class="form-input" type="text" id="importSubject" placeholder="e.g. Science"></div>
+        <div class="form-grp"><label class="form-lbl">Due Date</label><input class="form-input" type="date" id="importDue"></div>
+      </div>
+      <div class="form-grp"><label class="form-lbl">Notes</label><textarea class="form-input" rows="3" id="importDesc" placeholder="Any extra details…"></textarea></div>
+
+      <!-- Class selector — shown for teacher role only -->
+      <div id="importClassWrap" style="display:none;margin-bottom:10px;">
+        <label class="form-lbl">Assign to Class</label>
+        <select class="form-input" id="importClassPicker">
+          <option value="">— Select a class —</option>
+        </select>
+      </div>
+
+      <button class="publish-btn" id="importSaveBtn" onclick="saveImportedAssignment()" style="background:linear-gradient(135deg,var(--mint),var(--indigo));">💾 Save Assignment</button>
+    </div>
+  </div>
+
   <div id="screen-add-task" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
@@ -2436,6 +2476,177 @@ async function parentAddTask() {
   closeDrawerScreen();
 }
 
+// ── Import Assignment functions ──────────────────────────────────────────────
+
+async function parseImportedAssignment() {
+  const raw = document.getElementById('importPasteInput').value.trim();
+  if(!raw) { showToast('Paste some assignment text first'); return; }
+
+  const btn = document.getElementById('importParseBtn');
+  btn.textContent = '⏳ Extracting…'; btn.disabled = true;
+
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD for context
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: `Extract assignment details from pasted text. Today's date is ${today}. Return ONLY a raw JSON object with these keys:
+- "title": string (assignment name, max 10 words)
+- "subject": string (subject/class name, or "" if unclear)
+- "due_date": string in YYYY-MM-DD format (or "" if not found)
+- "description": string (key instructions, max 60 words, or "")
+No markdown, no backticks, no explanation. Just the JSON object.`,
+        messages: [{ role: 'user', content: raw }]
+      })
+    });
+    const data = await res.json();
+    const parsed = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+
+    // Populate confirmation form
+    document.getElementById('importTitle').value = parsed.title || '';
+    document.getElementById('importSubject').value = parsed.subject || '';
+    document.getElementById('importDue').value = parsed.due_date || '';
+    document.getElementById('importDesc').value = parsed.description || '';
+
+    // Show role-specific extras
+    const role = currentProfile?.role;
+    if(role === 'parent') {
+      const wrap = document.getElementById('importChildSelectWrap');
+      wrap.style.display = 'block';
+      if(currentChildren?.length) {
+        wrap.innerHTML = `<label class="form-lbl">For which child?</label>
+          <select class="form-input" id="importChildPicker">
+            ${currentChildren.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+          </select>`;
+      }
+    }
+    if(role === 'teacher' && teacherClasses?.length) {
+      const wrap = document.getElementById('importClassWrap');
+      const picker = document.getElementById('importClassPicker');
+      picker.innerHTML = '<option value="">— Select a class —</option>' +
+        teacherClasses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+      wrap.style.display = 'block';
+    }
+
+    document.getElementById('importConfirmCard').style.display = 'block';
+    document.getElementById('importConfirmCard').scrollIntoView({behavior:'smooth', block:'start'});
+  } catch(e) {
+    showToast('❌ Could not parse — try editing the text and retrying');
+    console.error('Import parse error:', e);
+  } finally {
+    btn.textContent = '✨ Extract Details'; btn.disabled = false;
+  }
+}
+
+async function saveImportedAssignment() {
+  const title = document.getElementById('importTitle').value.trim();
+  const subject = document.getElementById('importSubject').value.trim();
+  const due = document.getElementById('importDue').value;
+  const desc = document.getElementById('importDesc').value.trim();
+  if(!title) { showToast('✏️ Add a title first'); return; }
+
+  const btn = document.getElementById('importSaveBtn');
+  btn.textContent = '⏳ Saving…'; btn.disabled = true;
+
+  const role = currentProfile?.role;
+
+  try {
+    if(role === 'teacher') {
+      // Save as a class assignment
+      const classId = document.getElementById('importClassPicker')?.value || '';
+      if(!classId) { showToast('Select a class first'); btn.textContent='💾 Save Assignment'; btn.disabled=false; return; }
+      const {error} = await dbQuery(
+        db.from('assignments').insert({
+          created_by: currentUser.id,
+          class_id: classId,
+          school_id: currentProfile.school_id || null,
+          title, description: desc,
+          due_date: due || null,
+          status: 'active'
+        }).select().maybeSingle()
+      );
+      if(error?.message && error.message !== 'timeout') throw new Error(error.message);
+      showToast('✅ Assignment imported!');
+      // Refresh teacher view
+      if(selectedClassId) selectClass(selectedClassId).catch(()=>{});
+
+    } else {
+      // Parent or student — save as private task for child
+      let childId = null;
+      if(role === 'parent') {
+        childId = document.getElementById('importChildPicker')?.value || currentChildren?.[0]?.id;
+      } else {
+        // Student — get their own child record
+        const {data:children} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, []);
+        childId = children?.[0]?.id;
+      }
+      if(!childId) { showToast('No child account linked yet'); btn.textContent='💾 Save Assignment'; btn.disabled=false; return; }
+
+      const {data:assignment, error} = await dbQuery(
+        db.from('assignments').insert({
+          created_by: currentUser.id,
+          child_id: childId,
+          class_id: null,           // private — not visible to teachers
+          parent_created: true,
+          title, description: desc,
+          due_date: due || null,
+          status: 'active'
+        }).select().maybeSingle()
+      );
+      if(error?.message && error.message !== 'timeout') throw new Error(error.message);
+
+      // AI-generate steps in background (same as parentAddTask)
+      if(assignment) {
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              model:'claude-sonnet-4-20250514', max_tokens:600,
+              system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each item: "title" (max 8 words). No markdown.`,
+              messages:[{role:'user',content:`Task: "${title}". ${desc}`}]
+            })
+          });
+          const d = await res.json();
+          const steps = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
+          const stepRows = steps.map((s,i)=>({
+            assignment_id: assignment.id,
+            child_id: childId,
+            title: s.title || s.step || `Step ${i+1}`,
+            completed: false,
+            verification_required: i === steps.length-1,
+            verification_status: 'none',
+            star_value: 2,
+            xp_value: 15,
+            sort_order: i
+          }));
+          await dbQuery(db.from('tasks').insert(stepRows), 8000, null);
+        } catch(e) { console.log('Step gen skipped:', e.message); }
+      }
+
+      showToast('✅ Assignment imported!');
+      // Refresh student/parent view
+      if(role === 'parent') loadParentAssignments().catch(()=>{});
+      else loadStudentAssignments(currentProfile.age_group).catch(()=>{});
+    }
+
+    // Reset form
+    document.getElementById('importPasteInput').value = '';
+    document.getElementById('importConfirmCard').style.display = 'none';
+    closeDrawerScreen();
+
+  } catch(e) {
+    showToast('❌ Error saving: '+e.message);
+    console.error('Import save error:', e);
+  } finally {
+    btn.textContent = '💾 Save Assignment'; btn.disabled = false;
+  }
+}
+
+// ── End import functions ─────────────────────────────────────────────────────
+
 // ── School setup functions ──────────────────────────────────────────────────
 
 function openSchoolSetup() {
@@ -3673,6 +3884,7 @@ function renderDrawerItems() {
       : { icon:'🏫', label:'Set Up / Join a School', action:`openSchoolSetup()`, disabled: false };
     items = [
       { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !teacherClasses?.length, note: !teacherClasses?.length ? 'Create a class first' : '' },
+      { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
       { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
       schoolItem,
@@ -3680,12 +3892,14 @@ function renderDrawerItems() {
   } else if(role === 'parent') {
     items = [
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
+      { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'📬', label:'Family Invite Code', action:`openDrawerScreen('family-invite')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
     ];
   } else if(role === 'student') {
     items = [
       { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
+      { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
     ];
   }
@@ -3702,7 +3916,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -3754,6 +3968,14 @@ function openDrawerScreen(screen) {
   }
 
   // Change avatar: populate grid with correct emoji set and show current avatar
+  if(screen === 'import-assignment') {
+    // Reset to clean state each time
+    document.getElementById('importPasteInput').value = '';
+    document.getElementById('importConfirmCard').style.display = 'none';
+    document.getElementById('importChildSelectWrap').style.display = 'none';
+    document.getElementById('importClassWrap').style.display = 'none';
+  }
+
   if(screen === 'change-avatar') {
     const age = currentProfile?.age_group;
     const current = currentProfile?.avatar || (age==='primary' ? '🧙' : '🎓');
@@ -4090,6 +4312,7 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
 </script>
 </body>
 </html>
+
 
 
 
