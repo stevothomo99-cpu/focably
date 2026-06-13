@@ -103,6 +103,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .nav-icon{font-size:20px;}
 .nav-label{font-size:10px;font-weight:600;color:var(--gray-500);}
 .nav-item.active .nav-label{color:var(--violet);}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 2px rgba(124,58,237,0.4));}
 .toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--indigo);color:white;padding:10px 22px;border-radius:30px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(30,27,75,0.35);opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -1066,12 +1067,57 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
   </div>
 
+  <!-- SETTINGS SCREEN (footer nav) -->
+  <div id="screen-settings" class="scroll-content" style="display:none;">
+    <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--indigo);margin-bottom:16px;">Settings</div>
+
+    <!-- Profile card -->
+    <div class="card" id="settingsProfileCard">
+      <div class="card-title">👤 My Profile</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div id="settingsAvatar" style="font-size:42px;line-height:1;">🎓</div>
+        <div>
+          <div id="settingsName" style="font-size:16px;font-weight:700;color:var(--indigo);">Loading...</div>
+          <div id="settingsRole" style="font-size:12px;color:var(--gray-500);margin-top:2px;text-transform:capitalize;"></div>
+        </div>
+      </div>
+      <div id="settingsChangeAvatarWrap" style="display:none;">
+        <button onclick="openDrawerScreen('change-avatar')" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--indigo);font-size:13px;font-weight:600;cursor:pointer;">🎭 Change Avatar</button>
+      </div>
+    </div>
+
+    <!-- Notifications card -->
+    <div class="card" id="settingsNotifsCard" style="display:none;">
+      <div class="card-title">🔔 Notifications</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;color:var(--gray-700);font-weight:600;">Push Notifications</div>
+        <button onclick="enableNotifications()" id="settingsEnableNotifsBtn" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--violet);background:white;color:var(--violet);font-size:12px;font-weight:600;cursor:pointer;">Enable</button>
+      </div>
+      <div id="settingsNotifStatus" style="font-size:12px;color:var(--gray-500);margin-top:6px;"></div>
+    </div>
+
+    <!-- About card -->
+    <div class="card">
+      <div class="card-title">ℹ️ About</div>
+      <div style="font-size:13px;color:var(--gray-600);line-height:1.6;">
+        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--indigo);margin-bottom:4px;">AchievED</div>
+        Gamified school task tracker for students, parents and teachers.<br>
+        <span style="color:var(--gray-400);font-size:11px;">Version 0.3 — Early Access</span>
+      </div>
+    </div>
+
+    <!-- Sign out -->
+    <div class="card" style="border:1.5px solid #FECDD3;">
+      <button onclick="signOut()" style="width:100%;padding:12px;border-radius:10px;border:none;background:#FFF1F2;color:var(--rose);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">👋 Sign Out</button>
+    </div>
+  </div>
+
   <div class="bottom-nav">
-    <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
-    <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
-    <div class="nav-item"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
-    <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Messages</div></div>
-    <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+    <div class="nav-item active" id="fnav-home" onclick="footerNav('home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+    <div class="nav-item" id="fnav-tasks" onclick="footerNav('tasks')"><div class="nav-icon">📋</div><div class="nav-label">Tasks</div></div>
+    <div class="nav-item" id="fnav-rewards" onclick="footerNav('rewards')"><div class="nav-icon">🏆</div><div class="nav-label">Rewards</div></div>
+    <div class="nav-item" id="fnav-messages" onclick="footerNav('messages')"><div class="nav-icon">💬</div><div class="nav-label">Messages</div></div>
+    <div class="nav-item" id="fnav-settings" onclick="footerNav('settings')"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
   </div>
 </div>
 
@@ -1238,6 +1284,89 @@ async function signUp() {
   }
 }
 async function signInGoogle() { await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}}); }
+// ── FOOTER NAV ──
+function setFooterActive(tab) {
+  ['home','tasks','rewards','messages','settings'].forEach(t => {
+    const el = document.getElementById('fnav-'+t);
+    if(el) el.classList.toggle('active', t===tab);
+  });
+}
+
+function footerNav(tab) {
+  // If we're in a drawer screen, close it first then go home
+  if(tab === 'home') {
+    closeDrawerScreen();
+    setFooterActive('home');
+    return;
+  }
+
+  const role = currentProfile?.role;
+
+  if(tab === 'settings') {
+    // Show settings screen for all roles
+    ['student','parent','teacher'].forEach(r => {
+      const el = document.getElementById('view-'+r); if(el) el.style.display='none';
+    });
+    ALL_DRAWER_SCREENS.forEach(s => {
+      const el = document.getElementById('screen-'+s); if(el) el.style.display='none';
+    });
+    const ss = document.getElementById('screen-settings');
+    if(ss) ss.style.display='block';
+    // Populate settings
+    const p = currentProfile;
+    const nameEl = document.getElementById('settingsName');
+    const roleEl = document.getElementById('settingsRole');
+    const avatarEl = document.getElementById('settingsAvatar');
+    if(nameEl) nameEl.textContent = p?.full_name || '—';
+    if(roleEl) roleEl.textContent = p?.role || '—';
+    if(avatarEl) avatarEl.textContent = p?.avatar || (p?.role==='student' ? '🎓' : p?.role==='parent' ? '👨‍👩‍👧' : '📚');
+    // Show avatar change only for students
+    const avatarWrap = document.getElementById('settingsChangeAvatarWrap');
+    if(avatarWrap) avatarWrap.style.display = (p?.role==='student') ? 'block' : 'none';
+    // Show notifications card for parent/student
+    const notifsCard = document.getElementById('settingsNotifsCard');
+    if(notifsCard) notifsCard.style.display = (p?.role !== 'teacher') ? 'block' : 'none';
+    setFooterActive('settings');
+    return;
+  }
+
+  if(tab === 'tasks') {
+    // For all roles: go home and scroll to task/class section
+    closeDrawerScreen();
+    setFooterActive('tasks');
+    setTimeout(() => {
+      let el = null;
+      if(role === 'student') {
+        const isHS = currentProfile?.age_group === 'highschool';
+        el = document.getElementById(isHS ? 'hsClassTilesContainer' : 'classTilesContainer');
+      } else if(role === 'parent') {
+        el = document.getElementById('parentSubjectProgress');
+      } else if(role === 'teacher') {
+        el = document.getElementById('teacherAssignmentsView');
+      }
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 100);
+    return;
+  }
+
+  if(tab === 'rewards') {
+    // Student only — scroll to Treasure Chest
+    closeDrawerScreen();
+    setFooterActive('rewards');
+    setTimeout(() => {
+      const el = document.getElementById('chestEmoji') || document.getElementById('rewardsContainer');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 100);
+    return;
+  }
+
+  if(tab === 'messages') {
+    showToast('💬 Messages coming soon!');
+    setFooterActive('home'); // Don't highlight messages since it's not active
+    return;
+  }
+}
+
 async function signOut() { await db.auth.signOut(); const n=document.getElementById('navUserName'); if(n) n.textContent=''; showToast('👋 Signed out'); }
 
 function setLoadingStatus(msg) {
@@ -1407,6 +1536,7 @@ async function completeOnboarding() {
 }
 // ── STUDENT APP ──
 async function loadStudentApp() {
+  setFooterActive('home');
   isNavigating = true;
   appReady = true;
   showScreen('app');
@@ -2092,6 +2222,7 @@ async function linkToFamily() {
 
 // ── PARENT APP ──
 async function loadParentApp() {
+  setFooterActive('home');
   showScreen('app');
   appReady = true;
   switchRole('parent');
@@ -2777,6 +2908,7 @@ let selectedClassId = null;
 let teacherViewMode = 'assignments';
 
 async function loadTeacherApp() {
+  setFooterActive('home');
   showScreen('app');
   appReady = true;
   switchRole('teacher');
@@ -3977,7 +4109,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -4031,6 +4163,11 @@ function openDrawerScreen(screen) {
   // Change avatar: populate grid with correct emoji set and show current avatar
   if(screen === 'archive') {
     loadArchivedItems();
+  }
+
+  if(screen === 'settings') {
+    footerNav('settings');
+    return;
   }
 
   if(screen === 'import-assignment') {
@@ -4099,6 +4236,8 @@ function closeDrawerScreen() {
   const role = currentProfile?.role || 'teacher';
   const view = document.getElementById('view-'+role);
   if(view) view.style.display = 'block';
+  // Reset footer nav to Home
+  setFooterActive('home');
 }
 
 function showCreateClassFromDrawer() {
