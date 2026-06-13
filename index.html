@@ -1006,6 +1006,18 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <div class="form-grp"><label class="form-lbl">Subject</label><input class="form-input" id="classSubject" placeholder="e.g. English"></div>
           <div class="form-grp"><label class="form-lbl">Year Group</label><input class="form-input" id="classYear" placeholder="e.g. Year 9"></div>
         </div>
+        <div id="directEnrolWrap" style="display:none;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--gray-50);border-radius:10px;border:1.5px solid var(--gray-200);">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--indigo);">🎓 Students can join directly</div>
+              <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Students use the class code without parent — school context only</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+              <input type="checkbox" id="directEnrolToggle" style="opacity:0;width:0;height:0;">
+              <span onclick="this.previousElementSibling.checked=!this.previousElementSibling.checked;this.style.background=this.previousElementSibling.checked?'var(--violet)':'#CBD5E1';" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#CBD5E1;border-radius:24px;transition:0.3s;"><span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;transform:translateX(0);"></span></span>
+            </label>
+          </div>
+        </div>
         <button class="publish-btn" onclick="createClass()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Create Class</button>
       </div>
     </div>
@@ -1118,6 +1130,55 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- SCHOOL ADMIN SCREEN (teacher admin only) -->
+  <div id="screen-school-admin" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">School Admin</div>
+    </div>
+
+    <!-- School info + subscription -->
+    <div class="card">
+      <div class="card-title">🏫 School</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div id="adminSchoolName" style="font-size:16px;font-weight:700;color:var(--indigo);">Loading…</div>
+          <div id="adminSchoolStatus" style="font-size:12px;color:var(--gray-500);margin-top:2px;"></div>
+        </div>
+        <div id="adminSubBadge" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--gray-100);color:var(--gray-600);">trial</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Invite Code</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div id="adminSchoolCode" style="font-family:monospace;font-size:18px;font-weight:800;color:var(--violet);letter-spacing:3px;">——————</div>
+            <button onclick="copyAdminSchoolCode()" style="padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;font-size:11px;font-weight:600;cursor:pointer;color:var(--gray-600);">Copy</button>
+          </div>
+          <div id="adminCodeExpiry" style="font-size:11px;color:var(--gray-400);margin-top:2px;"></div>
+        </div>
+        <button onclick="regenSchoolCode()" style="align-self:flex-end;padding:7px 14px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--indigo);font-size:12px;font-weight:600;cursor:pointer;">🔄 New Code</button>
+      </div>
+    </div>
+
+    <!-- Pending teacher approvals -->
+    <div class="card" id="adminPendingCard" style="display:none;">
+      <div class="card-title">⏳ Pending Approval</div>
+      <div id="adminPendingList"></div>
+    </div>
+
+    <!-- Active teachers -->
+    <div class="card">
+      <div class="card-title">👩‍🏫 Teachers</div>
+      <div id="adminTeacherList"><div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Loading…</div></div>
+    </div>
+
+    <!-- Classes overview -->
+    <div class="card">
+      <div class="card-title">📚 Classes</div>
+      <div id="adminClassList"><div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Loading…</div></div>
     </div>
   </div>
 
@@ -2450,6 +2511,147 @@ async function updateTrustScoreManual(childId, action) {
   await db.from('children').update({trust_score:newScore,trust_level:newLevel}).eq('id',childId);
 }
 
+// ── SCHOOL ADMIN ──────────────────────────────────────────────
+
+async function loadSchoolAdmin() {
+  if(!currentSchool) {
+    showToast('No school loaded'); return;
+  }
+  const schoolId = currentSchool.id;
+
+  // Populate school info
+  document.getElementById('adminSchoolName').textContent = currentSchool.name;
+  const status = currentSchool.subscription_status || 'trial';
+  const statusColors = {trial:'#FEF3C7', active:'#ECFDF5', past_due:'#FFF1F2', cancelled:'#F1F5F9'};
+  const statusTextColors = {trial:'#92400E', active:'#065F46', past_due:'#9F1239', cancelled:'#475569'};
+  const badge = document.getElementById('adminSubBadge');
+  if(badge) {
+    badge.textContent = status.replace('_',' ');
+    badge.style.background = statusColors[status] || '#F1F5F9';
+    badge.style.color = statusTextColors[status] || '#475569';
+  }
+  document.getElementById('adminSchoolCode').textContent = currentSchool.invite_code || '——';
+  document.getElementById('adminSchoolStatus').textContent = 'School ID: ' + schoolId.slice(0,8) + '…';
+  const expiry = currentSchool.invite_code_expires_at;
+  document.getElementById('adminCodeExpiry').textContent = expiry
+    ? 'Expires ' + new Date(expiry).toLocaleDateString('en-AU')
+    : '';
+
+  // Load pending teachers
+  const {data:pending} = await dbQuery(
+    db.from('profiles').select('id, full_name, email').eq('school_id', schoolId).eq('school_role','pending'),
+    8000, []
+  );
+  const pendingCard = document.getElementById('adminPendingCard');
+  const pendingList = document.getElementById('adminPendingList');
+  if(pending?.length) {
+    pendingCard.style.display = 'block';
+    pendingList.innerHTML = pending.map(t => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#FFFBEB;margin-bottom:8px;border:1px solid #FDE68A;">
+        <div style="font-size:22px;">👩‍🏫</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--indigo);">${t.full_name||'Teacher'}</div>
+          <div style="font-size:11px;color:var(--gray-500);">${t.email||''}</div>
+        </div>
+        <button data-tid="${t.id}" data-tname="${(t.full_name||'Teacher').replace(/"/g,'&quot;')}" class="admin-approve-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;margin-right:4px;">✓ Approve</button>
+        <button data-tid="${t.id}" data-tname="${(t.full_name||'Teacher').replace(/"/g,'&quot;')}" class="admin-remove-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--rose);color:white;font-size:12px;font-weight:700;cursor:pointer;">✗</button>
+      </div>`).join('');
+    pendingList.querySelectorAll('.admin-approve-btn').forEach(btn => {
+      btn.addEventListener('click', () => approveTeacher(btn.dataset.tid, btn.dataset.tname));
+    });
+    pendingList.querySelectorAll('.admin-remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => removeTeacher(btn.dataset.tid, btn.dataset.tname));
+    });
+  } else {
+    pendingCard.style.display = 'none';
+  }
+
+  // Load active teachers
+  const {data:teachers} = await dbQuery(
+    db.from('profiles').select('id, full_name, email, school_role').eq('school_id', schoolId).in('school_role',['admin','member']),
+    8000, []
+  );
+  const teacherList = document.getElementById('adminTeacherList');
+  if(!teachers?.length) {
+    teacherList.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">No teachers yet</div>';
+  } else {
+    teacherList.innerHTML = teachers.map(t => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--gray-50);margin-bottom:8px;">
+        <div style="font-size:22px;">${t.school_role==='admin'?'👑':'👩‍🏫'}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--indigo);">${t.full_name||'Teacher'} ${t.school_role==='admin'?'<span style="font-size:10px;background:var(--violet);color:white;padding:2px 6px;border-radius:10px;margin-left:4px;">Admin</span>':''}</div>
+          <div style="font-size:11px;color:var(--gray-500);">${t.email||''}</div>
+        </div>
+        ${t.id !== currentUser.id ? `<button data-tid="${t.id}" data-tname="${(t.full_name||'Teacher').replace(/"/g,'&quot;')}" class="admin-remove-teacher-btn" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:600;cursor:pointer;">Remove</button>` : '<span style="font-size:11px;color:var(--gray-400);">You</span>'}
+      </div>`).join('');
+    teacherList.querySelectorAll('.admin-remove-teacher-btn').forEach(btn => {
+      btn.addEventListener('click', () => removeTeacher(btn.dataset.tid, btn.dataset.tname));
+    });
+  }
+
+  // Load classes
+  const {data:classes} = await dbQuery(
+    db.from('classes').select('id, name, subject, year_group, direct_student_enrol, class_members(count)').eq('school_id', schoolId).eq('status','active'),
+    8000, []
+  );
+  const classList = document.getElementById('adminClassList');
+  if(!classes?.length) {
+    classList.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">No classes yet</div>';
+  } else {
+    classList.innerHTML = classes.map(c => {
+      const count = c.class_members?.[0]?.count || 0;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--gray-50);margin-bottom:8px;">
+        <div style="font-size:22px;">📚</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--indigo);">${c.name}</div>
+          <div style="font-size:11px;color:var(--gray-500);">${c.subject||''} ${c.year_group||''} · ${count} student${count===1?'':'s'}</div>
+        </div>
+        ${c.direct_student_enrol ? '<span style="font-size:10px;background:#ECFDF5;color:var(--mint);padding:2px 8px;border-radius:10px;font-weight:700;">Direct enrol</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+}
+
+async function approveTeacher(teacherId, teacherName) {
+  await dbQuery(db.from('profiles').update({school_role:'member'}).eq('id', teacherId));
+  // Notify the teacher
+  await dbQuery(db.from('notifications').insert({
+    recipient_id: teacherId,
+    sender_id: currentUser.id,
+    type: 'school_approved',
+    title: '✅ School Access Approved',
+    body: 'You have been approved to join ' + (currentSchool?.name||'the school') + '. You can now create classes and use direct student enrolment.'
+  }));
+  showToast('✅ ' + teacherName + ' approved');
+  loadSchoolAdmin();
+}
+
+async function removeTeacher(teacherId, teacherName) {
+  if(!confirm('Remove ' + teacherName + ' from the school?')) return;
+  await dbQuery(db.from('profiles').update({school_id:null, school_role:null}).eq('id', teacherId));
+  showToast(teacherName + ' removed from school');
+  loadSchoolAdmin();
+}
+
+async function regenSchoolCode() {
+  if(!confirm('Generate a new school invite code? The old code will stop working.')) return;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  const expires = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+  await dbQuery(db.from('schools').update({invite_code:code, invite_code_expires_at:expires}).eq('id', currentSchool.id));
+  currentSchool.invite_code = code;
+  currentSchool.invite_code_expires_at = expires;
+  document.getElementById('adminSchoolCode').textContent = code;
+  document.getElementById('adminCodeExpiry').textContent = 'Expires ' + new Date(expires).toLocaleDateString('en-AU');
+  showToast('🔑 New code: ' + code);
+}
+
+function copyAdminSchoolCode() {
+  const code = document.getElementById('adminSchoolCode').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('📋 Code copied: ' + code));
+}
+
 // ── REWARDS ──
 
 const REWARD_EMOJIS = ['🎮','🍕','🎬','🛒','🍦','🎉','🎈','🏖️','🚗','🎲','🃏','⚽','🎸','📱','🍫','🍔','🎠','🏊','🎪','🎯','📚','🎨','🧩','🏆','💰','🌟','🎁','🎤','🎧','🍭'];
@@ -3209,16 +3411,16 @@ async function joinSchool() {
   }
   // Link teacher as member
   const {error:profErr} = await dbQuery(
-    db.from('profiles').update({school_id:school.id, school_role:'member'}).eq('id',currentUser.id),
+    db.from('profiles').update({school_id:school.id, school_role:'pending'}).eq('id',currentUser.id),
     8000, null
   );
   if(profErr) { showToast('❌ Error joining school: '+profErr.message); return; }
   currentProfile.school_id = school.id;
-  currentProfile.school_role = 'member';
+  currentProfile.school_role = 'pending';
   currentSchool = school;
   const badge = document.getElementById('teacherSchoolBadge');
-  if(badge) { badge.textContent = '🏫 '+school.name; badge.style.display='block'; }
-  showToast('✅ Joined '+school.name+'!');
+  if(badge) { badge.textContent = '⏳ '+school.name+' (Pending Approval)'; badge.style.display='block'; }
+  showToast('✅ Request sent! Waiting for admin approval.');
   closeDrawerScreen();
 }
 
@@ -3235,7 +3437,27 @@ async function joinClass() {
     showToast('⏰ This class code has expired — ask the teacher for a new one'); return;
   }
 
-  // Use selected child from dropdown or first child
+  // Students can only join directly if teacher has enabled direct_student_enrol
+  if(currentProfile?.role === 'student') {
+    if(!cls.direct_student_enrol) {
+      showToast('⚠️ Ask your parent to join this class for you'); return;
+    }
+    // Student joins directly — get their child record
+    const {data:childRecord} = await dbQuery(
+      db.from('children').select('id').eq('profile_id', currentUser.id).maybeSingle()
+    );
+    if(!childRecord) { showToast('❌ Could not find your student record'); return; }
+    const {data:existing} = await db.from('class_members').select('id').eq('class_id', cls.id).eq('child_id', childRecord.id).maybeSingle();
+    if(existing) { showToast('Already in this class!'); return; }
+    const {error} = await db.from('class_members').insert({ class_id: cls.id, child_id: childRecord.id });
+    if(error) { showToast('❌ Could not join class: ' + error.message); return; }
+    showToast(\`✅ Joined \${cls.name}!\`);
+    document.getElementById('classCodeInput').value = '';
+    await loadStudentApp();
+    return;
+  }
+
+  // Use selected child from dropdown or first child (parent flow)
   const childSelectEl = document.getElementById('joinClassChildId');
   const childId = childSelectEl?.value || currentChildren?.[0]?.id;
   if(!childId) { showToast('No child linked to your account yet'); return; }
@@ -3547,7 +3769,9 @@ function showCreateClass() {
 async function createClass() {
   const name=document.getElementById('className').value.trim(),subject=document.getElementById('classSubject').value.trim(),year=document.getElementById('classYear').value.trim();
   if(!name||!subject){showToast('Enter class name and subject');return;}
-  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year,school_id:currentProfile.school_id||null}).select().maybeSingle();
+  const directEnrol = document.getElementById('directEnrolToggle')?.checked || false;
+  const isApproved = currentProfile?.school_role === 'admin' || currentProfile?.school_role === 'member';
+  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year,school_id:currentProfile.school_id||null,direct_student_enrol:isApproved&&directEnrol}).select().maybeSingle();
   if(error){showToast('❌ Error creating class: '+error.message);return;}
   teacherClasses.push(data);
   selectedClassId = data.id;
@@ -4444,9 +4668,14 @@ function renderDrawerItems() {
   let items = [];
 
   if(role === 'teacher') {
-    const schoolItem = currentProfile?.school_id
-      ? { icon:'🏫', label: currentSchool ? currentSchool.name : 'My School', action:`openDrawerScreen('join-school')`, disabled: true, note:'Already in a school' }
-      : { icon:'🏫', label:'Set Up / Join a School', action:`openSchoolSetup()`, disabled: false };
+    const sRole = currentProfile?.school_role;
+    const schoolItem = !currentProfile?.school_id
+      ? { icon:'🏫', label:'Set Up / Join a School', action:`openSchoolSetup()`, disabled: false }
+      : sRole === 'admin'
+        ? { icon:'🏫', label:'School Admin — ' + (currentSchool?.name||'My School'), action:`openDrawerScreen('school-admin')`, disabled: false }
+        : sRole === 'pending'
+          ? { icon:'⏳', label:'Awaiting school approval', action:`showToast('Your request is pending admin approval')`, disabled: false }
+          : { icon:'🏫', label: currentSchool ? currentSchool.name : 'My School', action:`openDrawerScreen('join-school')`, disabled: true, note:'Already in a school' };
     items = [
       { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !teacherClasses?.length, note: !teacherClasses?.length ? 'Create a class first' : '' },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
@@ -4465,6 +4694,7 @@ function renderDrawerItems() {
   } else if(role === 'student') {
     items = [
       { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
+      { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
     ];
@@ -4482,7 +4712,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -4534,6 +4764,10 @@ function openDrawerScreen(screen) {
   }
 
   // Change avatar: populate grid with correct emoji set and show current avatar
+  if(screen === 'school-admin') {
+    loadSchoolAdmin();
+  }
+
   if(screen === 'archive') {
     loadArchivedItems();
   }
@@ -4641,6 +4875,11 @@ function showCreateClassFromDrawer() {
   closeDrawer();
   document.getElementById('classSetupCard').style.display = 'block';
   document.getElementById('classSetupCard').scrollIntoView({behavior:'smooth'});
+  // Show direct enrol toggle only for school-approved teachers
+  const isApprovedSchoolTeacher = currentProfile?.school_id &&
+    (currentProfile?.school_role === 'member' || currentProfile?.school_role === 'admin');
+  const dew = document.getElementById('directEnrolWrap');
+  if(dew) dew.style.display = isApprovedSchoolTeacher ? 'block' : 'none';
 }
 
 // ── PARENT: ASSIGNMENT DETAIL ──
