@@ -3455,7 +3455,7 @@ async function joinClass() {
     if(existing) { showToast('Already in this class!'); return; }
     const {error} = await db.from('class_members').insert({ class_id: cls.id, child_id: childRecord.id });
     if(error) { showToast('❌ Could not join class: ' + error.message); return; }
-    showToast(\`✅ Joined \${cls.name}!\`);
+    showToast(`✅ Joined \${cls.name}!`);
     document.getElementById('classCodeInput').value = '';
     await loadStudentApp();
     return;
