@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AchievED</title>
+<title>FocablyED</title>
 <meta name="version" content="20260610095519">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1E1B4B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AchievED">
+<meta name="apple-mobile-web-app-title" content="FocablyED">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -407,7 +407,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 <!-- LOADING -->
 <div class="screen" id="screen-loading" style="display:flex;">
   <div style="text-align:center;">
-    <div class="loading-logo">Achiev<span>ED</span></div>
+    <div class="loading-logo">Focably<span>ED</span></div>
     <div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
     <div id="loadingStatus" style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:16px;">Connecting...</div>
     <button id="loadingRetry" onclick="retryLoad()" style="display:none;margin-top:16px;padding:10px 24px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:14px;cursor:pointer;">Tap to Retry</button>
@@ -417,8 +417,8 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 <!-- AUTH -->
 <div class="screen" id="screen-auth" style="display:none;flex-direction:column;">
   <div class="auth-box" style="margin:auto;">
-    <div class="auth-logo">Achiev<span>ED</span></div>
-    <div class="auth-tagline">School. Achieved. 🎓</div>
+    <div class="auth-logo">Focably<span>ED</span></div>
+    <div class="auth-tagline">Focus. Achieve. Grow. 🐿️</div>
     <div id="authError" class="auth-error"></div>
     <div id="authSignIn">
       <div class="auth-title">Welcome back</div>
@@ -466,7 +466,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 <div class="screen" id="screen-confirm" style="display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;">
   <div class="auth-box" style="margin:auto;text-align:center;">
     <div style="font-size:56px;margin-bottom:16px;">📧</div>
-    <div class="auth-logo">Achiev<span>ED</span></div>
+    <div class="auth-logo">Focably<span>ED</span></div>
     <div style="color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:20px;margin:16px 0 8px;">Check your email!</div>
     <div style="color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6;margin-bottom:20px;">We sent a confirmation link to<br><strong id="confirmEmail" style="color:var(--violet-light);">your email</strong><br><br>Click the link in the email to activate your account, then come back and sign in.</div>
     <button class="auth-btn" onclick="showSignIn();showScreen('auth');">Back to Sign In</button>
@@ -474,14 +474,14 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   </div>
 </div>
 
-<!-- AchievED v2.1 - 202606100513 -->
+<!-- FocablyED v0.3 - 20260613 -->
 <!-- ONBOARDING -->
 <div class="screen" id="screen-onboarding" style="display:none;flex-direction:column;">
   <div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:380px;margin:auto;">
-    <div class="onboard-logo">Achiev<span>ED</span></div>
+    <div class="onboard-logo">Focably<span>ED</span></div>
     <div style="color:rgba(255,255,255,0.6);font-size:14px;margin-bottom:28px;">Let's set up your experience</div>
     <div style="color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">How old are you?</div>
-    <div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:22px;">We'll set AchievED up just right</div>
+    <div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:22px;">We'll set FocablyED up just right</div>
     <div class="age-row">
       <div class="age-btn" id="age-primary" onclick="selectAge('primary')"><span class="age-emoji">🎒</span>Primary<br><span style="font-size:11px;opacity:0.7">Ages 6–12</span></div>
       <div class="age-btn" id="age-highschool" onclick="selectAge('highschool')"><span class="age-emoji">🎓</span>High School<br><span style="font-size:11px;opacity:0.7">Ages 13–17</span></div>
@@ -531,7 +531,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   </div>
 
   <div class="top-nav">
-    <div class="logo">Achiev<span>ED</span></div>
+    <div class="logo">Focably<span>ED</span></div>
     <div id="navUserName" style="flex:1;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:rgba(255,255,255,0.85);padding-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
     <div style="display:flex;align-items:center;gap:6px;">
       <!-- NOTIFICATION BELL -->
@@ -1154,7 +1154,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="card">
       <div class="card-title">ℹ️ About</div>
       <div style="font-size:13px;color:var(--gray-600);line-height:1.6;">
-        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--indigo);margin-bottom:4px;">AchievED</div>
+        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--indigo);margin-bottom:4px;">FocablyED</div>
         Gamified school task tracker for students, parents and teachers.<br>
         <span style="color:var(--gray-400);font-size:11px;">Version 0.3 — Early Access</span>
       </div>
@@ -4044,8 +4044,8 @@ async function sendPushToUser(userId, title, body) {
   }
 }
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install AchievED</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
-async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 AchievED installed!');}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setTimeout(()=>{if(document.getElementById('screen-app').style.display!=='none'){const b=document.createElement('div');b.id='installBanner';b.style.cssText='position:fixed;bottom:80px;left:14px;right:14px;background:var(--indigo);color:white;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:998;box-shadow:0 8px 24px rgba(30,27,75,0.4);';b.innerHTML=`<div style="font-size:26px;">📱</div><div style="flex:1"><div style="font-weight:700;font-size:14px;">Install FocablyED</div><div style="font-size:12px;opacity:0.75;">Add to home screen</div></div><button onclick="installApp()" style="padding:8px 14px;border-radius:20px;border:none;background:var(--violet);color:white;font-weight:700;font-size:12px;cursor:pointer;">Install</button><button onclick="document.getElementById('installBanner').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">×</button>`;document.body.appendChild(b);}},15000);});
+async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner')?.remove();if(r.outcome==='accepted')showToast('🎉 FocablyED installed!');}
 
 // ── SHARED APPROVAL QUEUE ──
 // Pulls from Supabase tasks where verification_required=true and verification_status='pending'
@@ -4607,7 +4607,7 @@ function openDrawerScreen(screen) {
       if(aiResult) aiResult.style.display = 'none';
       if(hsWrap) hsWrap.style.display = 'block';
       if(cardTitle) cardTitle.textContent = '🤖 AI Task Breakdown';
-      if(cardSub) cardSub.textContent = 'Paste any assignment and AchievED will break it into steps.';
+      if(cardSub) cardSub.textContent = 'Paste any assignment and FocablyED will break it into steps.';
       if(screenTitle) screenTitle.textContent = 'Break into Steps';
     } else {
       document.getElementById('questInput').style.display = 'block';
