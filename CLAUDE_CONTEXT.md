@@ -285,6 +285,43 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAUL
 
 > _Most recent at top._
 
+### 13 Jun 2026 (Session 4) — CRM setup, HubSpot, landing page expansion
+
+#### CRM / HubSpot
+- Evaluated CRM options for Focably: HubSpot chosen (MCP already connected)
+- Created fresh HubSpot free account for Focably (account ID: 443338489, steve@yourfinancedept.com.au)
+- Created products: Focably Free ($0) and Focably Pro ($9.99 AUD/mo)
+- Created Parent B2C pipeline with stages: Facebook/Insta Lead → Signed Up Free → Active Free User → Upgrade Email Sent → Converted to Pro → Churned
+- Default Sales Pipeline repurposed for School B2B tracking
+- Sample contacts and deals created and linked
+- HubSpot upgrade path confirmed: Starter (A$11/seat) = no sequences; Professional (A$140/seat) = full sequences + workflows — skip Starter, go straight to Pro when selling
+- HubSpot Private App token created for API access (stored in landing page JS)
+
+#### Landing Page (focably-Landing repo)
+- Replaced simple email-only waitlist forms with rich 3-step modal:
+  - Step 1: First name, email, role (Parent/Teacher/School Admin/Student)
+  - Step 2: Role-specific fields (children count, school name, ADHD flag, state, enrolment, admin role etc)
+  - Step 3: Biggest challenge (free text), plan interest (checkboxes), lead source, phone
+- Dual-write on submit: Supabase waitlist table + HubSpot CRM contact via Contacts API
+- Supabase waitlist table expanded with 16 new columns (SQL run)
+- Added Screenshots section with 5 real app screenshots in phone frames:
+  - Sign In, Parent Dashboard, Teacher View, New Assignment, Join a Class
+  - Screenshots stored in /screenshots/ folder in focably-Landing repo
+- Added About Us / backstory section:
+  - Steve's story, Zoe (ADHD), squirrel mascot origin
+  - Founder card, 4 stat tiles, squirrel card with bob animation
+- Fixed SyntaxError in main app (index.html): escaped backticks \` at line 3458 causing entire script block to fail → app not loading
+
+#### App bug fixed
+- Escaped backtick syntax error at line 3458 in index.html — broke entire app load
+- Fixed and pushed — app loading correctly again
+
+#### Files changed
+- focably-Landing/index.html (major — modal, screenshots, about)
+- focably-Landing/screenshots/ (5 new PNG assets)
+- focably/index.html (syntax fix)
+- focably/CLAUDE_CONTEXT.md
+
 ### 13 Jun 2026 (Session 3, part 2) — School Admin, rebrand, pricing model design
 - Rebranded app: AchievED → FocablyED throughout
 - School Admin dashboard: pending approvals, active teachers, classes, invite code regen
