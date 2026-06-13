@@ -23,7 +23,9 @@
 ## Branding
 
 - **Name:** FocablyED (made-up word: Focus + Ability + ED suffix for education)
-- **Mascot:** Squirrel 🐿️ — named by Zoe (Steve's daughter, 15, ADHD), inspired by Doug from Pixar's UP ("SQUIRREL!"). Placeholder emoji until proper illustration sourced.
+- **Mascot:** Squirrel 🐿️ — named by Zoe (Steve's daughter, 15, ADHD), inspired by Doug from Pixar's UP ("SQUIRREL!")
+- **Logo:** `squirrel.png` committed to the app repo — orange squirrel holding acorn, dark teal rounded-square background. Deployed as favicon, PWA icon, nav logo, auth screen, settings card, install banner, landing page hero + nav + footer.
+- **Logo URL:** `https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png`
 - **Domains (all via Crazy Domains):**
   - focablyed.com ✅ (primary)
   - focablyed.com.au ✅ (Australian market)
@@ -52,7 +54,9 @@
 - **Fonts:** Fraunces (display serif) + Inter (body)
 - **Palette:** Warm amber/cream — #E8A020 amber, #FBF7F0 cream, #1E1712 ink
 - **Waitlist:** Supabase `waitlist` table (RLS disabled, public inserts)
-- **TODO:** Nav + body copy still says "Focably" in a couple of places — needs final pass
+- **Squirrel logo:** deployed to nav, hero (animated bob), footer
+- **TODO:** Nav + body copy still has some "Focably" references — needs final pass
+- **TODO:** Add focablyed.com.au as second domain in Vercel
 
 ---
 
@@ -85,7 +89,7 @@
 | School Large | $3,490/yr | Unlimited | Discounted at $4.99/mo | — |
 | School Platinum | $5,990/yr | Unlimited | **Fully included** | Enterprise — whole school covered |
 
-### Freemium gates
+### Freemium gates (not yet built — Session 4 priority)
 - Adding a 2nd child → upgrade prompt
 - Parent joining a class (teacher connection) → upgrade prompt
 - Student using a class code → family needs Family Pro (unless school license covers it)
@@ -94,7 +98,7 @@
 - Enterprise/principal-level sale — one invoice covers everyone
 - No parent billing friction, no chasing families
 - Suitable for NDIS/wellbeing budget funding (single line item)
-- Premium extras to justify price: priority support, dedicated onboarding session, custom school branding (logo in app header), early feature access, annual review call
+- Premium extras: priority support, dedicated onboarding, custom school branding, early feature access, annual review call
 
 ### The natural upgrade moment
 > Teacher sends class code to parent → parent taps "Join a Class" → paywall: "Upgrade to Family Pro to connect with your child's teacher"
@@ -106,7 +110,6 @@
 ### Student cap enforcement
 - Store `max_students` on `schools` table
 - **Deferred to Stripe build** — store tier now, enforce later
-- When enforced: block enrolment if count >= max_students, notify admin to upgrade
 
 ### Market sizing
 - Australia: ~4,500 schools / NZ: ~1,200 / UK: ~8,000 / Canada: ~6,000 / USA: ~50,000
@@ -116,7 +119,7 @@
 
 ---
 
-## License System (build next session)
+## License System (build Session 4)
 
 ### Design decisions
 - **Create School requires a license key** — no free school creation
@@ -160,13 +163,14 @@ CREATE TABLE licenses (
 - Smart Import Assignment: paste text → Claude API extracts → confirmation card
 - Footer nav: Home/Tasks/Rewards/Settings wired; Messages = coming soon
 - Settings screen: profile, avatar change (student), notifications, Sign Out
-- **Rewards system:** parent creates → student redeems → parent approves → stars deducted → notifications
-- **In-app rebrand:** fully FocablyED throughout
-- **School Admin dashboard:** school info, subscription badge, invite code copy/regen, pending teacher approvals, active teachers, classes overview
-- **Teacher approval flow:** join school → pending → admin approves → member
-- **Direct student enrolment:** `direct_student_enrol` flag on classes (school-approved teachers only)
+- Rewards system: parent creates → student redeems → parent approves → stars deducted → notifications
+- In-app rebrand: fully FocablyED throughout
+- School Admin dashboard: school info, subscription badge, invite code copy/regen, pending teacher approvals, active teachers, classes overview
+- Teacher approval flow: join school → pending → admin approves → member
+- Direct student enrolment: `direct_student_enrol` flag on classes (school-approved teachers only)
+- **Squirrel logo live:** favicon, PWA icon, top nav, auth screen (x2), settings card, install banner, landing page (nav + hero + footer)
 - **Enrolment matrix:**
-  - Standalone teacher + parent: Teacher → Parent → child enrolled (parent needs Family Pro)
+  - Standalone teacher + parent: Teacher → Parent → child enrolled (parent needs Family Pro — gate not yet built)
   - School teacher (approved) + no parent: Teacher → Student directly (if direct_student_enrol on)
   - School Platinum: Teacher → Student directly, parents included
   - Parent always gets retrospective class visibility via class_members
@@ -183,50 +187,46 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAUL
 - (none currently open)
 
 ### Next Priorities (Session 4)
-1. **License gate on Create School** — entry point for all school monetisation
+1. **License gate on Create School** — run licenses SQL, build key entry UI
 2. **Freemium/Pro paywall gate** — parent joining a class triggers upgrade prompt
-3. `subscription_status` on families table (free/pro)
-4. `school_id` on families table (for discount detection)
-5. End-to-end test all features
-6. Fix landing page remaining "Focably" → "FocablyED" instances
-7. Add focablyed.com.au as second domain in Vercel
+3. `subscription_status` + `school_id` columns on families table
+4. End-to-end test all features
+5. Fix landing page remaining "Focably" → "FocablyED" instances
+6. Add focablyed.com.au as second domain in Vercel
 
 ---
 
 ## Future Features Roadmap
 
 ### Near-term (next 2–3 sessions)
-- **License gate on Create School** — manually issued keys for pilot, Stripe later
-- **Freemium paywall** — gate on Join a Class (parent), 2nd child add
-- **Stripe integration** — webhook → Vercel serverless → creates license / flips subscription_status
-- **School-attached parent discount** — detect school_id on family, show $4.99 price
-- **Platinum parent inclusion** — detect platinum tier, bypass Family Pro paywall
+- License gate on Create School
+- Freemium paywall — gate on Join a Class (parent), 2nd child add
+- Stripe integration — webhook → Vercel serverless → creates license / flips subscription_status
+- School-attached parent discount — detect school_id on family, show $4.99 price
+- Platinum parent inclusion — detect platinum tier, bypass Family Pro paywall
 
 ### Medium-term
-- **School Admin enhancements:** student count enforcement, Stripe billing portal link
-- **Custom school branding:** school logo in app header (Platinum feature)
-- **Priority support / onboarding flows** (Platinum)
-- **Profile photo + reward image uploads:** Supabase Storage, signed URLs, school-admin moderation toggle
+- School Admin enhancements: student count enforcement, Stripe billing portal link
+- Custom school branding: school logo in app header (Platinum feature)
+- Priority support / onboarding flows (Platinum)
+- Profile photo + reward image uploads: Supabase Storage, signed URLs, school-admin moderation toggle
 
 ### Longer-term
-- **Microsoft Teams for Education:**
-  - Near-term: Power Automate webhook (no MS verification needed, ~80% of value)
-  - Long-term: MS Graph API (EduAssignments.Read, EduRoster.Read) — ~6-12 week build, school-tier premium
-- **Wire footer nav Messages tab** — in-app messaging between roles
-- **Wire footer nav Tasks tab** — dedicated task list screen
-- **Student leaderboards / class XP competitions**
-- **Teacher analytics dashboard** — completion rates, at-risk students
-- **Data residency:** Supabase EU project for UK customers (GDPR)
-- **COPPA compliance** before US launch
-- **Annual review call workflow** (Platinum tier relationship management)
+- Microsoft Teams for Education: Power Automate webhook (near-term); MS Graph API (long-term)
+- Footer nav Messages tab — in-app messaging between roles
+- Student leaderboards / class XP competitions
+- Teacher analytics dashboard — completion rates, at-risk students
+- Data residency: Supabase EU project for UK (GDPR)
+- COPPA compliance before US launch
+- Annual review call workflow (Platinum tier)
 
 ---
 
 ## Navigation Structure (current)
 
-**Top nav (all roles):** logo | first name | 🔔 bell | ↻ refresh | ☰ hamburger
+**Top nav (all roles):** squirrel logo | first name | 🔔 bell | ↻ refresh | ☰ hamburger
 
-**Teacher hamburger:** New Assignment, Import Assignment, Archive & Archived, Create New Class, School Admin (admin) / School Name (member) / Set Up or Join (none) / Awaiting Approval (pending), Sign Out
+**Teacher hamburger:** New Assignment, Import Assignment, Archive & Archived, Create New Class, School Admin (admin) / Awaiting Approval (pending) / Set Up or Join (none), Sign Out
 
 **Parent hamburger:** Add Task for Child, Manage Rewards, Import Assignment, Family Invite Code, Join a Class, Sign Out
 
@@ -242,7 +242,7 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAUL
 |-------|-------------|-------|
 | profiles | id, role, full_name, age_group, theme, avatar, school_id, school_role | school_role = null/pending/member/admin |
 | schools | id, name, invite_code, invite_code_expires_at, subscription_status, max_students | subscription_status = trial/active/past_due/cancelled |
-| families | id, parent_id, invite_code, invite_code_expires_at, family_name | add subscription_status + school_id columns (next session) |
+| families | id, parent_id, invite_code, invite_code_expires_at, family_name | **needs** subscription_status + school_id columns (Session 4) |
 | children | id, profile_id, name, family_id | profile_id links to student's auth profile |
 | classes | id, teacher_id, name, subject, year_group, invite_code, invite_code_expires_at, status, school_id, direct_student_enrol | |
 | class_members | id, class_id, child_id | enrolment join |
@@ -270,6 +270,7 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAUL
 - `ALL_DRAWER_SCREENS` array must include any new screen
 - Footer nav: `setFooterActive(tab)` / `footerNav(tab)`
 - School role states: null → pending → member → admin
+- Logo asset: always reference `https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png`
 
 ---
 
@@ -285,69 +286,36 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAUL
 
 > _Most recent at top._
 
-### 13 Jun 2026 (Session 4) — CRM setup, HubSpot, landing page expansion
-
-#### CRM / HubSpot
-- Evaluated CRM options for Focably: HubSpot chosen (MCP already connected)
-- Created fresh HubSpot free account for Focably (account ID: 443338489, steve@yourfinancedept.com.au)
-- Created products: Focably Free ($0) and Focably Pro ($9.99 AUD/mo)
-- Created Parent B2C pipeline with stages: Facebook/Insta Lead → Signed Up Free → Active Free User → Upgrade Email Sent → Converted to Pro → Churned
-- Default Sales Pipeline repurposed for School B2B tracking
-- Sample contacts and deals created and linked
-- HubSpot upgrade path confirmed: Starter (A$11/seat) = no sequences; Professional (A$140/seat) = full sequences + workflows — skip Starter, go straight to Pro when selling
-- HubSpot Private App token created for API access (stored in landing page JS)
-
-#### Landing Page (focably-Landing repo)
-- Replaced simple email-only waitlist forms with rich 3-step modal:
-  - Step 1: First name, email, role (Parent/Teacher/School Admin/Student)
-  - Step 2: Role-specific fields (children count, school name, ADHD flag, state, enrolment, admin role etc)
-  - Step 3: Biggest challenge (free text), plan interest (checkboxes), lead source, phone
-- Dual-write on submit: Supabase waitlist table + HubSpot CRM contact via Contacts API
-- Supabase waitlist table expanded with 16 new columns (SQL run)
-- Added Screenshots section with 5 real app screenshots in phone frames:
-  - Sign In, Parent Dashboard, Teacher View, New Assignment, Join a Class
-  - Screenshots stored in /screenshots/ folder in focably-Landing repo
-- Added About Us / backstory section:
-  - Steve's story, Zoe (ADHD), squirrel mascot origin
-  - Founder card, 4 stat tiles, squirrel card with bob animation
-- Fixed SyntaxError in main app (index.html): escaped backticks \` at line 3458 causing entire script block to fail → app not loading
-
-#### App bug fixed
-- Escaped backtick syntax error at line 3458 in index.html — broke entire app load
-- Fixed and pushed — app loading correctly again
-
-#### Files changed
-- focably-Landing/index.html (major — modal, screenshots, about)
-- focably-Landing/screenshots/ (5 new PNG assets)
-- focably/index.html (syntax fix)
-- focably/CLAUDE_CONTEXT.md
+### 13 Jun 2026 (Session 3, part 3) — Squirrel logo, pricing model finalised
+- Squirrel logo (ChatGPT-generated PNG) committed to repo as `squirrel.png`
+- Deployed to: favicon, PWA apple-touch-icon, top nav (alongside text), both auth screens, settings about card, install banner
+- Landing page: favicon, nav logo mark (replaces amber box), hero mascot (replaces emoji, animated bob), footer
+- Pricing model fully locked:
+  - Freemium: parent + student only, 1 child, no teacher
+  - Family Pro: $9.99/mo standalone, $4.99/mo school-attached
+  - School Small/Medium/Large: $990/$1,990/$3,490 — parents discounted
+  - School Platinum: $5,990 — enterprise, all parents included, no caps, white glove extras
+- Files changed: index.html, focably-Landing/index.html, squirrel.png (new), CLAUDE_CONTEXT.md
 
 ### 13 Jun 2026 (Session 3, part 2) — School Admin, rebrand, pricing model design
-- Rebranded app: AchievED → FocablyED throughout
-- School Admin dashboard: pending approvals, active teachers, classes, invite code regen
+- Rebranded: AchievED → FocablyED throughout app
+- School Admin dashboard built (pending approvals, teachers, classes, invite code regen)
 - Teacher approval flow: join → pending → admin approves → member
-- Direct student enrolment flag on classes (school-approved teachers only)
+- Direct student enrolment flag on classes
 - Student hamburger: added Join a Class
-- **Pricing model fully designed:**
-  - Everyone free; pay to connect roles
-  - Family Pro: $9.99/mo standalone, $4.99/mo school-attached
-  - School tiers: Small $990 / Medium $1,990 / Large $3,490 / **Platinum $5,990 (enterprise, all parents included)**
-  - Platinum: no caps, priority support, custom branding, dedicated onboarding, annual review
-  - License key required to create school (manually issued for pilot, Stripe later)
-- SQL documented but not yet run (pending constraint + direct_student_enrol)
+- Pricing model designed (finalised in part 3)
 - Files changed: index.html, CLAUDE_CONTEXT.md
 
 ### 13 Jun 2026 (Session 3, part 1) — Archive persistence, footer nav, rewards
 - Archive persisted to Supabase
 - Footer nav + Settings screen built
-- Full rewards loop: parent create → student redeem → parent approve → stars deducted → notifications
+- Full rewards loop built end-to-end
 - Files changed: index.html, CLAUDE_CONTEXT.md
 
 ### 13 Jun 2026 (PM) — Naming, branding, landing page, domains
-- FocablyED name, squirrel mascot 🐿️, domains purchased, landing page live at focablyed.com
+- FocablyED name, squirrel mascot, domains, landing page live
 
 ### 13 Jun 2026 (AM) — School concept, avatars, smart import, business planning
-- Schools table, teacher badge, create/join flows, emoji avatars, Claude API import
 
 ### 12 Jun 2026 — Auth fix, parent detail, dynamic codes, teacher view polish
 
