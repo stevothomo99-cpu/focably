@@ -38,7 +38,7 @@
 
 - **Auth:** Supabase Auth (email/password)
 - **Database:** Supabase Postgres with RLS enabled
-- **Frontend:** ONE file — `index.html` (~4,100+ lines). Vanilla JS, no framework, no build step.
+- **Frontend:** ONE file — `index.html` (~4,500+ lines). Vanilla JS, no framework, no build step.
 - **User roles:** Student (primary + high-school modes), Parent, Teacher
 - **Deploy:** push to GitHub `main` → Vercel auto-deploys
 
@@ -77,7 +77,7 @@
 - Teacher view toggle is a DROPDOWN (fits narrow screens); by-student rows expand
 - Unified approval queue (teacher + parent share one queue; approve/reject cross-clears both)
 - Notifications: in-app bell (top nav) + Supabase notifications table, polls every 60s
-- Archive: assignment archive + class archive + restore
+- **Archive: Supabase-persisted** — archived assignments + classes survive page refresh; restore works
 - Hamburger drawer nav for secondary actions (all 3 roles)
 - Date-based assignment status colours (red ≤7d / amber ≤14d / green 15d+ / grey complete)
 - Parent Subject Progress: assignments grouped under collapsible class headings
@@ -98,24 +98,37 @@
   - Available in all 3 role hamburger menus
   - Teacher saves to class; parent/student saves as private task + AI generates steps
 - HS student unlinked state: shows greeting header + avatar, then Link to Family card below (no race condition)
+- **Footer nav wired:** Home / Tasks / Rewards / Settings active; Messages shows "coming soon" toast
+  - Home: returns to role view from anywhere
+  - Tasks: scrolls to class tiles (student), Subject Progress (parent), assignments (teacher)
+  - Rewards: scrolls to Treasure Chest
+  - Settings: dedicated screen with profile card, avatar change (student), notifications, Sign Out
+- **Rewards system (full loop):**
+  - `rewards` table: parent creates rewards per child (emoji + name + star cost)
+  - `redemptions` table: student requests, parent approves/rejects
+  - Parent hamburger → Manage Rewards: create/delete rewards, see + respond to pending requests
+  - Parent main screen: redemption request card surfaces inline (no drawer needed)
+  - Student Treasure Chest: dynamic reward tiles from Supabase — green "Redeem!" if affordable, grey with deficit if not, "⏳ Requested!" if pending
+  - Approval: deducts stars from child, sends notification to student
+  - Rejection: sends notification to student
+  - Reward image upload planned (post-MVP, alongside profile photo uploads)
 
 ### In Progress / Needs Testing
 - Full end-to-end test with real Supabase data across all 3 roles
-- Archive state currently held in JS arrays — needs to be driven from Supabase for persistence
 - Test dynamic invite codes end-to-end
 - Test school create/join flows end-to-end
 - Test emoji avatar picker on fresh onboarding
+- Test rewards loop end-to-end (parent create → student redeem → parent approve)
 
 ### Known Bugs / Issues
 - (none currently open)
 
 ### Next Priorities
-- End-to-end test all new features (school, avatar, import)
-- Persist archive via Supabase
-- Freemium/Pro paywall (Stripe) — see Business Model below
+- End-to-end test all features
+- Freemium/Pro paywall (Stripe)
 - School Admin dashboard screen
-- Update app in-app branding from AchievED → FocablyED
-- Fix landing page nav/body copy "Focably" → "FocablyED" remaining instances
+- Update in-app branding: AchievED → FocablyED
+- Fix landing page remaining "Focably" references → "FocablyED"
 - Add focablyed.com.au as second domain in Vercel
 
 ---
@@ -145,7 +158,7 @@
 - NDIS/wellbeing budgets in AU schools can fund outside normal IT procurement
 
 ### Future features (roadmap)
-- **Profile photo uploads** (post-emoji): Supabase Storage, upload/resize/compress, signed URLs, school-admin toggle for moderation. Pro/school-approved feature only.
+- **Profile photo + reward image uploads** (post-emoji): Supabase Storage, upload/resize/compress, signed URLs, school-admin toggle for moderation. Pro/school-approved feature only.
 - **Microsoft Teams for Education integration:**
   - Near-term: Power Automate webhook (school IT admin configures, no MS verification needed, ~80% of value)
   - Long-term: Full MS Graph API (EduAssignments.Read, EduRoster.Read via Azure AD app registration) — requires MS app verification + school IT admin consent, ~6-12 week build, school-tier premium
@@ -153,7 +166,6 @@
 - **Stripe billing:** webhook → Vercel serverless function → updates `subscription_status` in Supabase
 - **Data residency:** Supabase EU project for UK customers (GDPR)
 - **COPPA compliance** before US launch
-- **Wire up footer nav** (currently placeholders)
 
 ---
 
@@ -164,13 +176,13 @@
 **Teacher main screen:** Class selector → Assignments → Step Approvals
 **Teacher hamburger:** New Assignment, Import Assignment, Archive & Archived, Create New Class, Set Up/Join School, Sign Out
 
-**Parent main screen:** child stats → Subject Progress → Step Approvals
-**Parent hamburger:** Add Task for Child, Import Assignment, Family Invite Code, Join a Class, Sign Out
+**Parent main screen:** child stats → Redemption Requests (if any) → Subject Progress → Step Approvals
+**Parent hamburger:** Add Task for Child, Manage Rewards, Import Assignment, Family Invite Code, Join a Class, Sign Out
 
-**Student main screen:** quest/XP header → Trust Score → class tiles → Treasure Chest
+**Student main screen:** quest/XP header → Trust Score → class tiles → Treasure Chest (dynamic reward tiles)
 **Student hamburger:** Break Any Task (AI), Import Assignment, Change Avatar, Sign Out
 
-**Footer nav:** Home / Tasks / Rewards / Messages / Settings (placeholders, not wired yet)
+**Footer nav:** 🏠 Home | 📋 Tasks | 🏆 Rewards | 💬 Messages (coming soon) | ⚙️ Settings
 
 ---
 
@@ -188,6 +200,8 @@
 | tasks | id, assignment_id, child_id, title, completed, verification_required, verification_status, proof_url, proof_submitted_at, verified_by, verified_at, star_value, xp_value, sort_order | |
 | notifications | id, recipient_id, sender_id, child_id, type, title, body, read_at, created_at | |
 | waitlist | id, email, created_at | landing page waitlist signups — RLS disabled |
+| rewards | id, family_id, created_by, child_id, title, emoji, star_cost, is_active, created_at | parent-created rewards per child |
+| redemptions | id, reward_id, child_id, family_id, status, requested_at, responded_at | status = pending/approved/rejected |
 
 ---
 
@@ -202,19 +216,19 @@
 - `currentSchool` loaded at teacher login from `profiles.school_id`
 - Avatar emoji sets: `AVATARS_HS` (cool/neutral 20 emoji), `AVATARS_PRIMARY` (fun/playful 20 emoji)
 - Import flow uses Claude API (`claude-sonnet-4-20250514`) to extract assignment details from freeform text
+- `ALL_DRAWER_SCREENS` array must include any new screen added — used by `openDrawerScreen` + `closeDrawerScreen`
+- Footer nav: `setFooterActive(tab)` sets active state; `footerNav(tab)` handles routing
 
 ---
 
 ## Tech Debt / Future
 
 ### Style cleanup pass (do once features are stable)
-- index.html is ~4,100+ lines. ~300 inline `style="..."` attributes.
+- index.html is ~4,500+ lines. ~300 inline `style="..."` attributes.
 - Duplication to collapse: drawer back buttons (×6+), circular top-nav buttons (×3), violet gradient (×6+)
 - NOT urgent. App works as-is.
 
 ### Other
-- Persist archive in Supabase (currently JS arrays, lost on reload)
-- Wire up footer nav items
 - Consider a one-off human developer review (bus-factor insurance)
 
 ---
@@ -223,18 +237,22 @@
 
 > _Brief entry after each session. Most recent at top._
 
+### 13 Jun 2026 (Session 3) — Archive persistence, footer nav, rewards system
+- **Archive persisted to Supabase:** `loadArchivedItems()` fetches from DB on screen open — no more in-memory loss on reload. Restore works off IDs not array indices.
+- **Footer nav wired:** Home/Tasks/Rewards/Settings all functional. Settings screen built (profile card, avatar change for students, notifications toggle, Sign Out). Messages shows "coming soon" toast.
+- **Rewards system built end-to-end:**
+  - Parent: Manage Rewards screen (create emoji+name+cost rewards per child, delete, see + approve/reject redemption requests)
+  - Parent main view: inline redemption request card
+  - Student: Treasure Chest now loads dynamic reward tiles from Supabase (affordable = green Redeem button, deficit = grey, pending = ⏳)
+  - Full approval loop: student requests → parent approves → stars deducted → notifications both ways
+  - Reward image upload noted as future feature (alongside profile photos, Supabase Storage)
+- Files changed: index.html, CLAUDE_CONTEXT.md
+
 ### 13 Jun 2026 (PM) — Naming, branding, landing page, domain setup
-- Long naming session exploring 20+ names — SquirrelED, LoopedInED, HiveMindED, TelosED, SwarmED, FlockED, NexusED, ClaritED etc. — all blocked by trademark or existing products
-- Settled on **FocablyED** — made-up word, completely clear, Focus + Ability + ED
-- Mascot: squirrel 🐿️ named by Zoe (Steve's daughter, 15, ADHD) — inspired by Doug from UP
-- Domains purchased via Crazy Domains: focablyed.com, focablyed.com.au, focablyed.app
-- focably.com was domain front-run by Namecheap — do not use Namecheap again
-- Also accidentally purchased facably.com/app/ed variants (typo) — keep as redirects
-- Built landing page (single HTML file): warm amber/cream palette, Fraunces + Inter fonts
-- Deployed to Vercel via GitHub repo stevothomo99-cpu/focably-Landing
-- DNS: Crazy Domains nameservers → ns1.vercel-dns.com + ns2.vercel-dns.com
-- Waitlist form wired to Supabase `waitlist` table — RLS disabled, public inserts
-- Landing page live at focablyed.com ✅
+- Settled on **FocablyED** — mascot squirrel 🐿️ named by Zoe
+- Domains purchased via Crazy Domains: focablyed.com/.com.au/.app
+- Built + deployed landing page to focablyed.com (stevothomo99-cpu/focably-Landing)
+- Waitlist form wired to Supabase `waitlist` table
 - Files changed: CLAUDE_CONTEXT.md; new repo focably-Landing created
 
 ### 13 Jun 2026 (AM) — School concept, emoji avatars, smart import, business planning
