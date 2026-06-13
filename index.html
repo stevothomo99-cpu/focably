@@ -3724,18 +3724,65 @@ async function resolveApproval(taskId, childId, action, fromRole) {
 }
 
 // ── ARCHIVE — JS state (swap for Supabase when ready) ──
-const archivedAssignments = [];
-const archivedClasses = [];
+// Archive data — loaded from Supabase each time the archive screen opens
+let archivedAssignments = [];
+let archivedClasses = [];
+
+async function loadArchivedItems() {
+  try {
+    // Load archived classes for this teacher
+    const {data:classes} = await dbQuery(
+      db.from('classes')
+        .select('id, name, updated_at')
+        .eq('teacher_id', currentUser.id)
+        .eq('status','archived')
+        .order('updated_at', {ascending:false})
+    );
+    archivedClasses = (classes||[]).map(c=>({
+      classId: c.id,
+      className: c.name,
+      archivedAt: new Date(c.updated_at).toLocaleDateString('en-AU')
+    }));
+
+    // Load archived assignments for classes this teacher owns
+    const classIds = (await dbQuery(
+      db.from('classes').select('id').eq('teacher_id', currentUser.id)
+    ))?.data?.map(c=>c.id) || [];
+
+    let rows = [];
+    if(classIds.length) {
+      const {data:asgns} = await dbQuery(
+        db.from('assignments')
+          .select('id, title, class_id, updated_at')
+          .in('class_id', classIds)
+          .eq('status','archived')
+          .order('updated_at', {ascending:false})
+      );
+      rows = asgns||[];
+    }
+
+    // Group by title+class so multi-student assignments appear as one row
+    const grouped = {};
+    rows.forEach(a => {
+      const key = a.title+'|'+a.class_id;
+      if(!grouped[key]) grouped[key] = {title:a.title, assignmentIds:[], archivedAt: new Date(a.updated_at).toLocaleDateString('en-AU')};
+      grouped[key].assignmentIds.push(a.id);
+    });
+    archivedAssignments = Object.values(grouped);
+  } catch(e) {
+    console.log('loadArchivedItems error:', e.message);
+  }
+  refreshArchivedPanel();
+}
 
 async function archiveAssignment(taskId, title, assignmentId) {
   await dbQuery(db.from('assignments').update({status:'archived'}).eq('id', assignmentId));
-  archivedAssignments.push({title, assignmentId, archivedAt: new Date().toLocaleDateString('en-AU')});
   const tile = document.getElementById('assignTile-'+assignmentId);
   if(tile) {
     tile.style.transition='opacity 0.3s';
     tile.style.opacity='0';
-    setTimeout(()=>{tile.remove(); refreshArchivedPanel();},300);
-  } else { refreshArchivedPanel(); }
+    setTimeout(()=>{tile.remove();},300);
+  }
   showToast(`🗄️ "${title}" archived`);
 }
 
@@ -3755,14 +3802,13 @@ async function archiveAssignmentGroup(groupKey, title, assignmentIds) {
   for(const id of assignmentIds) {
     await dbQuery(db.from('assignments').update({status:'archived'}).eq('id', id));
   }
-  archivedAssignments.push({title, groupKey, assignmentIds, archivedAt: new Date().toLocaleDateString('en-AU')});
-  // Animate tile out
+  // Animate tile out, then reload archive from Supabase
   const tile = document.getElementById('assignTile-'+groupKey);
   if(tile) {
     tile.style.transition='opacity 0.3s, max-height 0.3s';
     tile.style.opacity='0';
-    setTimeout(()=>{tile.remove(); refreshArchivedPanel();},300);
-  } else { refreshArchivedPanel(); }
+    setTimeout(()=>{tile.remove();},300);
+  }
   showToast(`🗄️ "${title}" archived`);
 }
 
@@ -3770,7 +3816,7 @@ async function archiveClass(classId, className, confirmEl) {
   confirmEl.classList.remove('visible');
   // Mark class archived in Supabase
   await dbQuery(db.from('classes').update({status:'archived'}).eq('id', classId));
-  archivedClasses.push({classId, className, archivedAt: new Date().toLocaleDateString('en-AU')});
+  // archivedClasses reloaded from Supabase on next archive screen open
   // Notify all students via notification
   try {
     const {data:members} = await dbQuery(db.from('class_members').select('children(profile_id)').eq('class_id', classId));
@@ -3817,30 +3863,45 @@ function refreshArchivedPanel() {
   const cc = document.getElementById('archived-classes-list');
   const ac = document.getElementById('archived-assignments-list');
   if(cc) cc.innerHTML = archivedClasses.length
-    ? archivedClasses.map((c,i)=>`<div class="archived-item"><div style="font-size:18px;">📚</div><div style="flex:1;"><div class="archived-item-title">${c.className}</div><div class="archived-item-meta">Archived ${c.archivedAt}</div></div><button class="restore-btn" onclick="restoreClass(${i})">Restore</button></div>`).join('')
+    ? archivedClasses.map(c=>{
+        const safeClass = c.className.replace(/'/g,"\'");
+        return `<div class="archived-item"><div style="font-size:18px;">📚</div><div style="flex:1;"><div class="archived-item-title">${c.className}</div><div class="archived-item-meta">Archived ${c.archivedAt}</div></div><button class="restore-btn" data-class-id="${c.classId}" data-class-name="${c.className.replace(/"/g,"&quot;")}">Restore</button></div>`;
+      }).join('')
     : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;">None yet</div>';
   if(ac) ac.innerHTML = archivedAssignments.length
-    ? archivedAssignments.map((a,i)=>`<div class="archived-item"><div style="font-size:18px;">📄</div><div style="flex:1;"><div class="archived-item-title">${a.title}</div><div class="archived-item-meta">Archived ${a.archivedAt}</div></div><button class="restore-btn" onclick="restoreAssignment(${i})">Restore</button></div>`).join('')
+    ? archivedAssignments.map(a=>{
+        const idsJson = JSON.stringify(a.assignmentIds);
+        const safeTitle = a.title.replace(/"/g,"&quot;");
+        return `<div class="archived-item"><div style="font-size:18px;">📄</div><div style="flex:1;"><div class="archived-item-title">${a.title}</div><div class="archived-item-meta">Archived ${a.archivedAt}</div></div><button class="restore-btn" data-assignment-ids="${safeTitle}" data-assignment-title="${safeTitle}" data-ids-json="${encodeURIComponent(idsJson)}">Restore</button></div>`;
+      }).join('')
     : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;">None yet</div>';
+  // Attach event listeners for restore buttons (avoids inline onclick with complex args)
+  if(cc) cc.querySelectorAll('.restore-btn[data-class-id]').forEach(btn => {
+    btn.addEventListener('click', () => restoreClass(btn.dataset.classId, btn.dataset.className));
+  });
+  if(ac) ac.querySelectorAll('.restore-btn[data-ids-json]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ids = JSON.parse(decodeURIComponent(btn.dataset.idsJson));
+      restoreAssignment(ids, btn.dataset.assignmentTitle);
+    });
+  });
 }
 
-async function restoreClass(i) {
-  const c = archivedClasses.splice(i,1)[0];
-  await dbQuery(db.from('classes').update({status:'active'}).eq('id',c.classId));
-  refreshArchivedPanel();
-  showToast(`✅ ${c.className} restored`);
+async function restoreClass(classId, className) {
+  await dbQuery(db.from('classes').update({status:'active'}).eq('id',classId));
+  showToast(`✅ ${className} restored`);
+  await loadArchivedItems();
   loadTeacherApp();
 }
 
-async function restoreAssignment(i) {
-  const a = archivedAssignments.splice(i,1)[0];
-  const ids = a.assignmentIds || (a.assignmentId ? [a.assignmentId] : []);
+async function restoreAssignment(assignmentIds, title) {
+  const ids = Array.isArray(assignmentIds) ? assignmentIds : [assignmentIds];
   for(const id of ids) {
     await dbQuery(db.from('assignments').update({status:'active'}).eq('id',id));
   }
-  refreshArchivedPanel();
-  showToast(`✅ "${a.title}" restored`);
-  await loadTeacherClassAssignments(selectedClassId);
+  showToast(`✅ "${title}" restored`);
+  await loadArchivedItems();
+  if(selectedClassId) await loadTeacherClassAssignments(selectedClassId);
 }
 
 let archivePanelOpen = false;
@@ -3968,6 +4029,10 @@ function openDrawerScreen(screen) {
   }
 
   // Change avatar: populate grid with correct emoji set and show current avatar
+  if(screen === 'archive') {
+    loadArchivedItems();
+  }
+
   if(screen === 'import-assignment') {
     // Reset to clean state each time
     document.getElementById('importPasteInput').value = '';
