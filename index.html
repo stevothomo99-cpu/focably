@@ -612,8 +612,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <div style="font-size:13px;color:var(--gray-500);" id="chestCount">0 stars collected</div>
         </div>
         <div class="reward-grid" id="rewardsContainer">
-          <div class="reward-tile"><div class="r-emoji">🎮</div><div class="r-name">30 min Screen Time</div><div class="r-cost">⭐ 10 stars</div><div class="r-status">Keep going!</div></div>
-          <div class="reward-tile"><div class="r-emoji">🍕</div><div class="r-name">Choose Friday Dinner</div><div class="r-cost">⭐ 25 stars</div><div class="r-status">Keep going!</div></div>
+          <div style="font-size:12px;color:var(--gray-400);text-align:center;padding:8px 0;grid-column:1/-1;">Loading rewards…</div>
         </div>
       </div>
     </div>
@@ -686,6 +685,12 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
     </div>
 
+    <div id="parent-redemption-card" class="card" style="display:none;">
+      <div class="card-title">🎁 Reward Requests</div>
+      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Your child wants to redeem a reward!</p>
+      <div id="parent-redemption-queue"></div>
+    </div>
+
     <div id="parent-approval-card" class="card" style="display:none;">
       <div class="card-title">✅ Step Approvals</div>
       <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Steps your child has completed that need sign-off. Teachers can also approve — it clears from both queues.</p>
@@ -697,6 +702,55 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
   <!-- ADD TASK SCREEN -->
   <!-- IMPORT ASSIGNMENT SCREEN (all roles) -->
+  <!-- MANAGE REWARDS SCREEN (parent) -->
+  <div id="screen-manage-rewards" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Manage Rewards</div>
+    </div>
+
+    <!-- Child selector -->
+    <div class="card">
+      <div class="card-title">👧 Which child?</div>
+      <select class="form-input" id="rewardChildPicker" onchange="loadManageRewards()">
+        <option value="">— Select child —</option>
+      </select>
+    </div>
+
+    <!-- Add new reward -->
+    <div class="card">
+      <div class="card-title">➕ New Reward</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div id="rewardEmojiPreview" onclick="toggleEmojiPicker()" style="font-size:32px;cursor:pointer;padding:6px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;min-width:52px;text-align:center;">🎁</div>
+        <input class="form-input" type="text" id="rewardTitle" placeholder="e.g. 30 min screen time" style="flex:1;">
+      </div>
+      <!-- Emoji picker -->
+      <div id="rewardEmojiPicker" style="display:none;margin-bottom:10px;">
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <label class="form-lbl" style="white-space:nowrap;margin-bottom:0;">⭐ Cost</label>
+        <input class="form-input" type="number" id="rewardCost" value="10" min="1" max="999" style="width:80px;">
+        <span style="font-size:12px;color:var(--gray-500);">stars</span>
+      </div>
+      <button class="publish-btn" onclick="addReward()" style="background:linear-gradient(135deg,var(--amber),#F97316);">🎁 Add Reward</button>
+    </div>
+
+    <!-- Redemption requests -->
+    <div class="card" id="redemptionRequestsCard" style="display:none;">
+      <div class="card-title">🔔 Redemption Requests</div>
+      <div id="redemptionRequestsList"></div>
+    </div>
+
+    <!-- Existing rewards -->
+    <div class="card">
+      <div class="card-title">🏆 Active Rewards</div>
+      <div id="manageRewardsList"><div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Select a child above</div></div>
+    </div>
+  </div>
+
+
   <div id="screen-import-assignment" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
@@ -2022,6 +2076,7 @@ function renderPrimaryAssignments(assignments, child) {
   document.getElementById('chestCount').textContent=`${child.stars||0} stars collected`;
   document.getElementById('chestEmoji').textContent=t.chest;
   renderClassTiles(assignments, child, 'classTilesContainer', false);
+  loadStudentRewards(child.id, child.stars||0);
 }
 
 function renderQuestStep(task) {
@@ -2057,6 +2112,8 @@ function renderHSAssignments(assignments, child) {
   document.getElementById('xpBarFill').style.width=((xp%500)/500*100)+'%';
   document.getElementById('xpRing').style.strokeDashoffset=163-(163*((xp%500)/500));
   renderClassTiles(assignments, child, 'hsClassTilesContainer', true);
+  // HS mode doesn't have a treasure chest but we still load rewards in case they scroll down
+  loadStudentRewards(child.id, child.xp||0);
 }
 
 function renderHSTask(task) {
@@ -2391,6 +2448,320 @@ async function updateTrustScoreManual(childId, action) {
   const newScore = Math.max(0,Math.min(100,(child.trust_score||0)+points));
   const newLevel = newScore>=81?'champion':newScore>=51?'trust':newScore>=21?'check':'verify';
   await db.from('children').update({trust_score:newScore,trust_level:newLevel}).eq('id',childId);
+}
+
+// ── REWARDS ──
+
+const REWARD_EMOJIS = ['🎮','🍕','🎬','🛒','🍦','🎉','🎈','🏖️','🚗','🎲','🃏','⚽','🎸','📱','🍫','🍔','🎠','🏊','🎪','🎯','📚','🎨','🧩','🏆','💰','🌟','🎁','🎤','🎧','🍭'];
+
+const REWARD_SUGGESTIONS = [
+  {emoji:'🎮', title:'30 min screen time', cost:10},
+  {emoji:'🍕', title:'Choose Friday dinner', cost:25},
+  {emoji:'🎬', title:'Movie night pick', cost:30},
+  {emoji:'🛒', title:'$5 to spend', cost:50},
+  {emoji:'🍦', title:'Ice cream trip', cost:20},
+  {emoji:'🎉', title:'Friend sleepover', cost:60},
+  {emoji:'🏖️', title:'Beach day', cost:75},
+  {emoji:'🎲', title:'Board game night pick', cost:15},
+];
+
+let selectedRewardEmoji = '🎁';
+let currentRewards = [];
+let currentRedemptions = [];
+
+function toggleEmojiPicker() {
+  const picker = document.getElementById('rewardEmojiPicker');
+  if(!picker) return;
+  const isOpen = picker.style.display !== 'none';
+  if(isOpen) { picker.style.display = 'none'; return; }
+  const grid = picker.querySelector('div');
+  if(grid && !grid.children.length) {
+    grid.innerHTML = REWARD_EMOJIS.map(e =>
+      `<div onclick="pickRewardEmoji('${e}')" style="font-size:24px;padding:6px;border-radius:8px;cursor:pointer;text-align:center;transition:background 0.15s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background=''">${e}</div>`
+    ).join('');
+  }
+  picker.style.display = 'block';
+}
+
+function pickRewardEmoji(emoji) {
+  selectedRewardEmoji = emoji;
+  const preview = document.getElementById('rewardEmojiPreview');
+  if(preview) preview.textContent = emoji;
+  const picker = document.getElementById('rewardEmojiPicker');
+  if(picker) picker.style.display = 'none';
+}
+
+async function loadManageRewards() {
+  const childId = document.getElementById('rewardChildPicker')?.value;
+  const list = document.getElementById('manageRewardsList');
+  const reqCard = document.getElementById('redemptionRequestsCard');
+  const reqList = document.getElementById('redemptionRequestsList');
+  if(!list) return;
+
+  if(!childId) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Select a child above</div>';
+    if(reqCard) reqCard.style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Loading…</div>';
+
+  // Load rewards for this child
+  const {data:rewards} = await dbQuery(
+    db.from('rewards').select('*').eq('child_id', childId).eq('is_active', true).order('star_cost')
+  );
+  currentRewards = rewards || [];
+
+  // Load pending redemptions
+  const {data:redemptions} = await dbQuery(
+    db.from('redemptions')
+      .select('*, rewards(title, emoji, star_cost)')
+      .eq('child_id', childId)
+      .eq('status', 'pending')
+      .order('requested_at', {ascending:false})
+  );
+  currentRedemptions = redemptions || [];
+
+  // Render redemption requests
+  if(currentRedemptions.length) {
+    if(reqCard) reqCard.style.display = 'block';
+    if(reqList) reqList.innerHTML = currentRedemptions.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--gray-50);margin-bottom:8px;">
+        <div style="font-size:22px;">${r.rewards?.emoji||'🎁'}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--indigo);">${r.rewards?.title||'Reward'}</div>
+          <div style="font-size:11px;color:var(--gray-500);">⭐ ${r.rewards?.star_cost||0} stars · ${new Date(r.requested_at).toLocaleDateString('en-AU')}</div>
+        </div>
+        <button data-redemption-id="${r.id}" data-action="approved" class="redemption-action-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;margin-right:4px;">✓ Yes</button>
+        <button data-redemption-id="${r.id}" data-action="rejected" class="redemption-action-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--rose);color:white;font-size:12px;font-weight:700;cursor:pointer;">✗ No</button>
+      </div>`).join('');
+    // Attach listeners
+    reqList.querySelectorAll('.redemption-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => respondToRedemption(btn.dataset.redemptionId, btn.dataset.action, btn));
+    });
+  } else {
+    if(reqCard) reqCard.style.display = 'none';
+  }
+
+  // Render active rewards list
+  if(!currentRewards.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">No rewards yet — add one above!</div>';
+    return;
+  }
+  list.innerHTML = currentRewards.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--gray-50);margin-bottom:8px;">
+      <div style="font-size:22px;">${r.emoji}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--indigo);">${r.title}</div>
+        <div style="font-size:11px;color:var(--amber);font-weight:700;">⭐ ${r.star_cost} stars</div>
+      </div>
+      <button data-reward-id="${r.id}" class="delete-reward-btn" style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:11px;font-weight:600;cursor:pointer;">Remove</button>
+    </div>`).join('');
+  list.querySelectorAll('.delete-reward-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteReward(btn.dataset.rewardId));
+  });
+}
+
+async function addReward() {
+  const childId = document.getElementById('rewardChildPicker')?.value;
+  const title = document.getElementById('rewardTitle')?.value?.trim();
+  const cost = parseInt(document.getElementById('rewardCost')?.value) || 10;
+  if(!childId) { showToast('Select a child first'); return; }
+  if(!title) { showToast('Enter a reward name'); return; }
+
+  // Get family_id from currentFamily
+  const familyId = currentFamily?.id;
+  if(!familyId) { showToast('Family not loaded'); return; }
+
+  const {error} = await dbQuery(
+    db.from('rewards').insert({
+      family_id: familyId,
+      created_by: currentUser.id,
+      child_id: childId,
+      title,
+      emoji: selectedRewardEmoji,
+      star_cost: cost,
+      is_active: true
+    })
+  );
+  if(error) { showToast('Error adding reward'); console.error(error); return; }
+  // Reset form
+  document.getElementById('rewardTitle').value = '';
+  document.getElementById('rewardCost').value = '10';
+  selectedRewardEmoji = '🎁';
+  document.getElementById('rewardEmojiPreview').textContent = '🎁';
+  showToast('🎁 Reward added!');
+  loadManageRewards();
+}
+
+async function deleteReward(rewardId) {
+  if(!confirm('Remove this reward?')) return;
+  await dbQuery(db.from('rewards').update({is_active: false}).eq('id', rewardId));
+  showToast('Reward removed');
+  loadManageRewards();
+}
+
+async function respondToRedemption(redemptionId, action, btn) {
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  const {data:redemption} = await dbQuery(
+    db.from('redemptions').select('*, children(profile_id), rewards(title,emoji,star_cost)').eq('id',redemptionId).maybeSingle()
+  );
+  if(!redemption) { showToast('Could not load redemption'); return; }
+
+  await dbQuery(
+    db.from('redemptions').update({status: action, responded_at: new Date().toISOString()}).eq('id', redemptionId)
+  );
+
+  // If approved, deduct stars from child
+  if(action === 'approved') {
+    const stars = redemption.rewards?.star_cost || 0;
+    const childId = redemption.child_id;
+    const {data:child} = await dbQuery(db.from('children').select('stars').eq('id',childId).maybeSingle());
+    const newStars = Math.max(0, (child?.stars||0) - stars);
+    await dbQuery(db.from('children').update({stars: newStars}).eq('id', childId));
+
+    // Notify the student
+    const studentId = redemption.children?.profile_id;
+    if(studentId) {
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: studentId,
+        sender_id: currentUser.id,
+        type: 'reward_approved',
+        title: '🎉 Reward Approved!',
+        body: `Your parent approved: ${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'your reward'}. Enjoy!`
+      }));
+      await sendPushToUser(studentId, '🎉 Reward Approved!', `Your parent approved: ${redemption.rewards?.title||'your reward'}. Enjoy!`);
+    }
+    showToast('🎉 Reward approved!');
+  } else {
+    // Notify rejection
+    const studentId = redemption.children?.profile_id;
+    if(studentId) {
+      await dbQuery(db.from('notifications').insert({
+        recipient_id: studentId,
+        sender_id: currentUser.id,
+        type: 'reward_rejected',
+        title: '😔 Not Yet',
+        body: `${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'Your reward request'} wasn't approved this time. Keep earning!`
+      }));
+    }
+    showToast('Reward declined');
+  }
+  loadManageRewards();
+}
+
+// Load redemption requests for parent main view
+async function loadParentRedemptions() {
+  const card = document.getElementById('parent-redemption-card');
+  const queue = document.getElementById('parent-redemption-queue');
+  if(!card || !queue) return;
+
+  // Get all children for this parent
+  const childIds = currentChildren.map(c=>c.id);
+  if(!childIds.length) { card.style.display='none'; return; }
+
+  const {data:redemptions} = await dbQuery(
+    db.from('redemptions')
+      .select('*, rewards(title,emoji,star_cost), children(name)')
+      .in('child_id', childIds)
+      .eq('status','pending')
+      .order('requested_at', {ascending:false})
+  );
+
+  if(!redemptions || !redemptions.length) { card.style.display='none'; return; }
+  card.style.display = 'block';
+
+  queue.innerHTML = redemptions.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--gray-50);margin-bottom:8px;">
+      <div style="font-size:22px;">${r.rewards?.emoji||'🎁'}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--indigo);">${r.rewards?.title||'Reward'}</div>
+        <div style="font-size:11px;color:var(--gray-500);">${r.children?.name||'Child'} · ⭐ ${r.rewards?.star_cost||0} stars</div>
+      </div>
+      <button data-redemption-id="${r.id}" data-action="approved" class="parent-redemption-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;margin-right:4px;">✓</button>
+      <button data-redemption-id="${r.id}" data-action="rejected" class="parent-redemption-btn" style="padding:6px 12px;border-radius:20px;border:none;background:var(--rose);color:white;font-size:12px;font-weight:700;cursor:pointer;">✗</button>
+    </div>`).join('');
+
+  queue.querySelectorAll('.parent-redemption-btn').forEach(btn => {
+    btn.addEventListener('click', () => respondToRedemption(btn.dataset.redemptionId, btn.dataset.action, btn).then(()=>loadParentRedemptions()));
+  });
+}
+
+// Load rewards for student (called from loadStudentAssignments / loadStudentApp)
+async function loadStudentRewards(childId, stars) {
+  const container = document.getElementById('rewardsContainer');
+  if(!container) return;
+
+  const {data:rewards} = await dbQuery(
+    db.from('rewards').select('*').eq('child_id', childId).eq('is_active', true).order('star_cost')
+  );
+
+  // Also load pending redemptions so we can show status
+  const {data:pendingRedemptions} = await dbQuery(
+    db.from('redemptions').select('reward_id').eq('child_id', childId).eq('status','pending')
+  );
+  const pendingIds = new Set((pendingRedemptions||[]).map(r=>r.reward_id));
+
+  if(!rewards || !rewards.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--gray-400);text-align:center;grid-column:1/-1;padding:8px 0;">No rewards set up yet — ask your parent!</div>';
+    return;
+  }
+
+  container.innerHTML = rewards.map(r => {
+    const canAfford = (stars||0) >= r.star_cost;
+    const isPending = pendingIds.has(r.id);
+    const cls = isPending ? 'reward-tile' : canAfford ? 'reward-tile unlocked' : 'reward-tile';
+    const status = isPending ? '⏳ Requested!' : canAfford ? '✨ Redeem!' : `Need ${r.star_cost - (stars||0)} more ⭐`;
+    return `<div class="${cls}" data-reward-id="${r.id}" data-can-afford="${canAfford}" data-is-pending="${isPending}" style="cursor:${canAfford && !isPending ? 'pointer':'default'};">
+      <div class="r-emoji">${r.emoji}</div>
+      <div class="r-name">${r.title}</div>
+      <div class="r-cost">⭐ ${r.star_cost} stars</div>
+      <div class="r-status">${status}</div>
+    </div>`;
+  }).join('');
+
+  // Attach click handlers for affordable, non-pending rewards
+  container.querySelectorAll('.reward-tile[data-can-afford="true"][data-is-pending="false"]').forEach(tile => {
+    tile.addEventListener('click', () => redeemReward(tile.dataset.rewardId, childId));
+  });
+}
+
+async function redeemReward(rewardId, childId) {
+  const reward = await dbQuery(db.from('rewards').select('*').eq('id',rewardId).maybeSingle()).then(r=>r.data);
+  if(!reward) return;
+  if(!confirm(`Redeem "${reward.emoji} ${reward.title}" for ⭐ ${reward.star_cost} stars?\n\nYour parent will need to approve it.`)) return;
+
+  const familyId = reward.family_id;
+  const {error} = await dbQuery(
+    db.from('redemptions').insert({
+      reward_id: rewardId,
+      child_id: childId,
+      family_id: familyId,
+      status: 'pending'
+    })
+  );
+  if(error) { showToast('Error requesting reward'); return; }
+
+  // Notify parent
+  const {data:family} = await dbQuery(db.from('families').select('parent_id').eq('id', familyId).maybeSingle());
+  if(family?.parent_id) {
+    const {data:child} = await dbQuery(db.from('children').select('name').eq('id',childId).maybeSingle());
+    await dbQuery(db.from('notifications').insert({
+      recipient_id: family.parent_id,
+      sender_id: currentUser.id,
+      type: 'reward_requested',
+      title: '🎁 Reward Request!',
+      body: `${child?.name||'Your child'} wants to redeem: ${reward.emoji} ${reward.title} (⭐ ${reward.star_cost} stars)`
+    }));
+    await sendPushToUser(family.parent_id, '🎁 Reward Request!', `${child?.name||'Your child'} wants to redeem: ${reward.title}`);
+  }
+
+  showToast('🎁 Request sent to your parent!');
+  // Refresh the treasure chest view
+  const {data:childData} = await dbQuery(db.from('children').select('stars').eq('id',childId).maybeSingle());
+  loadStudentRewards(childId, childData?.stars||0);
 }
 
 async function approveReward(rewardId,btn) {
@@ -3694,6 +4065,7 @@ async function loadApprovalQueues() {
       8000, []
     );
     renderApprovalQueue('parent', tasks||[]);
+    loadParentRedemptions();
   }
   // Teacher queue — tasks for assignments in the currently selected class only
   if(currentProfile?.role === 'teacher') {
@@ -4085,6 +4457,7 @@ function renderDrawerItems() {
   } else if(role === 'parent') {
     items = [
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
+      { icon:'🎁', label:'Manage Rewards', action:`openDrawerScreen('manage-rewards')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'📬', label:'Family Invite Code', action:`openDrawerScreen('family-invite')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
@@ -4109,7 +4482,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -4168,6 +4541,30 @@ function openDrawerScreen(screen) {
   if(screen === 'settings') {
     footerNav('settings');
     return;
+  }
+
+  if(screen === 'manage-rewards') {
+    // Populate child picker
+    const picker = document.getElementById('rewardChildPicker');
+    if(picker) {
+      picker.innerHTML = '<option value="">— Select child —</option>' +
+        currentChildren.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      // Auto-select if only one child
+      if(currentChildren.length === 1) {
+        picker.value = currentChildren[0].id;
+        loadManageRewards();
+      } else {
+        loadManageRewards();
+      }
+    }
+    // Reset add form
+    selectedRewardEmoji = '🎁';
+    const ep = document.getElementById('rewardEmojiPreview');
+    if(ep) ep.textContent = '🎁';
+    const rt = document.getElementById('rewardTitle');
+    if(rt) rt.value = '';
+    const rc = document.getElementById('rewardCost');
+    if(rc) rc.value = '10';
   }
 
   if(screen === 'import-assignment') {
