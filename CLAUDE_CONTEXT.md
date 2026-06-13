@@ -1,4 +1,4 @@
-# Focably (AchievED) — Claude Session Context
+# Focably (FocablyED) — Claude Session Context
 
 > **Instructions:** Paste this file (or relevant sections) at the start of each Claude session.
 > Update the "Current Status" and "Session Log" sections after each session.
@@ -7,14 +7,30 @@
 
 ## Project Overview
 
-**App:** Focably (branded "AchievED" in-app) — gamified school task and accountability tool for parents, students, and teachers. ADHD-friendly design is a core value proposition.
-**Live URL:** https://focably.vercel.app
+**App:** FocablyED (previously branded "AchievED" in-app) — gamified school task and accountability tool for parents, students, and teachers. ADHD-friendly design is a core value proposition.
+**Live App URL:** https://focably.vercel.app
+**Landing Page URL:** https://focablyed.com
 **Stack:** Single-file vanilla HTML/CSS/JS app, Supabase backend, deployed on Vercel
 **Supabase project:** mxgnrgajspprupzxaeld.supabase.co
-**GitHub repo:** stevothomo99-cpu/focably
+**GitHub repo (app):** stevothomo99-cpu/focably
+**GitHub repo (landing page):** stevothomo99-cpu/focably-Landing
 
-> **IMPORTANT:** The live app is **`index.html`** (the "AchievED" build with real Supabase auth).
+> **IMPORTANT:** The live app is **`index.html`** (the FocablyED build with real Supabase auth).
 > `focably.html` is an OLD prototype — **IGNORE IT.** All work goes into `index.html`.
+
+---
+
+## Branding
+
+- **Name:** FocablyED (made-up word: Focus + Ability + ED suffix for education)
+- **Mascot:** Squirrel 🐿️ — named by Zoe (Steve's daughter, 15, ADHD), inspired by Doug from Pixar's UP ("SQUIRREL!"). Placeholder emoji in use until proper illustration sourced.
+- **Domains (all via Crazy Domains):**
+  - focablyed.com ✅ (primary)
+  - focablyed.com.au ✅ (Australian market)
+  - focablyed.app ✅ (app-specific)
+  - facably.com, facably.app, facablyed.com, facablyed.app ✅ (accidental typo purchases — keep as redirects)
+- **DNS:** Crazy Domains nameservers pointed to Vercel (ns1.vercel-dns.com, ns2.vercel-dns.com)
+- **Note:** focably.com was front-run/domain-sniped by Namecheap after searching — do not use Namecheap again. Use Crazy Domains or Cloudflare Registrar.
 
 ---
 
@@ -25,6 +41,21 @@
 - **Frontend:** ONE file — `index.html` (~4,100+ lines). Vanilla JS, no framework, no build step.
 - **User roles:** Student (primary + high-school modes), Parent, Teacher
 - **Deploy:** push to GitHub `main` → Vercel auto-deploys
+
+---
+
+## Landing Page
+
+- **Repo:** stevothomo99-cpu/focably-Landing
+- **Live at:** focablyed.com
+- **Stack:** Single file index.html — vanilla HTML/CSS/JS, no framework
+- **Fonts:** Fraunces (display serif) + Inter (body)
+- **Palette:** Warm amber/cream — #E8A020 amber, #FBF7F0 cream, #1E1712 ink
+- **Waitlist:** Form submits email to Supabase `waitlist` table (same project: mxgnrgajspprupzxaeld)
+- **Waitlist table columns:** id (int8 PK), email (text, not null), created_at (timestamptz, default now())
+- **RLS:** Disabled on waitlist table (public inserts allowed)
+- **Sections:** Hero + waitlist CTA → Three-way value prop (student/parent/teacher cards) → Problem strip (ADHD/time blindness) → How it works (4 steps) → Bottom waitlist CTA → Footer
+- **TODO:** Nav + body copy still says "Focably" in a couple of places — needs final pass
 
 ---
 
@@ -83,6 +114,9 @@
 - Persist archive via Supabase
 - Freemium/Pro paywall (Stripe) — see Business Model below
 - School Admin dashboard screen
+- Update app in-app branding from AchievED → FocablyED
+- Fix landing page nav/body copy "Focably" → "FocablyED" remaining instances
+- Add focablyed.com.au as second domain in Vercel
 
 ---
 
@@ -153,6 +187,7 @@
 | assignments | id, class_id, created_by, child_id, title, due_date, description, status, parent_created | class_id null = private/home task |
 | tasks | id, assignment_id, child_id, title, completed, verification_required, verification_status, proof_url, proof_submitted_at, verified_by, verified_at, star_value, xp_value, sort_order | |
 | notifications | id, recipient_id, sender_id, child_id, type, title, body, read_at, created_at | |
+| waitlist | id, email, created_at | landing page waitlist signups — RLS disabled |
 
 ---
 
@@ -188,52 +223,47 @@
 
 > _Brief entry after each session. Most recent at top._
 
-### 13 Jun 2026 — School concept, emoji avatars, smart import, business planning
-- FIXED: HS student unlinked state race condition — `loadStudentApp` no longer pre-shows hs-mode; `loadStudentAssignments` controls visibility. HS students now see greeting + avatar even before linking to family.
-- Added `navUserName` span to top nav — shows first name for all 3 roles, cleared on sign out.
-- **School concept added:**
-  - SQL: `CREATE TABLE schools`, `ALTER TABLE profiles ADD COLUMN school_id/school_role`, `ALTER TABLE classes ADD COLUMN school_id`
-  - `currentSchool` state variable loaded at teacher login
-  - Teacher header badge: "🏫 School Name" or "👤 Individual Teacher"
-  - Teacher drawer: "Set Up / Join a School" → Create School (generates 30-day invite code, sets school_role=admin) or Join School (validates code, sets school_role=member)
-  - New classes auto-inherit `school_id` from creating teacher
-- **Emoji avatar picker:**
-  - SQL: `ALTER TABLE profiles ADD COLUMN avatar text DEFAULT '🎓'`
-  - Onboarding: after age selection, avatar grid appears (20 emoji, age-appropriate set)
-  - HS header: large avatar above greeting; primary: avatar as heroEmoji
-  - "🎭 Change Avatar" in student drawer — live preview, saves to Supabase instantly
-- **Smart Import Assignment (all 3 roles):**
-  - "📥 Import Assignment" added to all three hamburger menus
-  - Paste any freeform text → Claude API extracts title, subject, due date, description
-  - Confirmation card with editable fields before saving
-  - Teacher: saves to selected class; Parent/Student: saves as private task + AI step generation
-  - Screen resets cleanly on each open
-- Business planning discussion: pricing model, AU/international market sizing (~70K+ addressable schools across AU/NZ/UK/CA/US), go-to-market strategy, roadmap items noted in memory
+### 13 Jun 2026 (PM) — Naming, branding, landing page, domain setup
+- Long naming session exploring 20+ names — SquirrelED, LoopedInED, HiveMindED, TelosED, SwarmED, FlockED, NexusED, ClaritED etc. — all blocked by trademark or existing products
+- Settled on **FocablyED** — made-up word, completely clear, Focus + Ability + ED
+- Mascot: squirrel 🐿️ named by Zoe (Steve's daughter, 15, ADHD) — inspired by Doug from UP
+- Domains purchased via Crazy Domains: focablyed.com, focablyed.com.au, focablyed.app
+- focably.com was domain front-run by Namecheap — do not use Namecheap again
+- Also accidentally purchased facably.com/app/ed variants (typo) — keep as redirects
+- Built landing page (single HTML file): warm amber/cream palette, Fraunces + Inter fonts
+- Deployed to Vercel via GitHub repo stevothomo99-cpu/focably-Landing
+- DNS: Crazy Domains nameservers → ns1.vercel-dns.com + ns2.vercel-dns.com
+- Waitlist form wired to Supabase `waitlist` table — RLS disabled, public inserts
+- Landing page live at focablyed.com ✅
+- Files changed: CLAUDE_CONTEXT.md; new repo focably-Landing created
+
+### 13 Jun 2026 (AM) — School concept, emoji avatars, smart import, business planning
+- FIXED: HS student unlinked state race condition
+- Added `navUserName` span to top nav
+- School concept: schools table, school_id/school_role on profiles, school badge in teacher header, Create/Join school flows
+- Emoji avatar picker on onboarding, Change Avatar in drawer
+- Smart Import Assignment: paste freeform text → Claude API extracts details → confirmation card
+- Business planning: pricing model, AU/international market sizing (~70K+ addressable schools)
 - Files changed: index.html, CLAUDE_CONTEXT.md
 
 ### 12 Jun 2026 — Auth fix, parent detail, dynamic codes, teacher view polish
-- FIXED: "Sign up for free" did nothing — missing authForgotPassword form block crashing showSignUp/showSignIn. Added form + made toggles null-safe.
-- Parent: tap assignment row → Assignment Detail screen (steps, status, proof links, instructions)
-- Dynamic invite codes (family + class): 48h expiry, unambiguous charset, generate on demand
+- FIXED: "Sign up for free" did nothing — missing authForgotPassword form block
+- Parent: tap assignment → Assignment Detail screen
+- Dynamic invite codes (family + class): 48h expiry
 - Teacher assignments: By Assignment / By Student toggle → DROPDOWN
-- Teacher By-Student: rows expand to show assignments + nudge button
 - Files changed: index.html only
 
 ### 11 Jun 2026 (AM, part 2) — Parent grouping + private/tagged tasks
 - Parent Subject Progress groups assignments under collapsible class headings
 - Parent Add Task: Private vs Tag to Class visibility toggle
-- SQL: `ALTER TABLE assignments ADD COLUMN parent_created boolean DEFAULT false`
-- Teacher view: parent-tagged tasks show badge + 🔒 (read-only, no archive)
-- FIXED: "+ Add" child tab did nothing → now opens Family Invite screen
+- SQL: ALTER TABLE assignments ADD COLUMN parent_created boolean DEFAULT false
 - Files changed: index.html only
 
 ### 11 Jun 2026 (AM, part 1) — Nav restructure, approvals, notifications, archive
 - Unified duplicate proof/step approval queues into ONE shared card
-- Added 🔔 notification bell in top nav (dropdown, red-dot badge, 60s polling)
-- Built hamburger drawer nav; moved secondary actions off main screens (all 3 roles)
-- FIXED: login crash from stale rbParent/rbTeacher/rbStudent references
-- FIXED: assignment archive button (malformed onclick) → data-attrs + confirm dialog
-- FIXED: approve didn't update student — made task update authoritative
+- Added 🔔 notification bell in top nav
+- Built hamburger drawer nav
+- Multiple bug fixes
 - Files changed: index.html only
 
 ---
