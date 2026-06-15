@@ -411,6 +411,43 @@ Then build in this order:
 - **Web funnel strategy:** Drive parents to focablyed.com → Stripe → then download app
 - **Session 4 build plan locked** (see Session 4 Build Plan section)
 
+### 16 Jun 2026 (Session 5) — Landing rebrand, Stripe payments, AI cap
+
+**Landing page (focably-Landing repo):**
+- Full colour rebrand from amber/brown/cream → app palette (indigo #0F172A bg, violet #7C3AED primary, mint #10B981 accents). Amber #F59E0B kept as warm accent on dark.
+- "Our story" section moved to immediately after hero (second thing visitors read).
+
+**Stripe payments (main app) — WORKING END-TO-END (verified to checkout page):**
+- Server-side Checkout Session architecture (client-only `redirectToCheckout` is DEPRECATED by Stripe — no longer available, do not attempt).
+- Two Supabase Edge Functions deployed:
+  - `create-checkout-session` — takes priceId/email/userId, calls Stripe API with secret key, returns hosted checkout URL. Has CORS headers.
+  - `stripe-webhook` — verifies Stripe signature (Web Crypto HMAC-SHA256), handles `checkout.session.completed` → sets families.subscription_status='pro' + stripe IDs; handles `customer.subscription.deleted` → sets 'free'. Uses service_role key to bypass RLS.
+- App flow: paywall modal → startStripeCheckout() POSTs to create-checkout-session Edge Function → window.location redirect to Stripe → returns with ?checkout=success → handleStripeReturn() refreshes family record.
+- Stripe config in app: STRIPE_PK (pk_live), STRIPE_PRICE_MONTHLY = price_1TiYduBClvRtlFVHK1JSodkf ($9.99/mo inc GST), STRIPE_PRICE_ANNUAL = price_1TiYeWBClvRtlFVH8KKVA20U ($89/yr inc GST). NOTE: these were initially swapped, now correct.
+- LIVE MODE (pk_live/sk_live). GST-inclusive pricing for AU B2C.
+- Webhook signing secret + service_role key are hardcoded in the Edge Functions.
+- **STILL UNTESTED:** actual payment completion → webhook → subscription_status flip. Code deployed & ready; needs one real purchase to confirm.
+
+**Paywall gates (freemium) — all built:**
+- isPro() helper checks subscription_status (pro OR school_attached). MUST be defined early in main script (hoisting bug fixed — was throwing "isPro is not defined").
+- Join a Class (parent) — gated, fires paywall.
+- 2nd child via family invite — gated.
+- AI Import cap: 3 per user per month, all roles, resets 1st of month. Tracked in profiles.ai_import_count + ai_import_reset_at columns. Gates parseImportedAssignment, breakdownTask, breakdownHS. Usage hint shows remaining count. Pro = unlimited.
+- ⭐ PRO badge next to parent name; drawer shows Upgrade vs Active.
+
+**DB columns added this session:**
+- licenses table (re-run); families: subscription_status/school_id/stripe_customer_id/stripe_subscription_id; profiles: ai_import_count/ai_import_reset_at.
+
+**Key learnings:**
+- Service worker aggressively caches — must Unregister + Clear site data to see new deploys. Recurring pain point.
+- String-replace pushes can SILENTLY MISS — always verify function defs landed (Stripe JS block was lost once, caused "handleStripeReturn is not defined").
+- All paywall/Stripe/AI functions must live in the SAME <script> block as main app (single inline script in this app).
+
+**Next session TODO:**
+- Confirm webhook fires on real purchase (check Supabase Edge Function logs + families row).
+- License gate on Create School (B2B).
+- THEME SYSTEM — still not built. Design locked (Free 2-3 presets / Pro full library + AI generator; 10 themes named; profiles.theme column exists; AVATARS_HS vs AVATARS_PRIMARY split done). This is the next big feature.
+
 ### 13 Jun 2026 (Session 3, part 3) — Logo, pricing, themes, story, email
 - Squirrel logo deployed everywhere (app + landing page)
 - Pricing model locked including Platinum enterprise tier
