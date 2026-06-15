@@ -42,6 +42,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 #screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;}
 #screen-onboarding{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;text-align:center;flex-direction:column;}
 #screen-app{display:none;}
+#screen-settings{overflow-y:auto;max-height:calc(100vh - 60px);}
 
 /* LOADING */
 .loading-logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:42px;color:white;}
@@ -935,6 +936,14 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
   <!-- STUDENT AI BREAKDOWN SCREEN -->
   <!-- CHANGE AVATAR SCREEN (student) -->
+  <div id="screen-themes" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">🎨 My Theme</div>
+    </div>
+    <div id="themesDrawerContent"></div>
+  </div>
+
   <div id="screen-change-avatar" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
@@ -1302,6 +1311,7 @@ function isPro() {
 }
 
 let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
+let profileLoadInProgress = false;
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
@@ -1460,9 +1470,7 @@ function applyHSTheme(key, save) {
   });
 }
 
-function renderHSThemePicker() {
-  // For students, isPro() checks currentFamily — but that's only loaded for parents.
-  // Check the student's family subscription via stored value on currentProfile, or default false.
+function renderHSThemePickerInto(container) {
   const proUser = (currentProfile?.subscription_status === 'pro' || currentProfile?.subscription_status === 'school_attached') || (isPro ? isPro() : false);
   const current = currentProfile?.theme || 'vanilla';
   const entries = Object.entries(HS_THEMES);
@@ -1476,7 +1484,7 @@ function renderHSThemePicker() {
 
   freeThemes.forEach(([key, t]) => {
     const active = key === current;
-    html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePicker();"
+    html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
       style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
       background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
       <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
@@ -1509,7 +1517,7 @@ function renderHSThemePicker() {
     html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
     proThemes.forEach(([key, t]) => {
       const active = key === current;
-      html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePicker();"
+      html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
         style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
         background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
         <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
@@ -1523,11 +1531,12 @@ function renderHSThemePicker() {
 
   html += `</div>`;
 
-  // Insert into the dedicated placeholder — always reliable
+  container.innerHTML = html;
+}
+
+function renderHSThemePicker() {
   const placeholder = document.getElementById('hsThemeCardPlaceholder');
-  if(placeholder) {
-    placeholder.innerHTML = html;
-  }
+  if(placeholder) renderHSThemePickerInto(placeholder);
 }
 
 const trustConfig = {
@@ -1573,6 +1582,7 @@ window.addEventListener('load', async () => {
     console.log('Session:', session ? 'logged in as ' + session.user.email : 'none');
     if (session) {
       currentUser = session.user;
+      profileLoadInProgress = true;
       await loadProfile();
     } else {
       // If we came back from Stripe but lost the session, flag it so the
@@ -1604,6 +1614,8 @@ db.auth.onAuthStateChange(async (event, session) => {
     return;
   }
   if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
+    // Skip if window.load already kicked off a profile load
+    if (profileLoadInProgress || currentUser) return;
     currentUser = session.user;
     await loadProfile();
   } else if (event === 'SIGNED_OUT') {
@@ -1752,17 +1764,9 @@ function footerNav(tab) {
     // Show notifications card for parent/student
     const notifsCard = document.getElementById('settingsNotifsCard');
     if(notifsCard) notifsCard.style.display = (p?.role !== 'teacher') ? 'block' : 'none';
-    // Show theme picker for HS students
-    console.log('Settings: role='+p?.role+' age='+p?.age_group);
-    if(p?.role === 'student' && p?.age_group === 'highschool') {
-      console.log('Rendering HS theme picker...');
-      renderHSThemePicker();
-      console.log('Placeholder innerHTML length:', document.getElementById('hsThemeCardPlaceholder')?.innerHTML?.length);
-    } else {
-      // Remove theme card if switching away from HS student
-      const placeholder = document.getElementById('hsThemeCardPlaceholder');
-      if(placeholder) placeholder.innerHTML = '';
-    }
+    // Theme is now in its own drawer page (My Theme in hamburger menu)
+    const placeholder = document.getElementById('hsThemeCardPlaceholder');
+    if(placeholder) placeholder.innerHTML = '';
     setFooterActive('settings');
     return;
   }
@@ -1823,6 +1827,7 @@ async function retryLoad() {
 }
 
 async function loadProfile() {
+  profileLoadInProgress = true;
   showScreen('loading');
   setLoadingStatus('Loading your profile...');
   console.log('loadProfile: starting for', currentUser.email);
@@ -2091,6 +2096,10 @@ async function completeOnboarding() {
   await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme,avatar}).eq('id',currentUser.id);
   currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme; currentProfile.avatar=avatar;
   await loadStudentApp();
+  // HS students: prompt to pick a theme right after onboarding
+  if(selectedAge === 'highschool') {
+    setTimeout(() => openDrawerScreen('themes'), 400);
+  }
 }
 // ── STUDENT APP ──
 async function loadStudentApp() {
@@ -5197,6 +5206,10 @@ function renderDrawerItems() {
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
     ];
+    // Add My Theme for HS students
+    if(currentProfile?.age_group === 'highschool') {
+      items.splice(items.length - 1, 0, { icon:'🎨', label:'My Theme', action:`openDrawerScreen('themes')`, disabled: false });
+    }
   }
 
   container.innerHTML = items.map(item => `
@@ -5211,7 +5224,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -5324,6 +5337,11 @@ function openDrawerScreen(screen) {
     document.getElementById('importConfirmCard').style.display = 'none';
     document.getElementById('importChildSelectWrap').style.display = 'none';
     document.getElementById('importClassWrap').style.display = 'none';
+  }
+
+  if(screen === 'themes') {
+    const container = document.getElementById('themesDrawerContent');
+    if(container) renderHSThemePickerInto(container);
   }
 
   if(screen === 'change-avatar') {
