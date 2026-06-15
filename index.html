@@ -5313,23 +5313,38 @@ async function startStripeCheckout() {
   btn.textContent = 'Loading…';
   btn.disabled = true;
   try {
-    const stripe = getStripe();
     const priceId = selectedPlan === 'annual' ? STRIPE_PRICE_ANNUAL : STRIPE_PRICE_MONTHLY;
     const successUrl = window.location.origin + window.location.pathname + '?checkout=success';
     const cancelUrl  = window.location.origin + window.location.pathname + '?checkout=cancelled';
-    const { error } = await stripe.redirectToCheckout({
-      lineItems: [{ price: priceId, quantity: 1 }],
-      mode: 'subscription',
-      successUrl,
-      cancelUrl,
-      customerEmail: currentUser?.email || undefined,
+
+    const res = await fetch(SUPA_URL + '/functions/v1/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPA_KEY,
+      },
+      body: JSON.stringify({
+        priceId,
+        customerEmail: currentUser?.email,
+        successUrl,
+        cancelUrl,
+        userId: currentUser?.id,
+      })
     });
-    if(error) {
-      showToast('❌ ' + error.message);
+
+    const data = await res.json();
+    if(!res.ok || !data.url) {
+      console.error('Checkout session error:', data);
+      showToast('❌ ' + (data.error || 'Could not start checkout'));
       btn.textContent = 'Upgrade Now →';
       btn.disabled = false;
+      return;
     }
+
+    // Redirect to Stripe Checkout
+    window.location.href = data.url;
   } catch(e) {
+    console.error('Checkout error:', e);
     showToast('❌ Could not start checkout. Please try again.');
     btn.textContent = 'Upgrade Now →';
     btn.disabled = false;
