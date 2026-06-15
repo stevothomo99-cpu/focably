@@ -942,9 +942,34 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
     <div class="card">
       <div class="card-title">🎭 Your Avatar</div>
-      <div style="text-align:center;font-size:56px;margin:8px 0 16px;" id="avatarPreview">🎓</div>
-      <div class="avatar-grid" id="changeAvatarGrid"></div>
-      <button class="publish-btn" onclick="saveAvatarChange()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-top:4px;">Save Avatar ✓</button>
+      <!-- Avatar preview -->
+      <div style="text-align:center;margin:8px 0 16px;">
+        <div id="avatarPreviewWrap" style="width:80px;height:80px;border-radius:50%;margin:0 auto;overflow:hidden;background:var(--gray-100);display:flex;align-items:center;justify-content:center;border:3px solid var(--violet);">
+          <span id="avatarPreviewEmoji" style="font-size:48px;line-height:1;">🎓</span>
+          <img id="avatarPreviewPhoto" src="" style="display:none;width:100%;height:100%;object-fit:cover;" alt="avatar">
+        </div>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button id="avatarTabEmoji" onclick="switchAvatarTab('emoji')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--violet);background:var(--violet);color:white;font-size:13px;font-weight:700;cursor:pointer;">🎭 Emoji</button>
+        <button id="avatarTabPhoto" onclick="switchAvatarTab('photo')" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-700);font-size:13px;font-weight:700;cursor:pointer;">📸 Photo</button>
+      </div>
+      <!-- Emoji tab -->
+      <div id="avatarTabEmojiContent">
+        <div class="avatar-grid" id="changeAvatarGrid"></div>
+      </div>
+      <!-- Photo tab -->
+      <div id="avatarTabPhotoContent" style="display:none;">
+        <div style="border:2px dashed var(--gray-200);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="photoDropZone" onclick="document.getElementById('avatarPhotoInput').click()">
+          <div style="font-size:32px;margin-bottom:8px;">📷</div>
+          <div style="font-size:14px;font-weight:700;color:var(--indigo);margin-bottom:4px;">Tap to choose a photo</div>
+          <div style="font-size:12px;color:var(--gray-500);">JPG or PNG — we'll crop it to a circle</div>
+        </div>
+        <input type="file" id="avatarPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleAvatarPhotoSelect(event)">
+        <div id="avatarPhotoError" style="color:var(--rose);font-size:12px;margin-top:8px;display:none;"></div>
+        <div id="avatarPhotoProcessing" style="text-align:center;padding:12px;color:var(--violet);font-size:13px;font-weight:600;display:none;">⏳ Processing photo...</div>
+      </div>
+      <button class="publish-btn" onclick="saveAvatarChange()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-top:14px;">Save Avatar ✓</button>
     </div>
   </div>
 
@@ -1433,7 +1458,9 @@ function applyHSTheme(key, save) {
 }
 
 function renderHSThemePicker() {
-  const proUser = isPro ? isPro() : false;
+  // For students, isPro() checks currentFamily — but that's only loaded for parents.
+  // Check the student's family subscription via stored value on currentProfile, or default false.
+  const proUser = (currentProfile?.subscription_status === 'pro' || currentProfile?.subscription_status === 'school_attached') || (isPro ? isPro() : false);
   const current = currentProfile?.theme || 'vanilla';
   const entries = Object.entries(HS_THEMES);
   const freeThemes = entries.filter(([,v]) => v.free);
@@ -1493,13 +1520,19 @@ function renderHSThemePicker() {
 
   html += `</div>`;
 
-  // Find insertion point — after settingsChangeAvatarWrap closing div, before settingsNotifsCard
+  // Insert theme card — use settingsSignOut as anchor (always exists), or append to settings container
   const existing = document.getElementById('hsThemeCard');
   if (existing) {
     existing.outerHTML = html;
   } else {
-    const notifsCard = document.getElementById('settingsNotifsCard');
-    if(notifsCard) notifsCard.insertAdjacentHTML('beforebegin', html);
+    // Insert before the About card (which is before sign out — always present)
+    const settingsScreen = document.getElementById('screen-settings');
+    const aboutCard = settingsScreen?.querySelector('.card:not(#settingsProfileCard):not(#settingsNotifsCard)');
+    if(aboutCard) {
+      aboutCard.insertAdjacentHTML('beforebegin', html);
+    } else if(settingsScreen) {
+      settingsScreen.insertAdjacentHTML('afterbegin', html);
+    }
   }
 }
 
@@ -1707,7 +1740,18 @@ function footerNav(tab) {
     const avatarEl = document.getElementById('settingsAvatar');
     if(nameEl) nameEl.textContent = p?.full_name || '—';
     if(roleEl) roleEl.textContent = p?.role || '—';
-    if(avatarEl) avatarEl.textContent = p?.avatar || (p?.role==='student' ? '🎓' : p?.role==='parent' ? '👨‍👩‍👧' : '📚');
+    if(avatarEl) {
+      if(p?.avatar_photo) {
+        avatarEl.innerHTML='';
+        const img=document.createElement('img');
+        img.src=p.avatar_photo;
+        img.style.cssText='width:42px;height:42px;border-radius:50%;object-fit:cover;';
+        avatarEl.appendChild(img);
+      } else {
+        avatarEl.innerHTML='';
+        avatarEl.textContent = p?.avatar || (p?.role==='student' ? '🎓' : p?.role==='parent' ? '👨‍👩‍👧' : '📚');
+      }
+    }
     // Show avatar change only for students
     const avatarWrap = document.getElementById('settingsChangeAvatarWrap');
     if(avatarWrap) avatarWrap.style.display = (p?.role==='student') ? 'block' : 'none';
@@ -1877,28 +1921,149 @@ function selectAvatar(emoji, el) {
 
 function selectChangeAvatar(emoji, el) {
   selectedAvatar = emoji;
-  const preview = document.getElementById('avatarPreview');
-  if(preview) preview.textContent = emoji;
+  selectedAvatarPhoto = null; // clear any photo selection
+  // Update preview
+  const emojiPrev = document.getElementById('avatarPreviewEmoji');
+  const photoPrev = document.getElementById('avatarPreviewPhoto');
+  if(emojiPrev){ emojiPrev.style.display='block'; emojiPrev.textContent=emoji; }
+  if(photoPrev){ photoPrev.style.display='none'; photoPrev.src=''; }
   document.querySelectorAll('#changeAvatarGrid .avatar-opt').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
 }
 
 async function saveAvatarChange() {
-  if(!selectedAvatar) { showToast('Pick an avatar first!'); return; }
-  const {error} = await dbQuery(db.from('profiles').update({avatar:selectedAvatar}).eq('id',currentUser.id), 5000, null);
-  if(error) { showToast('❌ Could not save avatar'); return; }
-  currentProfile.avatar = selectedAvatar;
-  // Update displayed avatar immediately
   const age = currentProfile.age_group;
-  if(age === 'primary') {
-    const heroEl = document.getElementById('heroEmoji');
-    if(heroEl) heroEl.textContent = selectedAvatar;
+  if(selectedAvatarPhoto) {
+    // Saving a photo avatar
+    const {error} = await dbQuery(db.from('profiles').update({avatar: null, avatar_photo: selectedAvatarPhoto}).eq('id',currentUser.id), 8000, null);
+    if(error) { showToast('❌ Could not save photo: ' + error.message); return; }
+    currentProfile.avatar = null;
+    currentProfile.avatar_photo = selectedAvatarPhoto;
+    selectedAvatarPhoto = null;
+    // Update displayed avatar
+    updateAvatarDisplay(age, null, currentProfile.avatar_photo);
+    showToast('✅ Photo avatar saved!');
+    closeDrawerScreen();
   } else {
-    const hsAvatarEl = document.getElementById('hsAvatar');
-    if(hsAvatarEl) hsAvatarEl.textContent = selectedAvatar;
+    if(!selectedAvatar) { showToast('Pick an avatar first!'); return; }
+    const {error} = await dbQuery(db.from('profiles').update({avatar: selectedAvatar, avatar_photo: null}).eq('id',currentUser.id), 5000, null);
+    if(error) { showToast('❌ Could not save avatar'); return; }
+    currentProfile.avatar = selectedAvatar;
+    currentProfile.avatar_photo = null;
+    updateAvatarDisplay(age, selectedAvatar, null);
+    showToast('✅ Avatar updated!');
+    closeDrawerScreen();
   }
-  showToast('✅ Avatar updated!');
-  closeDrawerScreen();
+}
+
+function updateAvatarDisplay(age, emoji, photoDataURL) {
+  if(photoDataURL) {
+    // Photo avatar — update all avatar display points
+    ['hsAvatar','settingsAvatar','heroEmoji'].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      if(id === 'settingsAvatar') {
+        // Settings shows in a div — replace with img
+        el.innerHTML = '';
+        el.style.fontSize='inherit';
+        const img = document.createElement('img');
+        img.src = photoDataURL;
+        img.style.cssText='width:42px;height:42px;border-radius:50%;object-fit:cover;';
+        el.appendChild(img);
+      } else {
+        // Replace emoji span with img
+        el.innerHTML='';
+        const img = document.createElement('img');
+        img.src = photoDataURL;
+        img.style.cssText = id==='hsAvatar'
+          ? 'width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.3);'
+          : 'width:56px;height:56px;border-radius:50%;object-fit:cover;';
+        el.appendChild(img);
+      }
+    });
+  } else if(emoji) {
+    const hsEl = document.getElementById(age==='highschool'?'hsAvatar':'heroEmoji');
+    if(hsEl) { hsEl.innerHTML=''; hsEl.textContent=emoji; }
+    const sEl = document.getElementById('settingsAvatar');
+    if(sEl) { sEl.innerHTML=''; sEl.textContent=emoji; }
+  }
+}
+
+
+// ── PHOTO AVATAR ──
+let selectedAvatarPhoto = null; // base64 data URL of compressed photo
+let avatarTabActive = 'emoji';
+
+function switchAvatarTab(tab) {
+  avatarTabActive = tab;
+  const emojiBtn = document.getElementById('avatarTabEmoji');
+  const photoBtn = document.getElementById('avatarTabPhoto');
+  const emojiContent = document.getElementById('avatarTabEmojiContent');
+  const photoContent = document.getElementById('avatarTabPhotoContent');
+  if(tab === 'emoji') {
+    emojiBtn.style.background='var(--violet)'; emojiBtn.style.color='white'; emojiBtn.style.borderColor='var(--violet)';
+    photoBtn.style.background='white'; photoBtn.style.color='var(--gray-700,#374151)'; photoBtn.style.borderColor='var(--gray-200,#DDD6FE)';
+    emojiContent.style.display='block';
+    photoContent.style.display='none';
+  } else {
+    photoBtn.style.background='var(--violet)'; photoBtn.style.color='white'; photoBtn.style.borderColor='var(--violet)';
+    emojiBtn.style.background='white'; emojiBtn.style.color='var(--gray-700,#374151)'; emojiBtn.style.borderColor='var(--gray-200,#DDD6FE)';
+    emojiContent.style.display='none';
+    photoContent.style.display='block';
+  }
+}
+
+function handleAvatarPhotoSelect(event) {
+  const file = event.target.files?.[0];
+  if(!file) return;
+  const errEl = document.getElementById('avatarPhotoError');
+  const procEl = document.getElementById('avatarPhotoProcessing');
+  if(errEl) errEl.style.display='none';
+  // Validate
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+    if(errEl){ errEl.textContent='Please pick a JPG or PNG photo.'; errEl.style.display='block'; }
+    return;
+  }
+  if(file.size > 10 * 1024 * 1024) {
+    if(errEl){ errEl.textContent='Photo too large — pick one under 10MB.'; errEl.style.display='block'; }
+    return;
+  }
+  if(procEl) procEl.style.display='block';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Compress + crop to square via canvas
+      const canvas = document.createElement('canvas');
+      const SIZE = 200; // 200x200px output
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      // Crop to centre square
+      const minDim = Math.min(img.width, img.height);
+      const sx = (img.width - minDim) / 2;
+      const sy = (img.height - minDim) / 2;
+      // Clip to circle
+      ctx.beginPath();
+      ctx.arc(SIZE/2, SIZE/2, SIZE/2, 0, Math.PI*2);
+      ctx.clip();
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, SIZE, SIZE);
+      // Export as JPEG at 0.7 quality (~15-30KB typically)
+      const dataURL = canvas.toDataURL('image/jpeg', 0.7);
+      selectedAvatarPhoto = dataURL;
+      selectedAvatar = null; // clear emoji selection
+      // Update preview
+      const emojiPrev = document.getElementById('avatarPreviewEmoji');
+      const photoPrev = document.getElementById('avatarPreviewPhoto');
+      if(emojiPrev) emojiPrev.style.display='none';
+      if(photoPrev){ photoPrev.src=dataURL; photoPrev.style.display='block'; }
+      // Clear emoji grid selection
+      document.querySelectorAll('.avatar-opt').forEach(el => el.classList.remove('selected'));
+      if(procEl) procEl.style.display='none';
+      showToast('📸 Photo ready — tap Save to confirm');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function selectAge(age) {
@@ -1954,9 +2119,20 @@ async function loadStudentApp() {
     if(heroEl) heroEl.textContent = avatar;
   } else {
     document.getElementById('hsName').textContent=`Hey, ${firstName}! 👋`;
-    // Set avatar in HS header
+    // Set avatar in HS header — photo or emoji
     const hsAvatarEl = document.getElementById('hsAvatar');
-    if(hsAvatarEl) hsAvatarEl.textContent = avatar;
+    if(hsAvatarEl) {
+      if(currentProfile.avatar_photo) {
+        hsAvatarEl.innerHTML='';
+        const img = document.createElement('img');
+        img.src = currentProfile.avatar_photo;
+        img.style.cssText='width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.3);';
+        hsAvatarEl.appendChild(img);
+      } else {
+        hsAvatarEl.innerHTML='';
+        hsAvatarEl.textContent = avatar;
+      }
+    }
     // Apply saved HS theme
     const hsTheme = currentProfile.theme && HS_THEMES[currentProfile.theme] ? currentProfile.theme : 'vanilla';
     applyHSTheme(hsTheme, false);
@@ -5155,17 +5331,30 @@ function openDrawerScreen(screen) {
 
   if(screen === 'change-avatar') {
     const age = currentProfile?.age_group;
-    const current = currentProfile?.avatar || (age==='primary' ? '🧙' : '🎓');
+    const hasPhoto = !!currentProfile?.avatar_photo;
+    const currentEmoji = currentProfile?.avatar || (age==='primary' ? '🧙' : '🎓');
     const emojis = age === 'primary' ? AVATARS_PRIMARY : AVATARS_HS;
-    const preview = document.getElementById('avatarPreview');
-    if(preview) preview.textContent = current;
+    // Reset tab to emoji
+    avatarTabActive = 'emoji';
+    selectedAvatarPhoto = null;
+    switchAvatarTab('emoji');
+    // Set preview
+    const emojiPrev = document.getElementById('avatarPreviewEmoji');
+    const photoPrev = document.getElementById('avatarPreviewPhoto');
+    if(hasPhoto) {
+      if(emojiPrev) emojiPrev.style.display='none';
+      if(photoPrev){ photoPrev.src=currentProfile.avatar_photo; photoPrev.style.display='block'; }
+    } else {
+      if(emojiPrev){ emojiPrev.style.display='block'; emojiPrev.textContent=currentEmoji; }
+      if(photoPrev){ photoPrev.src=''; photoPrev.style.display='none'; }
+    }
     const grid = document.getElementById('changeAvatarGrid');
     if(grid) {
       grid.innerHTML = emojis.map(e =>
-        `<div class="avatar-opt${e===current?' selected':''}" onclick="selectChangeAvatar('${e}',this)">${e}</div>`
+        `<div class="avatar-opt${e===currentEmoji&&!hasPhoto?' selected':''}" onclick="selectChangeAvatar('${e}',this)">${e}</div>`
       ).join('');
     }
-    selectedAvatar = current;
+    selectedAvatar = hasPhoto ? null : currentEmoji;
   }
 
   // AI breakdown: show primary (quest) or HS variant based on student age
