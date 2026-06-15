@@ -962,10 +962,10 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="avatarTabPhotoContent" style="display:none;">
         <div style="border:2px dashed var(--gray-200);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="photoDropZone" onclick="document.getElementById('avatarPhotoInput').click()">
           <div style="font-size:32px;margin-bottom:8px;">📷</div>
-          <div style="font-size:14px;font-weight:700;color:var(--indigo);margin-bottom:4px;">Tap to choose a photo</div>
-          <div style="font-size:12px;color:var(--gray-500);">JPG or PNG — we'll crop it to a circle</div>
+          <div style="font-size:14px;font-weight:700;color:var(--indigo);margin-bottom:4px;">Tap to take or choose a photo</div>
+          <div style="font-size:12px;color:var(--gray-500);">Camera or gallery — we'll crop it to a circle</div>
         </div>
-        <input type="file" id="avatarPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleAvatarPhotoSelect(event)">
+        <input type="file" id="avatarPhotoInput" accept="image/jpeg,image/png,image/webp" capture="user" style="display:none;" onchange="handleAvatarPhotoSelect(event)">
         <div id="avatarPhotoError" style="color:var(--rose);font-size:12px;margin-top:8px;display:none;"></div>
         <div id="avatarPhotoProcessing" style="text-align:center;padding:12px;color:var(--violet);font-size:13px;font-weight:600;display:none;">⏳ Processing photo...</div>
       </div>
@@ -1253,6 +1253,9 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="settingsNotifStatus" style="font-size:12px;color:var(--gray-500);margin-top:6px;"></div>
     </div>
 
+    <!-- Theme picker placeholder — filled by renderHSThemePicker() for HS students -->
+    <div id="hsThemeCardPlaceholder"></div>
+
     <!-- About card -->
     <div class="card">
       <div class="card-title">ℹ️ About</div>
@@ -1520,19 +1523,10 @@ function renderHSThemePicker() {
 
   html += `</div>`;
 
-  // Insert theme card — use settingsSignOut as anchor (always exists), or append to settings container
-  const existing = document.getElementById('hsThemeCard');
-  if (existing) {
-    existing.outerHTML = html;
-  } else {
-    // Insert before the About card (which is before sign out — always present)
-    const settingsScreen = document.getElementById('screen-settings');
-    const aboutCard = settingsScreen?.querySelector('.card:not(#settingsProfileCard):not(#settingsNotifsCard)');
-    if(aboutCard) {
-      aboutCard.insertAdjacentHTML('beforebegin', html);
-    } else if(settingsScreen) {
-      settingsScreen.insertAdjacentHTML('afterbegin', html);
-    }
+  // Insert into the dedicated placeholder — always reliable
+  const placeholder = document.getElementById('hsThemeCardPlaceholder');
+  if(placeholder) {
+    placeholder.innerHTML = html;
   }
 }
 
@@ -1763,8 +1757,8 @@ function footerNav(tab) {
       renderHSThemePicker();
     } else {
       // Remove theme card if switching away from HS student
-      const existing = document.getElementById('hsThemeCard');
-      if(existing) existing.remove();
+      const placeholder = document.getElementById('hsThemeCardPlaceholder');
+      if(placeholder) placeholder.innerHTML = '';
     }
     setFooterActive('settings');
     return;
