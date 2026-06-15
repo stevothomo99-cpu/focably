@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>FocablyED</title>
-<meta name="version" content="20260610095519">
+<meta name="version" content="20260615234139">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png">
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png">
@@ -1753,8 +1753,11 @@ function footerNav(tab) {
     const notifsCard = document.getElementById('settingsNotifsCard');
     if(notifsCard) notifsCard.style.display = (p?.role !== 'teacher') ? 'block' : 'none';
     // Show theme picker for HS students
+    console.log('Settings: role='+p?.role+' age='+p?.age_group);
     if(p?.role === 'student' && p?.age_group === 'highschool') {
+      console.log('Rendering HS theme picker...');
       renderHSThemePicker();
+      console.log('Placeholder innerHTML length:', document.getElementById('hsThemeCardPlaceholder')?.innerHTML?.length);
     } else {
       // Remove theme card if switching away from HS student
       const placeholder = document.getElementById('hsThemeCardPlaceholder');
