@@ -1325,116 +1325,172 @@ const themes = {
 
 
 // ── HS THEMES ──
+// Each theme defines: header gradient, body bg, card bg, text colours, accent colours
+// Light themes: dark text on light bg. Dark themes: light text on dark bg.
 const HS_THEMES = {
+
+  // ── FREE ──
+
   vanilla: {
-    name:'Vanilla', emoji:'✨', free:true,
-    desc:'Clean & minimal',
-    vars:{'--hs-primary':'#7C3AED','--hs-primary-dark':'#5B21B6','--hs-primary-light':'#A78BFA',
-          '--hs-accent':'#10B981','--hs-accent2':'#F59E0B',
-          '--hs-header-grad':'linear-gradient(135deg,#1E1B4B 0%,#2D1B69 100%)',
-          '--hs-header-text':'#FFFFFF','--hs-card-bg':'#FFFFFF','--hs-body-bg':'#F8F7FF',
-          '--hs-badge-bg':'rgba(124,58,237,0.12)','--hs-badge-text':'#5B21B6',
-          '--hs-task-done-bg':'#F0FDF4','--hs-task-done-border':'#6EE7B7',
-          '--hs-xp-fill':'#7C3AED','--hs-trust-bar':'#10B981'}
+    name:'Vanilla', emoji:'✨', free:true, dark:false,
+    desc:'Clean & classic',
+    vars:{
+      '--hs-primary':'#7C3AED','--hs-primary-dark':'#5B21B6','--hs-primary-light':'#A78BFA',
+      '--hs-accent':'#10B981','--hs-accent2':'#F59E0B',
+      '--hs-header-grad':'linear-gradient(135deg,#4C1D95 0%,#7C3AED 100%)',
+      '--hs-header-text':'#FFFFFF',
+      '--hs-body-bg':'#F5F3FF','--hs-card-bg':'#FFFFFF','--hs-card-text':'#1E1B4B',
+      '--hs-subtext':'#6B7280',
+      '--hs-task-done-bg':'#ECFDF5','--hs-task-done-border':'#6EE7B7',
+      '--hs-xp-fill':'#7C3AED','--hs-trust-bar':'#10B981',
+      '--hs-badge-bg':'rgba(124,58,237,0.12)','--hs-badge-text':'#5B21B6',
+    }
   },
+
   midnight: {
-    name:'Midnight', emoji:'🌙', free:true,
-    desc:'Dark & sleek',
-    vars:{'--hs-primary':'#818CF8','--hs-primary-dark':'#6366F1','--hs-primary-light':'#C7D2FE',
-          '--hs-accent':'#34D399','--hs-accent2':'#FBBF24',
-          '--hs-header-grad':'linear-gradient(135deg,#0F0F23 0%,#1a1a3e 100%)',
-          '--hs-header-text':'#E0E7FF','--hs-card-bg':'#1E1E3F','--hs-body-bg':'#13132B',
-          '--hs-badge-bg':'rgba(129,140,248,0.18)','--hs-badge-text':'#C7D2FE',
-          '--hs-task-done-bg':'#0D2B1E','--hs-task-done-border':'#34D399',
-          '--hs-xp-fill':'#818CF8','--hs-trust-bar':'#34D399'}
+    name:'Midnight', emoji:'🌙', free:true, dark:true,
+    desc:'Pure dark mode',
+    vars:{
+      '--hs-primary':'#A78BFA','--hs-primary-dark':'#7C3AED','--hs-primary-light':'#DDD6FE',
+      '--hs-accent':'#34D399','--hs-accent2':'#FBBF24',
+      '--hs-header-grad':'linear-gradient(135deg,#0F0C29 0%,#1E1B4B 100%)',
+      '--hs-header-text':'#EDE9FE',
+      '--hs-body-bg':'#0D0B1E','--hs-card-bg':'#1A1730','--hs-card-text':'#EDE9FE',
+      '--hs-subtext':'#A78BFA',
+      '--hs-task-done-bg':'#052E1C','--hs-task-done-border':'#34D399',
+      '--hs-xp-fill':'#A78BFA','--hs-trust-bar':'#34D399',
+      '--hs-badge-bg':'rgba(167,139,250,0.2)','--hs-badge-text':'#DDD6FE',
+    }
   },
+
+  // ── PRO ──
+
   lightning: {
-    name:'Ancient Lightning', emoji:'⚡', free:false,
-    desc:'Gold & power',
-    vars:{'--hs-primary':'#D97706','--hs-primary-dark':'#92400E','--hs-primary-light':'#FCD34D',
-          '--hs-accent':'#3B82F6','--hs-accent2':'#60A5FA',
-          '--hs-header-grad':'linear-gradient(135deg,#1C1917 0%,#292524 50%,#1C1917 100%)',
-          '--hs-header-text':'#FCD34D','--hs-card-bg':'#FFFBEB','--hs-body-bg':'#FEF9EC',
-          '--hs-badge-bg':'rgba(217,119,6,0.12)','--hs-badge-text':'#92400E',
-          '--hs-task-done-bg':'#EFF6FF','--hs-task-done-border':'#93C5FD',
-          '--hs-xp-fill':'#D97706','--hs-trust-bar':'#3B82F6'}
+    name:'Ancient Lightning', emoji:'⚡', free:false, dark:false,
+    desc:'Gold & thunder',
+    vars:{
+      '--hs-primary':'#D97706','--hs-primary-dark':'#92400E','--hs-primary-light':'#FCD34D',
+      '--hs-accent':'#1D4ED8','--hs-accent2':'#60A5FA',
+      '--hs-header-grad':'linear-gradient(135deg,#78350F 0%,#D97706 50%,#FCD34D 100%)',
+      '--hs-header-text':'#1C1917',
+      '--hs-body-bg':'#FFFBEB','--hs-card-bg':'#FEF3C7','--hs-card-text':'#78350F',
+      '--hs-subtext':'#92400E',
+      '--hs-task-done-bg':'#EFF6FF','--hs-task-done-border':'#3B82F6',
+      '--hs-xp-fill':'#D97706','--hs-trust-bar':'#1D4ED8',
+      '--hs-badge-bg':'rgba(217,119,6,0.15)','--hs-badge-text':'#92400E',
+    }
   },
+
   softHour: {
-    name:'Soft Hour', emoji:'🌸', free:false,
-    desc:'Pastel & calm',
-    vars:{'--hs-primary':'#EC4899','--hs-primary-dark':'#BE185D','--hs-primary-light':'#F9A8D4',
-          '--hs-accent':'#8B5CF6','--hs-accent2':'#FDE68A',
-          '--hs-header-grad':'linear-gradient(135deg,#4A1942 0%,#831843 100%)',
-          '--hs-header-text':'#FCE7F3','--hs-card-bg':'#FFF0F6','--hs-body-bg':'#FEF2F8',
-          '--hs-badge-bg':'rgba(236,72,153,0.1)','--hs-badge-text':'#BE185D',
-          '--hs-task-done-bg':'#F3E8FF','--hs-task-done-border':'#C4B5FD',
-          '--hs-xp-fill':'#EC4899','--hs-trust-bar':'#8B5CF6'}
+    name:'Soft Hour', emoji:'🌸', free:false, dark:false,
+    desc:'Pastel pink vibes',
+    vars:{
+      '--hs-primary':'#EC4899','--hs-primary-dark':'#BE185D','--hs-primary-light':'#FBCFE8',
+      '--hs-accent':'#8B5CF6','--hs-accent2':'#F9A8D4',
+      '--hs-header-grad':'linear-gradient(135deg,#EC4899 0%,#F472B6 50%,#A78BFA 100%)',
+      '--hs-header-text':'#FFFFFF',
+      '--hs-body-bg':'#FDF2F8','--hs-card-bg':'#FCE7F3','--hs-card-text':'#831843',
+      '--hs-subtext':'#BE185D',
+      '--hs-task-done-bg':'#F3E8FF','--hs-task-done-border':'#C4B5FD',
+      '--hs-xp-fill':'#EC4899','--hs-trust-bar':'#8B5CF6',
+      '--hs-badge-bg':'rgba(236,72,153,0.15)','--hs-badge-text':'#9D174D',
+    }
   },
+
   neural: {
-    name:'Neural', emoji:'🤖', free:false,
-    desc:'Cyberpunk tech',
-    vars:{'--hs-primary':'#06B6D4','--hs-primary-dark':'#0891B2','--hs-primary-light':'#67E8F9',
-          '--hs-accent':'#10B981','--hs-accent2':'#F59E0B',
-          '--hs-header-grad':'linear-gradient(135deg,#020617 0%,#0C1445 50%,#020617 100%)',
-          '--hs-header-text':'#67E8F9','--hs-card-bg':'#0F172A','--hs-body-bg':'#050B1A',
-          '--hs-badge-bg':'rgba(6,182,212,0.15)','--hs-badge-text':'#67E8F9',
-          '--hs-task-done-bg':'#022C22','--hs-task-done-border':'#34D399',
-          '--hs-xp-fill':'#06B6D4','--hs-trust-bar':'#10B981'}
+    name:'Neural', emoji:'🤖', free:false, dark:true,
+    desc:'Cyberpunk neon',
+    vars:{
+      '--hs-primary':'#22D3EE','--hs-primary-dark':'#0891B2','--hs-primary-light':'#67E8F9',
+      '--hs-accent':'#A3E635','--hs-accent2':'#F43F5E',
+      '--hs-header-grad':'linear-gradient(135deg,#000000 0%,#0C4A6E 60%,#164E63 100%)',
+      '--hs-header-text':'#22D3EE',
+      '--hs-body-bg':'#020617','--hs-card-bg':'#0C1A2E','--hs-card-text':'#E0F2FE',
+      '--hs-subtext':'#67E8F9',
+      '--hs-task-done-bg':'#052E16','--hs-task-done-border':'#A3E635',
+      '--hs-xp-fill':'#22D3EE','--hs-trust-bar':'#A3E635',
+      '--hs-badge-bg':'rgba(34,211,238,0.15)','--hs-badge-text':'#67E8F9',
+    }
   },
+
   matchDay: {
-    name:'Match Day', emoji:'⚽', free:false,
-    desc:'Sport obsessives',
-    vars:{'--hs-primary':'#16A34A','--hs-primary-dark':'#15803D','--hs-primary-light':'#86EFAC',
-          '--hs-accent':'#FFFFFF','--hs-accent2':'#FCD34D',
-          '--hs-header-grad':'linear-gradient(135deg,#14532D 0%,#166534 100%)',
-          '--hs-header-text':'#FFFFFF','--hs-card-bg':'#FFFFFF','--hs-body-bg':'#F0FDF4',
-          '--hs-badge-bg':'rgba(22,163,74,0.1)','--hs-badge-text':'#15803D',
-          '--hs-task-done-bg':'#DCFCE7','--hs-task-done-border':'#86EFAC',
-          '--hs-xp-fill':'#16A34A','--hs-trust-bar':'#FFFFFF'}
+    name:'Match Day', emoji:'⚽', free:false, dark:false,
+    desc:'Green & white kit',
+    vars:{
+      '--hs-primary':'#16A34A','--hs-primary-dark':'#15803D','--hs-primary-light':'#86EFAC',
+      '--hs-accent':'#FACC15','--hs-accent2':'#FFFFFF',
+      '--hs-header-grad':'linear-gradient(135deg,#14532D 0%,#16A34A 60%,#22C55E 100%)',
+      '--hs-header-text':'#FFFFFF',
+      '--hs-body-bg':'#F0FDF4','--hs-card-bg':'#DCFCE7','--hs-card-text':'#14532D',
+      '--hs-subtext':'#15803D',
+      '--hs-task-done-bg':'#FEF9C3','--hs-task-done-border':'#FACC15',
+      '--hs-xp-fill':'#16A34A','--hs-trust-bar':'#FACC15',
+      '--hs-badge-bg':'rgba(22,163,74,0.15)','--hs-badge-text':'#14532D',
+    }
   },
+
   respawn: {
-    name:'Respawn', emoji:'🎮', free:false,
-    desc:'Gaming crowd',
-    vars:{'--hs-primary':'#7C3AED','--hs-primary-dark':'#6D28D9','--hs-primary-light':'#C4B5FD',
-          '--hs-accent':'#F43F5E','--hs-accent2':'#06B6D4',
-          '--hs-header-grad':'linear-gradient(135deg,#1A0533 0%,#2D0A5C 50%,#1A0533 100%)',
-          '--hs-header-text':'#E9D5FF','--hs-card-bg':'#1A0533','--hs-body-bg':'#0D021F',
-          '--hs-badge-bg':'rgba(124,58,237,0.2)','--hs-badge-text':'#C4B5FD',
-          '--hs-task-done-bg':'#1A0533','--hs-task-done-border':'#F43F5E',
-          '--hs-xp-fill':'#7C3AED','--hs-trust-bar':'#F43F5E'}
+    name:'Respawn', emoji:'🎮', free:false, dark:true,
+    desc:'Gaming neon purple',
+    vars:{
+      '--hs-primary':'#C026D3','--hs-primary-dark':'#86198F','--hs-primary-light':'#E879F9',
+      '--hs-accent':'#06B6D4','--hs-accent2':'#FACC15',
+      '--hs-header-grad':'linear-gradient(135deg,#1A0027 0%,#4A0066 50%,#C026D3 100%)',
+      '--hs-header-text':'#F5D0FE',
+      '--hs-body-bg':'#0D0015','--hs-card-bg':'#1E0030','--hs-card-text':'#F5D0FE',
+      '--hs-subtext':'#E879F9',
+      '--hs-task-done-bg':'#083344','--hs-task-done-border':'#06B6D4',
+      '--hs-xp-fill':'#C026D3','--hs-trust-bar':'#06B6D4',
+      '--hs-badge-bg':'rgba(192,38,211,0.2)','--hs-badge-text':'#F5D0FE',
+    }
   },
+
   offGrid: {
-    name:'Off Grid', emoji:'🌿', free:false,
-    desc:'Nature & calm',
-    vars:{'--hs-primary':'#059669','--hs-primary-dark':'#047857','--hs-primary-light':'#6EE7B7',
-          '--hs-accent':'#D97706','--hs-accent2':'#92400E',
-          '--hs-header-grad':'linear-gradient(135deg,#064E3B 0%,#065F46 100%)',
-          '--hs-header-text':'#D1FAE5','--hs-card-bg':'#F0FDF4','--hs-body-bg':'#ECFDF5',
-          '--hs-badge-bg':'rgba(5,150,105,0.1)','--hs-badge-text':'#065F46',
-          '--hs-task-done-bg':'#DCFCE7','--hs-task-done-border':'#6EE7B7',
-          '--hs-xp-fill':'#059669','--hs-trust-bar':'#D97706'}
+    name:'Off Grid', emoji:'🌿', free:false, dark:false,
+    desc:'Earthy & calm',
+    vars:{
+      '--hs-primary':'#059669','--hs-primary-dark':'#047857','--hs-primary-light':'#6EE7B7',
+      '--hs-accent':'#CA8A04','--hs-accent2':'#84CC16',
+      '--hs-header-grad':'linear-gradient(135deg,#064E3B 0%,#059669 50%,#6EE7B7 100%)',
+      '--hs-header-text':'#ECFDF5',
+      '--hs-body-bg':'#F0FDF4','--hs-card-bg':'#D1FAE5','--hs-card-text':'#064E3B',
+      '--hs-subtext':'#047857',
+      '--hs-task-done-bg':'#FEF9C3','--hs-task-done-border':'#CA8A04',
+      '--hs-xp-fill':'#059669','--hs-trust-bar':'#CA8A04',
+      '--hs-badge-bg':'rgba(5,150,105,0.15)','--hs-badge-text':'#065F46',
+    }
   },
+
   studio: {
-    name:'Studio', emoji:'🎨', free:false,
-    desc:'Art kids',
-    vars:{'--hs-primary':'#F97316','--hs-primary-dark':'#EA580C','--hs-primary-light':'#FED7AA',
-          '--hs-accent':'#8B5CF6','--hs-accent2':'#06B6D4',
-          '--hs-header-grad':'linear-gradient(135deg,#431407 0%,#7C2D12 100%)',
-          '--hs-header-text':'#FED7AA','--hs-card-bg':'#FFF7ED','--hs-body-bg':'#FFF3E6',
-          '--hs-badge-bg':'rgba(249,115,22,0.1)','--hs-badge-text':'#EA580C',
-          '--hs-task-done-bg':'#EDE9FE','--hs-task-done-border':'#C4B5FD',
-          '--hs-xp-fill':'#F97316','--hs-trust-bar':'#8B5CF6'}
+    name:'Studio', emoji:'🎨', free:false, dark:false,
+    desc:'Bold & creative',
+    vars:{
+      '--hs-primary':'#EA580C','--hs-primary-dark':'#9A3412','--hs-primary-light':'#FED7AA',
+      '--hs-accent':'#7C3AED','--hs-accent2':'#06B6D4',
+      '--hs-header-grad':'linear-gradient(135deg,#EA580C 0%,#F97316 40%,#FBBF24 100%)',
+      '--hs-header-text':'#FFFFFF',
+      '--hs-body-bg':'#FFF7ED','--hs-card-bg':'#FFEDD5','--hs-card-text':'#7C2D12',
+      '--hs-subtext':'#9A3412',
+      '--hs-task-done-bg':'#EDE9FE','--hs-task-done-border':'#A78BFA',
+      '--hs-xp-fill':'#EA580C','--hs-trust-bar':'#7C3AED',
+      '--hs-badge-bg':'rgba(234,88,12,0.15)','--hs-badge-text':'#9A3412',
+    }
   },
+
   grunge: {
-    name:'Grunge', emoji:'🔥', free:false,
-    desc:'Outliers only',
-    vars:{'--hs-primary':'#DC2626','--hs-primary-dark':'#B91C1C','--hs-primary-light':'#FCA5A5',
-          '--hs-accent':'#D97706','--hs-accent2':'#6B7280',
-          '--hs-header-grad':'linear-gradient(135deg,#1C1917 0%,#292524 100%)',
-          '--hs-header-text':'#FCA5A5','--hs-card-bg':'#1C1917','--hs-body-bg':'#0C0A09',
-          '--hs-badge-bg':'rgba(220,38,38,0.15)','--hs-badge-text':'#FCA5A5',
-          '--hs-task-done-bg':'#1C1917','--hs-task-done-border':'#D97706',
-          '--hs-xp-fill':'#DC2626','--hs-trust-bar':'#D97706'}
+    name:'Grunge', emoji:'🔥', free:false, dark:true,
+    desc:'Raw & dark energy',
+    vars:{
+      '--hs-primary':'#EF4444','--hs-primary-dark':'#B91C1C','--hs-primary-light':'#FCA5A5',
+      '--hs-accent':'#F97316','--hs-accent2':'#FBBF24',
+      '--hs-header-grad':'linear-gradient(135deg,#0C0A09 0%,#44100A 60%,#7F1D1D 100%)',
+      '--hs-header-text':'#FEF2F2',
+      '--hs-body-bg':'#0C0A09','--hs-card-bg':'#1C0F0F','--hs-card-text':'#FEF2F2',
+      '--hs-subtext':'#FCA5A5',
+      '--hs-task-done-bg':'#1C1204','--hs-task-done-border':'#F97316',
+      '--hs-xp-fill':'#EF4444','--hs-trust-bar':'#F97316',
+      '--hs-badge-bg':'rgba(239,68,68,0.2)','--hs-badge-text':'#FCA5A5',
+    }
   }
 };
 
@@ -1446,23 +1502,22 @@ function applyHSTheme(key, save) {
   const root = document.documentElement;
   Object.entries(t.vars).forEach(([k,v]) => root.style.setProperty(k, v));
   // Dark body bg for dark themes
-  const darkThemes = ['midnight','neural','respawn','grunge'];
-  document.getElementById('view-student-hs-wrap')?.style && null;
   const appEl = document.getElementById('screen-app');
   if(appEl) {
-    if(darkThemes.includes(key)) {
-      appEl.style.background = 'var(--hs-body-bg)';
-      appEl.style.color = 'var(--hs-header-text)';
-    } else {
-      appEl.style.background = 'var(--hs-body-bg)';
-      appEl.style.color = '';
-    }
+    appEl.style.background = 'var(--hs-body-bg)';
+    appEl.style.color = t.dark ? 'var(--hs-card-text)' : '';
   }
+  // Apply card text colour to all cards for dark themes
+  document.querySelectorAll('#view-student .card, #screen-settings .card').forEach(el => {
+    el.style.background = t.dark ? 'var(--hs-card-bg)' : '';
+    el.style.color = t.dark ? 'var(--hs-card-text)' : '';
+    el.style.borderColor = t.dark ? 'rgba(255,255,255,0.08)' : '';
+  });
+  // Update profile immediately so re-renders show correct active state
+  if(currentProfile) currentProfile.theme = key;
   // Persist to Supabase if requested
   if(save && currentUser) {
-    db.from('profiles').update({theme: key}).eq('id', currentUser.id).then(() => {
-      currentProfile.theme = key;
-    });
+    db.from('profiles').update({theme: key}).eq('id', currentUser.id).catch(e => console.log('Theme save error:', e.message));
   }
   // Update theme picker UI if open
   document.querySelectorAll('.hs-theme-card').forEach(el => {
@@ -1484,13 +1539,20 @@ function renderHSThemePickerInto(container) {
 
   freeThemes.forEach(([key, t]) => {
     const active = key === current;
-    html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
-      style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
-      background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
-      <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
-      <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;">${t.name}</div>
-      <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${t.desc}</div>
-      ${active?'<div style="font-size:10px;font-weight:700;color:var(--violet);margin-top:4px;">✓ Active</div>':''}
+    const grad = t.vars['--hs-header-grad'];
+    const headerTxt = t.vars['--hs-header-text'];
+    html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}"
+      onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
+      style="border-radius:14px;overflow:hidden;border:3px solid ${active?'#FFFFFF':'rgba(0,0,0,0.08)'};
+      box-shadow:${active?'0 0 0 3px var(--hs-primary,var(--violet))':'none'};cursor:pointer;transition:all 0.2s;">
+      <div style="background:${grad};padding:14px 8px;text-align:center;">
+        <div style="font-size:26px;margin-bottom:4px;">${t.emoji}</div>
+        <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:${headerTxt};">${t.name}</div>
+      </div>
+      <div style="padding:8px;background:${t.vars['--hs-card-bg']};text-align:center;">
+        <div style="font-size:10px;color:${t.vars['--hs-subtext']};">${t.desc}</div>
+        ${active?`<div style="font-size:10px;font-weight:800;color:${t.vars['--hs-primary']};margin-top:3px;">✓ Active</div>`:''}
+      </div>
     </div>`;
   });
 
@@ -1517,13 +1579,20 @@ function renderHSThemePickerInto(container) {
     html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
     proThemes.forEach(([key, t]) => {
       const active = key === current;
-      html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
-        style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
-        background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
-        <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
-        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;">${t.name}</div>
-        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${t.desc}</div>
-        ${active?'<div style="font-size:10px;font-weight:700;color:var(--violet);margin-top:4px;">✓ Active</div>':''}
+      const pg = t.vars['--hs-header-grad'];
+      const pt = t.vars['--hs-header-text'];
+      html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}"
+        onclick="applyHSTheme('${key}',true);renderHSThemePickerInto(document.getElementById('themesDrawerContent'));"
+        style="border-radius:14px;overflow:hidden;border:3px solid ${active?'#FFFFFF':'rgba(0,0,0,0.08)'};
+        box-shadow:${active?'0 0 0 3px var(--hs-primary,var(--violet))':'none'};cursor:pointer;transition:all 0.2s;">
+        <div style="background:${pg};padding:14px 8px;text-align:center;">
+          <div style="font-size:26px;margin-bottom:4px;">${t.emoji}</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:${pt};">${t.name}</div>
+        </div>
+        <div style="padding:8px;background:${t.vars['--hs-card-bg']};text-align:center;">
+          <div style="font-size:10px;color:${t.vars['--hs-subtext']};">${t.desc}</div>
+          ${active?`<div style="font-size:10px;font-weight:800;color:${t.vars['--hs-primary']};margin-top:3px;">✓ Active</div>`:''}
+        </div>
       </div>`;
     });
     html += `</div>`;
