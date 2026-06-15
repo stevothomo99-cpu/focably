@@ -1292,6 +1292,8 @@ window.addEventListener('load', async () => {
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(e => console.log('SW failed:', e.message));
   }
+  // Detect return from Stripe Checkout
+  const returningFromStripe = new URLSearchParams(window.location.search).has('checkout');
   try {
     console.log('App starting — waking Supabase...');
     // Ping Supabase first to wake it up
@@ -1299,12 +1301,34 @@ window.addEventListener('load', async () => {
     // Small delay to let it wake
     await new Promise(r => setTimeout(r, 1500));
     console.log('Getting session...');
-    const sessionPromise = db.auth.getSession();
-    const timeout = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 15000));
-    const { data: { session } } = await Promise.race([sessionPromise, timeout]);
+
+    // Get session — if returning from Stripe, retry a few times so we don't
+    // bounce the user to login before the session rehydrates.
+    let session = null;
+    const maxAttempts = returningFromStripe ? 5 : 1;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const sessionPromise = db.auth.getSession();
+      const timeout = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 15000));
+      const result = await Promise.race([sessionPromise, timeout]);
+      session = result?.data?.session || null;
+      if (session) break;
+      if (attempt < maxAttempts) {
+        console.log(`Session not ready (attempt ${attempt}/${maxAttempts}), retrying…`);
+        await new Promise(r => setTimeout(r, 1200));
+      }
+    }
     console.log('Session:', session ? 'logged in as ' + session.user.email : 'none');
-    if (session) { currentUser = session.user; await loadProfile(); }
-    else showScreen('auth');
+    if (session) {
+      currentUser = session.user;
+      await loadProfile();
+    } else {
+      // If we came back from Stripe but lost the session, flag it so the
+      // success message still shows after the user signs back in.
+      if (returningFromStripe) {
+        try { sessionStorage.setItem('pendingCheckoutReturn', window.location.search); } catch(e) {}
+      }
+      showScreen('auth');
+    }
   } catch(e) {
     console.error('Startup error:', e.message);
     showScreen('auth');
@@ -5354,16 +5378,32 @@ async function startStripeCheckout() {
 }
 
 async function handleStripeReturn() {
-  const params = new URLSearchParams(window.location.search);
+  let params = new URLSearchParams(window.location.search);
+  // Also check for a stashed return (session dropped, user re-signed in)
+  let stashed = null;
+  try { stashed = sessionStorage.getItem('pendingCheckoutReturn'); } catch(e) {}
+  if(stashed && !params.has('checkout')) {
+    params = new URLSearchParams(stashed);
+    try { sessionStorage.removeItem('pendingCheckoutReturn'); } catch(e) {}
+  }
+
   if(params.get('checkout') === 'success') {
     window.history.replaceState({}, '', window.location.pathname);
+    try { sessionStorage.removeItem('pendingCheckoutReturn'); } catch(e) {}
     showToast('🎉 Welcome to Family Pro! Your subscription is active.');
     if(currentUser) {
-      const {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
-      if(family) currentFamily = family;
+      // Webhook may take a moment — refresh family record a couple of times
+      for(let i=0; i<3; i++) {
+        const {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
+        if(family) { currentFamily = family; if(isPro()) break; }
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      const proEl = document.getElementById('parentProBadge');
+      if(proEl) proEl.style.display = isPro() ? 'inline-block' : 'none';
     }
   } else if(params.get('checkout') === 'cancelled') {
     window.history.replaceState({}, '', window.location.pathname);
+    try { sessionStorage.removeItem('pendingCheckoutReturn'); } catch(e) {}
     showToast('Checkout cancelled — you can upgrade any time.');
   }
 }
