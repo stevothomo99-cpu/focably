@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="FocablyED">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <style>
 :root {
   --indigo:#1E1B4B; --indigo-deep:#0F172A; --indigo-mid:#2D1B69;
@@ -664,6 +665,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="parent-header">
       <div style="font-size:13px;opacity:0.7;margin-bottom:3px;">Good to see you,</div>
       <div class="parent-name" id="parentName">Loading...</div>
+      <span id="parentProBadge" style="display:none;background:linear-gradient(135deg,var(--violet),var(--violet-dark));color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:0.5px;margin-left:6px;vertical-align:middle;">⭐ PRO</span>
       <div class="child-tabs" id="childTabs"><div class="child-tab active">Loading...</div></div>
       <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
         <button onclick="enableNotifications()" id="enableNotifsBtn" style="padding:6px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:12px;font-weight:600;cursor:pointer;">🔔 Enable Notifications</button>
@@ -1245,6 +1247,16 @@ const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
+
+// ── Stripe config ──
+const STRIPE_PK = 'pk_live_51T3vs4BClvRtlFVH7Zh5svzkwISEUF3CBRgZjUmHtFuBlbuxqPwG95rSA8mcwDIEuB34M3rqYLKo1MHXJHnwvcen00THCh7f4c';
+const STRIPE_PRICE_MONTHLY = 'price_1TiYeWBClvRtlFVH8KKVA20U';
+const STRIPE_PRICE_ANNUAL  = 'price_1TiYduBClvRtlFVHK1JSodkf';
+let stripeInstance = null;
+function getStripe() {
+  if(!stripeInstance) stripeInstance = Stripe(STRIPE_PK);
+  return stripeInstance;
+}
 
 let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
 let currentChildren = [], selectedChildId = null;
@@ -2323,6 +2335,18 @@ async function linkToFamily() {
   // Create child record linked to this family and profile
   const {data:existingRows} = await db.from('children').select('id').eq('profile_id',currentUser.id).limit(1);
   if(existingRows?.length){showToast('Already linked!');return;}
+
+  // ── Paywall gate: check if family already has a child (2nd child = Pro required) ──
+  const {data:familyChildren} = await dbQuery(db.from('children').select('id').eq('family_id',family.id));
+  if(familyChildren?.length >= 1) {
+    // Load family subscription to check
+    const {data:parentFamily} = await dbQuery(db.from('families').select('subscription_status').eq('id',family.id).maybeSingle());
+    const subStatus = parentFamily?.subscription_status || 'free';
+    if(subStatus !== 'pro' && subStatus !== 'school_attached') {
+      showToast('⭐ This family needs Family Pro to add a second child.');
+      return;
+    }
+  }
   const {data:newChild, error} = await db.from('children').insert({
     profile_id: currentUser.id,
     family_id: family.id,
@@ -2349,6 +2373,9 @@ async function loadParentApp() {
   appReady = true;
   switchRole('parent');
   document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
+  // Show Pro badge if subscribed
+  const proEl = document.getElementById('parentProBadge');
+  if(proEl) proEl.style.display = isPro() ? 'inline-block' : 'none';
   const navName = document.getElementById('navUserName');
   if(navName) navName.textContent = currentProfile.full_name?.split(' ')[0] || '';
   let {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
@@ -2357,6 +2384,8 @@ async function loadParentApp() {
     family=nf;
   }
   currentFamily=family;
+  // Check for Stripe return
+  await handleStripeReturn();
   const {data:children} = await dbQuery(db.from('children').select('*').eq('family_id',family.id), 8000, []);
   currentChildren=children||[];
   renderChildTabs();
@@ -3462,6 +3491,14 @@ async function joinClass() {
   }
 
   // Use selected child from dropdown or first child (parent flow)
+  // ── Paywall gate: parent must be Pro to join a class ──
+  if(!isPro()) {
+    showPaywall('join_class',
+      'Upgrade to connect with teachers',
+      'Family Pro lets you link your child to their class and see assignments, progress and proof submissions from their teacher.');
+    return;
+  }
+
   const childSelectEl = document.getElementById('joinClassChildId');
   const childId = childSelectEl?.value || currentChildren?.[0]?.id;
   if(!childId) { showToast('No child linked to your account yet'); return; }
@@ -4688,12 +4725,16 @@ function renderDrawerItems() {
       schoolItem,
     ];
   } else if(role === 'parent') {
+    const proItem = isPro()
+      ? { icon:'⭐', label:'Family Pro — Active', action:`showToast('Your Family Pro subscription is active!')`, disabled: false }
+      : { icon:'⭐', label:'Upgrade to Family Pro', action:`showPaywall('upgrade','Upgrade to Family Pro','Unlock teacher connections, unlimited children, themes and more.')`, disabled: false };
     items = [
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
       { icon:'🎁', label:'Manage Rewards', action:`openDrawerScreen('manage-rewards')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'📬', label:'Family Invite Code', action:`openDrawerScreen('family-invite')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
+      proItem,
     ];
   } else if(role === 'student') {
     items = [
@@ -5154,6 +5195,41 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
   }
 }
 </script>
+
+<!-- PAYWALL MODAL -->
+<div id="paywallOverlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(15,23,42,0.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:var(--indigo-deep);border:1px solid rgba(124,58,237,0.3);border-radius:20px;padding:36px 28px;max-width:420px;width:90%;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
+    <button onclick="closePaywall()" style="position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;color:var(--gray-400);cursor:pointer;">✕</button>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:40px;margin-bottom:8px;">🐿️</div>
+      <h2 style="font-family:'Inter',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:6px;" id="paywallTitle">Upgrade to Family Pro</h2>
+      <p style="font-size:14px;color:var(--violet-light);line-height:1.5;" id="paywallSubtitle">Connect with your child's teacher and unlock the full FocablyED experience.</p>
+    </div>
+
+    <!-- Plan toggle -->
+    <div style="display:flex;background:rgba(45,27,105,0.4);border-radius:10px;padding:4px;margin-bottom:20px;">
+      <button id="planMonthlyBtn" onclick="selectPlan('monthly')" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;background:var(--violet);color:var(--white);">Monthly<br><span style="font-size:11px;font-weight:400;">$9.99/mo inc GST</span></button>
+      <button id="planAnnualBtn" onclick="selectPlan('annual')" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--violet-light);">Annual<br><span style="font-size:11px;font-weight:400;">$89/yr inc GST <span style="color:var(--mint);">Save 26%</span></span></button>
+    </div>
+
+    <!-- Features list -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13px;color:var(--gray-200);margin-bottom:10px;font-weight:600;">Everything in Family Pro:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);">✅ Connect with your child's teacher</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);">✅ Unlimited children</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);">✅ Full theme library</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);">✅ Unlimited AI import</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);">✅ Push notifications</div>
+      </div>
+    </div>
+
+    <button id="paywallCheckoutBtn" onclick="startStripeCheckout()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--violet),var(--violet-dark));color:var(--white);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+      Upgrade Now →
+    </button>
+    <p style="text-align:center;font-size:11px;color:var(--gray-400);margin-top:12px;">Cancel anytime. Secure payment via Stripe.</p>
+  </div>
+</div>
 </body>
 </html>
 
