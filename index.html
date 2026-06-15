@@ -5269,6 +5269,88 @@ async function incrementAIImportCount() {
   if(currentProfile) currentProfile.ai_import_count = current + 1;
 }
 
+
+// ══════════════════════════════════════════
+// STRIPE / PAYWALL FUNCTIONS
+// ══════════════════════════════════════════
+let selectedPlan = 'monthly';
+let paywallContext = null;
+
+function showPaywall(context, title, subtitle) {
+  paywallContext = context || 'upgrade';
+  if(title) document.getElementById('paywallTitle').textContent = title;
+  if(subtitle) document.getElementById('paywallSubtitle').textContent = subtitle;
+  selectPlan('monthly');
+  const overlay = document.getElementById('paywallOverlay');
+  overlay.style.display = 'flex';
+}
+
+function closePaywall() {
+  document.getElementById('paywallOverlay').style.display = 'none';
+  paywallContext = null;
+}
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  const mBtn = document.getElementById('planMonthlyBtn');
+  const aBtn = document.getElementById('planAnnualBtn');
+  if(!mBtn || !aBtn) return;
+  if(plan === 'monthly') {
+    mBtn.style.background = 'var(--violet)';
+    mBtn.style.color = 'var(--white)';
+    aBtn.style.background = 'transparent';
+    aBtn.style.color = 'var(--violet-light)';
+  } else {
+    aBtn.style.background = 'var(--violet)';
+    aBtn.style.color = 'var(--white)';
+    mBtn.style.background = 'transparent';
+    mBtn.style.color = 'var(--violet-light)';
+  }
+}
+
+async function startStripeCheckout() {
+  const btn = document.getElementById('paywallCheckoutBtn');
+  btn.textContent = 'Loading…';
+  btn.disabled = true;
+  try {
+    const stripe = getStripe();
+    const priceId = selectedPlan === 'annual' ? STRIPE_PRICE_ANNUAL : STRIPE_PRICE_MONTHLY;
+    const successUrl = window.location.origin + window.location.pathname + '?checkout=success';
+    const cancelUrl  = window.location.origin + window.location.pathname + '?checkout=cancelled';
+    const { error } = await stripe.redirectToCheckout({
+      lineItems: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      successUrl,
+      cancelUrl,
+      customerEmail: currentUser?.email || undefined,
+    });
+    if(error) {
+      showToast('❌ ' + error.message);
+      btn.textContent = 'Upgrade Now →';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    showToast('❌ Could not start checkout. Please try again.');
+    btn.textContent = 'Upgrade Now →';
+    btn.disabled = false;
+  }
+}
+
+async function handleStripeReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('checkout') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    showToast('🎉 Welcome to Family Pro! Your subscription is active.');
+    if(currentUser) {
+      const {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
+      if(family) currentFamily = family;
+    }
+  } else if(params.get('checkout') === 'cancelled') {
+    window.history.replaceState({}, '', window.location.pathname);
+    showToast('Checkout cancelled — you can upgrade any time.');
+  }
+}
+
 </script>
 
 <!-- PAYWALL MODAL -->
