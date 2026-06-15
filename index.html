@@ -26,6 +26,14 @@
   --gray-50:#F8F7FF; --gray-100:#EDE9FE; --gray-200:#DDD6FE;
   --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#6B7280; --gray-700:#374151;
   --green-dark:#064E3B; --green-mid:#065F46;
+  /* HS Theme vars — defaults (Vanilla) */
+  --hs-primary:#7C3AED; --hs-primary-dark:#5B21B6; --hs-primary-light:#A78BFA;
+  --hs-accent:#10B981; --hs-accent2:#F59E0B;
+  --hs-header-grad:linear-gradient(135deg,#1E1B4B 0%,#2D1B69 100%);
+  --hs-header-text:#FFFFFF; --hs-card-bg:#FFFFFF; --hs-body-bg:#F8F7FF;
+  --hs-badge-bg:rgba(124,58,237,0.12); --hs-badge-text:#5B21B6;
+  --hs-task-done-bg:#F0FDF4; --hs-task-done-border:#6EE7B7;
+  --hs-xp-fill:#7C3AED; --hs-trust-bar:#10B981;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;}
@@ -161,16 +169,16 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .rejection-msg{margin-top:8px;background:rgba(244,63,94,0.2);border-radius:8px;padding:8px 10px;font-size:12px;color:#FCA5A5;}
 
 /* HS STYLES */
-.hs-header{background:linear-gradient(135deg,var(--violet) 0%,var(--indigo) 100%);border-radius:20px;padding:20px;margin-bottom:12px;color:white;}
+.hs-header{background:var(--hs-header-grad,linear-gradient(135deg,var(--violet) 0%,var(--indigo) 100%));border-radius:20px;padding:20px;margin-bottom:12px;color:var(--hs-header-text,white);transition:background 0.4s;}
 .hs-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:2px;}
 .xp-section{display:flex;align-items:center;gap:14px;}
 .xp-ring-wrap{position:relative;width:64px;height:64px;flex-shrink:0;}
 .xp-ring-wrap svg{transform:rotate(-90deg);}
 .xp-ring-bg{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:5;}
-.xp-ring-fill{fill:none;stroke:var(--amber);stroke-width:5;stroke-linecap:round;stroke-dasharray:163;stroke-dashoffset:49;transition:stroke-dashoffset 1s ease;}
+.xp-ring-fill{fill:none;stroke:var(--hs-xp-fill,var(--amber));stroke-width:5;stroke-linecap:round;stroke-dasharray:163;stroke-dashoffset:49;transition:stroke-dashoffset 1s ease,stroke 0.4s;}
 .xp-level-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Nunito',sans-serif;font-weight:900;font-size:17px;color:white;}
 .xp-bar-track{background:rgba(255,255,255,0.15);border-radius:10px;height:8px;margin-bottom:5px;}
-.xp-bar-fill{background:linear-gradient(90deg,var(--amber),var(--amber-light));border-radius:10px;height:8px;transition:width 1s ease;}
+.xp-bar-fill{background:linear-gradient(90deg,var(--hs-xp-fill,var(--amber)),var(--hs-primary-light,var(--amber-light)));border-radius:10px;height:8px;transition:width 1s ease,background 0.4s;}
 .hs-streak{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;font-size:12px;margin-top:10px;}
 .hs-task{border-radius:10px;margin-bottom:7px;overflow:hidden;}
 .hs-task-row{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--gray-50);border:1.5px solid transparent;transition:all 0.2s;cursor:pointer;}
@@ -1277,6 +1285,224 @@ const themes = {
   adventure: { grad:'linear-gradient(135deg,#064E3B,#065F46)', emoji:'🧭', name:'The Young Explorer', title:'Trailblazer · Exploration Corps', streak:'🗺️ Pathfinder', realm1Grad:'linear-gradient(135deg,#064E3B,#047857)', realm2Grad:'linear-gradient(135deg,#7C2D12,#F97316)', chest:'🗺️', aiTitle:'🧭 Trail Guide', aiSub:'Map every step of the trail!', aiBtnText:'Map My Trail', aiStyle:'adventure trail waypoints' }
 };
 
+
+// ── HS THEMES ──
+const HS_THEMES = {
+  vanilla: {
+    name:'Vanilla', emoji:'✨', free:true,
+    desc:'Clean & minimal',
+    vars:{'--hs-primary':'#7C3AED','--hs-primary-dark':'#5B21B6','--hs-primary-light':'#A78BFA',
+          '--hs-accent':'#10B981','--hs-accent2':'#F59E0B',
+          '--hs-header-grad':'linear-gradient(135deg,#1E1B4B 0%,#2D1B69 100%)',
+          '--hs-header-text':'#FFFFFF','--hs-card-bg':'#FFFFFF','--hs-body-bg':'#F8F7FF',
+          '--hs-badge-bg':'rgba(124,58,237,0.12)','--hs-badge-text':'#5B21B6',
+          '--hs-task-done-bg':'#F0FDF4','--hs-task-done-border':'#6EE7B7',
+          '--hs-xp-fill':'#7C3AED','--hs-trust-bar':'#10B981'}
+  },
+  midnight: {
+    name:'Midnight', emoji:'🌙', free:true,
+    desc:'Dark & sleek',
+    vars:{'--hs-primary':'#818CF8','--hs-primary-dark':'#6366F1','--hs-primary-light':'#C7D2FE',
+          '--hs-accent':'#34D399','--hs-accent2':'#FBBF24',
+          '--hs-header-grad':'linear-gradient(135deg,#0F0F23 0%,#1a1a3e 100%)',
+          '--hs-header-text':'#E0E7FF','--hs-card-bg':'#1E1E3F','--hs-body-bg':'#13132B',
+          '--hs-badge-bg':'rgba(129,140,248,0.18)','--hs-badge-text':'#C7D2FE',
+          '--hs-task-done-bg':'#0D2B1E','--hs-task-done-border':'#34D399',
+          '--hs-xp-fill':'#818CF8','--hs-trust-bar':'#34D399'}
+  },
+  lightning: {
+    name:'Ancient Lightning', emoji:'⚡', free:false,
+    desc:'Gold & power',
+    vars:{'--hs-primary':'#D97706','--hs-primary-dark':'#92400E','--hs-primary-light':'#FCD34D',
+          '--hs-accent':'#3B82F6','--hs-accent2':'#60A5FA',
+          '--hs-header-grad':'linear-gradient(135deg,#1C1917 0%,#292524 50%,#1C1917 100%)',
+          '--hs-header-text':'#FCD34D','--hs-card-bg':'#FFFBEB','--hs-body-bg':'#FEF9EC',
+          '--hs-badge-bg':'rgba(217,119,6,0.12)','--hs-badge-text':'#92400E',
+          '--hs-task-done-bg':'#EFF6FF','--hs-task-done-border':'#93C5FD',
+          '--hs-xp-fill':'#D97706','--hs-trust-bar':'#3B82F6'}
+  },
+  softHour: {
+    name:'Soft Hour', emoji:'🌸', free:false,
+    desc:'Pastel & calm',
+    vars:{'--hs-primary':'#EC4899','--hs-primary-dark':'#BE185D','--hs-primary-light':'#F9A8D4',
+          '--hs-accent':'#8B5CF6','--hs-accent2':'#FDE68A',
+          '--hs-header-grad':'linear-gradient(135deg,#4A1942 0%,#831843 100%)',
+          '--hs-header-text':'#FCE7F3','--hs-card-bg':'#FFF0F6','--hs-body-bg':'#FEF2F8',
+          '--hs-badge-bg':'rgba(236,72,153,0.1)','--hs-badge-text':'#BE185D',
+          '--hs-task-done-bg':'#F3E8FF','--hs-task-done-border':'#C4B5FD',
+          '--hs-xp-fill':'#EC4899','--hs-trust-bar':'#8B5CF6'}
+  },
+  neural: {
+    name:'Neural', emoji:'🤖', free:false,
+    desc:'Cyberpunk tech',
+    vars:{'--hs-primary':'#06B6D4','--hs-primary-dark':'#0891B2','--hs-primary-light':'#67E8F9',
+          '--hs-accent':'#10B981','--hs-accent2':'#F59E0B',
+          '--hs-header-grad':'linear-gradient(135deg,#020617 0%,#0C1445 50%,#020617 100%)',
+          '--hs-header-text':'#67E8F9','--hs-card-bg':'#0F172A','--hs-body-bg':'#050B1A',
+          '--hs-badge-bg':'rgba(6,182,212,0.15)','--hs-badge-text':'#67E8F9',
+          '--hs-task-done-bg':'#022C22','--hs-task-done-border':'#34D399',
+          '--hs-xp-fill':'#06B6D4','--hs-trust-bar':'#10B981'}
+  },
+  matchDay: {
+    name:'Match Day', emoji:'⚽', free:false,
+    desc:'Sport obsessives',
+    vars:{'--hs-primary':'#16A34A','--hs-primary-dark':'#15803D','--hs-primary-light':'#86EFAC',
+          '--hs-accent':'#FFFFFF','--hs-accent2':'#FCD34D',
+          '--hs-header-grad':'linear-gradient(135deg,#14532D 0%,#166534 100%)',
+          '--hs-header-text':'#FFFFFF','--hs-card-bg':'#FFFFFF','--hs-body-bg':'#F0FDF4',
+          '--hs-badge-bg':'rgba(22,163,74,0.1)','--hs-badge-text':'#15803D',
+          '--hs-task-done-bg':'#DCFCE7','--hs-task-done-border':'#86EFAC',
+          '--hs-xp-fill':'#16A34A','--hs-trust-bar':'#FFFFFF'}
+  },
+  respawn: {
+    name:'Respawn', emoji:'🎮', free:false,
+    desc:'Gaming crowd',
+    vars:{'--hs-primary':'#7C3AED','--hs-primary-dark':'#6D28D9','--hs-primary-light':'#C4B5FD',
+          '--hs-accent':'#F43F5E','--hs-accent2':'#06B6D4',
+          '--hs-header-grad':'linear-gradient(135deg,#1A0533 0%,#2D0A5C 50%,#1A0533 100%)',
+          '--hs-header-text':'#E9D5FF','--hs-card-bg':'#1A0533','--hs-body-bg':'#0D021F',
+          '--hs-badge-bg':'rgba(124,58,237,0.2)','--hs-badge-text':'#C4B5FD',
+          '--hs-task-done-bg':'#1A0533','--hs-task-done-border':'#F43F5E',
+          '--hs-xp-fill':'#7C3AED','--hs-trust-bar':'#F43F5E'}
+  },
+  offGrid: {
+    name:'Off Grid', emoji:'🌿', free:false,
+    desc:'Nature & calm',
+    vars:{'--hs-primary':'#059669','--hs-primary-dark':'#047857','--hs-primary-light':'#6EE7B7',
+          '--hs-accent':'#D97706','--hs-accent2':'#92400E',
+          '--hs-header-grad':'linear-gradient(135deg,#064E3B 0%,#065F46 100%)',
+          '--hs-header-text':'#D1FAE5','--hs-card-bg':'#F0FDF4','--hs-body-bg':'#ECFDF5',
+          '--hs-badge-bg':'rgba(5,150,105,0.1)','--hs-badge-text':'#065F46',
+          '--hs-task-done-bg':'#DCFCE7','--hs-task-done-border':'#6EE7B7',
+          '--hs-xp-fill':'#059669','--hs-trust-bar':'#D97706'}
+  },
+  studio: {
+    name:'Studio', emoji:'🎨', free:false,
+    desc:'Art kids',
+    vars:{'--hs-primary':'#F97316','--hs-primary-dark':'#EA580C','--hs-primary-light':'#FED7AA',
+          '--hs-accent':'#8B5CF6','--hs-accent2':'#06B6D4',
+          '--hs-header-grad':'linear-gradient(135deg,#431407 0%,#7C2D12 100%)',
+          '--hs-header-text':'#FED7AA','--hs-card-bg':'#FFF7ED','--hs-body-bg':'#FFF3E6',
+          '--hs-badge-bg':'rgba(249,115,22,0.1)','--hs-badge-text':'#EA580C',
+          '--hs-task-done-bg':'#EDE9FE','--hs-task-done-border':'#C4B5FD',
+          '--hs-xp-fill':'#F97316','--hs-trust-bar':'#8B5CF6'}
+  },
+  grunge: {
+    name:'Grunge', emoji:'🔥', free:false,
+    desc:'Outliers only',
+    vars:{'--hs-primary':'#DC2626','--hs-primary-dark':'#B91C1C','--hs-primary-light':'#FCA5A5',
+          '--hs-accent':'#D97706','--hs-accent2':'#6B7280',
+          '--hs-header-grad':'linear-gradient(135deg,#1C1917 0%,#292524 100%)',
+          '--hs-header-text':'#FCA5A5','--hs-card-bg':'#1C1917','--hs-body-bg':'#0C0A09',
+          '--hs-badge-bg':'rgba(220,38,38,0.15)','--hs-badge-text':'#FCA5A5',
+          '--hs-task-done-bg':'#1C1917','--hs-task-done-border':'#D97706',
+          '--hs-xp-fill':'#DC2626','--hs-trust-bar':'#D97706'}
+  }
+};
+
+let currentHSTheme = 'vanilla';
+
+function applyHSTheme(key, save) {
+  const t = HS_THEMES[key] || HS_THEMES.vanilla;
+  currentHSTheme = key;
+  const root = document.documentElement;
+  Object.entries(t.vars).forEach(([k,v]) => root.style.setProperty(k, v));
+  // Dark body bg for dark themes
+  const darkThemes = ['midnight','neural','respawn','grunge'];
+  document.getElementById('view-student-hs-wrap')?.style && null;
+  const appEl = document.getElementById('screen-app');
+  if(appEl) {
+    if(darkThemes.includes(key)) {
+      appEl.style.background = 'var(--hs-body-bg)';
+      appEl.style.color = 'var(--hs-header-text)';
+    } else {
+      appEl.style.background = 'var(--hs-body-bg)';
+      appEl.style.color = '';
+    }
+  }
+  // Persist to Supabase if requested
+  if(save && currentUser) {
+    db.from('profiles').update({theme: key}).eq('id', currentUser.id).then(() => {
+      currentProfile.theme = key;
+    });
+  }
+  // Update theme picker UI if open
+  document.querySelectorAll('.hs-theme-card').forEach(el => {
+    el.classList.toggle('hs-theme-card--active', el.dataset.themeKey === key);
+  });
+}
+
+function renderHSThemePicker() {
+  const proUser = isPro ? isPro() : false;
+  const current = currentProfile?.theme || 'vanilla';
+  const entries = Object.entries(HS_THEMES);
+  const freeThemes = entries.filter(([,v]) => v.free);
+  const proThemes  = entries.filter(([,v]) => !v.free);
+
+  let html = `<div class="card" id="hsThemeCard">
+    <div class="card-title">🎨 Your Theme</div>
+    <p style="font-size:12px;color:var(--gray-500);margin-bottom:14px;">Pick your vibe. Free users get 2 themes — upgrade for all 10.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">`;
+
+  freeThemes.forEach(([key, t]) => {
+    const active = key === current;
+    html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePicker();"
+      style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
+      background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
+      <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
+      <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;">${t.name}</div>
+      <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${t.desc}</div>
+      ${active?'<div style="font-size:10px;font-weight:700;color:var(--violet);margin-top:4px;">✓ Active</div>':''}
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  if (!proUser) {
+    html += `<div style="background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(16,185,129,0.05));border:1.5px solid rgba(124,58,237,0.2);border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:var(--violet);margin-bottom:10px;">⭐ Pro Themes (8 more)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;">`;
+    proThemes.forEach(([key, t]) => {
+      html += `<div style="text-align:center;opacity:0.5;">
+        <div style="font-size:24px;">${t.emoji}</div>
+        <div style="font-size:10px;font-weight:700;">${t.name}</div>
+      </div>`;
+    });
+    html += `</div>
+      <button onclick="showPaywall('upgrade','Unlock All Themes','Get 8 more theme skins + teacher connection + unlimited AI')" 
+        style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--violet),var(--violet-dark));color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;">
+        ⭐ Upgrade to Unlock
+      </button>
+    </div>`;
+  } else {
+    // Pro user — show all themes
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
+    proThemes.forEach(([key, t]) => {
+      const active = key === current;
+      html += `<div class="hs-theme-card${active?' hs-theme-card--active':''}" data-theme-key="${key}" onclick="applyHSTheme('${key}',true);renderHSThemePicker();"
+        style="border-radius:14px;padding:14px 10px;border:2.5px solid ${active?'var(--hs-primary,var(--violet))':'rgba(0,0,0,0.1)'};
+        background:${active?'rgba(124,58,237,0.08)':'white'};cursor:pointer;text-align:center;transition:all 0.2s;">
+        <div style="font-size:28px;margin-bottom:6px;">${t.emoji}</div>
+        <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;">${t.name}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${t.desc}</div>
+        ${active?'<div style="font-size:10px;font-weight:700;color:var(--violet);margin-top:4px;">✓ Active</div>':''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+
+  // Find insertion point — after settingsChangeAvatarWrap closing div, before settingsNotifsCard
+  const existing = document.getElementById('hsThemeCard');
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    const notifsCard = document.getElementById('settingsNotifsCard');
+    if(notifsCard) notifsCard.insertAdjacentHTML('beforebegin', html);
+  }
+}
+
 const trustConfig = {
   verify:   { label:'🔴 Verify Mode', cls:'trust-verify', color:'var(--rose)', next:'21 points to Check mode' },
   check:    { label:'🟡 Check Mode', cls:'trust-check', color:'var(--amber)', next:'51 points to Trust mode' },
@@ -1488,6 +1714,14 @@ function footerNav(tab) {
     // Show notifications card for parent/student
     const notifsCard = document.getElementById('settingsNotifsCard');
     if(notifsCard) notifsCard.style.display = (p?.role !== 'teacher') ? 'block' : 'none';
+    // Show theme picker for HS students
+    if(p?.role === 'student' && p?.age_group === 'highschool') {
+      renderHSThemePicker();
+    } else {
+      // Remove theme card if switching away from HS student
+      const existing = document.getElementById('hsThemeCard');
+      if(existing) existing.remove();
+    }
     setFooterActive('settings');
     return;
   }
@@ -1723,6 +1957,9 @@ async function loadStudentApp() {
     // Set avatar in HS header
     const hsAvatarEl = document.getElementById('hsAvatar');
     if(hsAvatarEl) hsAvatarEl.textContent = avatar;
+    // Apply saved HS theme
+    const hsTheme = currentProfile.theme && HS_THEMES[currentProfile.theme] ? currentProfile.theme : 'vanilla';
+    applyHSTheme(hsTheme, false);
   }
   isNavigating = false;
   // Load assignments — this will show the right panel once child record is confirmed
@@ -1811,7 +2048,7 @@ function updateTrustDisplay(child, prefix='') {
   const lEl = document.getElementById(prefix+'trustScoreLabel');
   if(pEl){pEl.className='trust-badge '+cfg.cls;pEl.textContent=cfg.label;}
   if(sEl) sEl.textContent=score;
-  if(bEl){bEl.style.width=score+'%';bEl.style.background=cfg.color;}
+  if(bEl){bEl.style.width=score+'%';bEl.style.background=prefix==='hs'?'var(--hs-trust-bar,'+cfg.color+')':cfg.color;}
   if(lEl) lEl.textContent=cfg.next;
 }
 
