@@ -426,7 +426,7 @@ Then build in this order:
 - Stripe config in app: STRIPE_PK (pk_live), STRIPE_PRICE_MONTHLY = price_1TiYduBClvRtlFVHK1JSodkf ($9.99/mo inc GST), STRIPE_PRICE_ANNUAL = price_1TiYeWBClvRtlFVH8KKVA20U ($89/yr inc GST). NOTE: these were initially swapped, now correct.
 - LIVE MODE (pk_live/sk_live). GST-inclusive pricing for AU B2C.
 - Webhook signing secret + service_role key are hardcoded in the Edge Functions.
-- **STILL UNTESTED:** actual payment completion → webhook → subscription_status flip. Code deployed & ready; needs one real purchase to confirm.
+- **CONFIRMED WORKING END-TO-END (16 Jun):** real $9.99 purchase → webhook fired → families row flipped to pro → app shows ⭐ PRO badge + "Pro Active" drawer. Full loop verified.
 
 **Paywall gates (freemium) — all built:**
 - isPro() helper checks subscription_status (pro OR school_attached). MUST be defined early in main script (hoisting bug fixed — was throwing "isPro is not defined").
@@ -439,12 +439,16 @@ Then build in this order:
 - licenses table (re-run); families: subscription_status/school_id/stripe_customer_id/stripe_subscription_id; profiles: ai_import_count/ai_import_reset_at.
 
 **Key learnings:**
+- WEBHOOK 401 FIX: Supabase gateway rejects Stripe (no Supabase JWT) with 401 UNAUTHORIZED_NO_AUTH_HEADER before code runs. Must turn OFF "Verify JWT" on the function (Edge Functions > stripe-webhook > Settings). TOGGLE IS STICKY — reverts to ON, especially on redeploy. Always re-check after deploying.
+- WEBHOOK 500 FIX: db.auth.admin.getUserByEmail() does NOT exist on supabase-js v2. Use the user_id passed via Stripe metadata.user_id / client_reference_id instead (app passes userId in create-checkout-session body → flows to session metadata). Match families on parent_id.
 - Service worker aggressively caches — must Unregister + Clear site data to see new deploys. Recurring pain point.
 - String-replace pushes can SILENTLY MISS — always verify function defs landed (Stripe JS block was lost once, caused "handleStripeReturn is not defined").
 - All paywall/Stripe/AI functions must live in the SAME <script> block as main app (single inline script in this app).
 
 **Next session TODO:**
-- Confirm webhook fires on real purchase (check Supabase Edge Function logs + families row).
+- (DONE) Webhook confirmed working on real purchase.
+- Possible: Subscription Status screen (plan, renewal date, Stripe customer portal manage/cancel link) — currently drawer just shows "Pro Active" + toast.
+- Post-checkout sometimes drops user to login page (session not always restored on Stripe return redirect) — webhook updates DB regardless, so low priority, but worth a look.
 - License gate on Create School (B2B).
 - THEME SYSTEM — still not built. Design locked (Free 2-3 presets / Pro full library + AI generator; 10 themes named; profiles.theme column exists; AVATARS_HS vs AVATARS_PRIMARY split done). This is the next big feature.
 
