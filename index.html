@@ -1251,8 +1251,8 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 
 // ── Stripe config ──
 const STRIPE_PK = 'pk_live_51T3vs4BClvRtlFVH7Zh5svzkwISEUF3CBRgZjUmHtFuBlbuxqPwG95rSA8mcwDIEuB34M3rqYLKo1MHXJHnwvcen00THCh7f4c';
-const STRIPE_PRICE_MONTHLY = 'price_1TiYeWBClvRtlFVH8KKVA20U';
-const STRIPE_PRICE_ANNUAL  = 'price_1TiYduBClvRtlFVHK1JSodkf';
+const STRIPE_PRICE_MONTHLY = 'price_1TiYduBClvRtlFVHK1JSodkf';
+const STRIPE_PRICE_ANNUAL  = 'price_1TiYeWBClvRtlFVH8KKVA20U';
 let stripeInstance = null;
 function getStripe() {
   if(!stripeInstance) stripeInstance = Stripe(STRIPE_PK);
