@@ -1259,6 +1259,10 @@ function getStripe() {
   return stripeInstance;
 }
 
+function isPro() {
+  return currentFamily?.subscription_status === 'pro' || currentFamily?.subscription_status === 'school_attached';
+}
+
 let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
