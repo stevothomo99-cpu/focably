@@ -448,7 +448,7 @@ Then build in this order:
 **Next session TODO:**
 - (DONE) Webhook confirmed working on real purchase.
 - Possible: Subscription Status screen (plan, renewal date, Stripe customer portal manage/cancel link) — currently drawer just shows "Pro Active" + toast.
-- Post-checkout sometimes drops user to login page (session not always restored on Stripe return redirect) — webhook updates DB regardless, so low priority, but worth a look.
+- (DONE) Post-checkout login bounce FIXED: on Stripe return (?checkout= in URL), getSession now retries up to 5x (1.2s apart) before showing auth, so the rehydrating session isn't missed. If session genuinely drops, checkout result is stashed in sessionStorage and replayed (success toast + badge refresh) after re-sign-in. handleStripeReturn also re-checks families row up to 3x to cover webhook timing.
 - License gate on Create School (B2B).
 - THEME SYSTEM — still not built. Design locked (Free 2-3 presets / Pro full library + AI generator; 10 themes named; profiles.theme column exists; AVATARS_HS vs AVATARS_PRIMARY split done). This is the next big feature.
 
