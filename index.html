@@ -767,6 +767,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Paste assignment details from Teams, email, Google Classroom — anywhere. We'll pull out the key details automatically.</p>
       <textarea class="form-input" id="importPasteInput" rows="6" placeholder="Paste the assignment text here…&#10;&#10;e.g. Science — Chapter 5 Review&#10;Due: Friday 20 June&#10;Read pages 45–60 and answer questions 1–5 in your workbook."></textarea>
       <button class="publish-btn" id="importParseBtn" onclick="parseImportedAssignment()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);margin-top:4px;">✨ Extract Details</button>
+      <div id="aiImportUsageHint" style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:6px;"></div>
     </div>
 
     <!-- Confirmation card — hidden until parse completes -->
@@ -3219,6 +3220,10 @@ async function parseImportedAssignment() {
   const raw = document.getElementById('importPasteInput').value.trim();
   if(!raw) { showToast('Paste some assignment text first'); return; }
 
+  // ── AI import usage cap ──
+  const allowed = await checkAIImportLimit();
+  if(!allowed) return;
+
   const btn = document.getElementById('importParseBtn');
   btn.textContent = '⏳ Extracting…'; btn.disabled = true;
 
@@ -3241,6 +3246,9 @@ No markdown, no backticks, no explanation. Just the JSON object.`,
     });
     const data = await res.json();
     const parsed = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+
+    // Increment AI usage counter
+    await incrementAIImportCount();
 
     // Populate confirmation form
     document.getElementById('importTitle').value = parsed.title || '';
@@ -4156,6 +4164,8 @@ function switchRole(role) {
 async function breakdownTask() {
   const input=document.getElementById('questInput').value.trim();
   if(!input){showToast('✏️ Describe your task first!');return;}
+  const allowed2 = await checkAIImportLimit();
+  if(!allowed2) return;
   const t=themes[currentProfile?.theme||'fantasy'];
   const btn=document.getElementById('aiBtn');
   btn.disabled=true;document.getElementById('aiBtnText').textContent='✨ Summoning...';
@@ -4164,6 +4174,7 @@ async function breakdownTask() {
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    await incrementAIImportCount();
     document.getElementById('aiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div>${'⭐'.repeat(s.stars||1)}</div></div>`).join('');
     document.getElementById('aiResult').classList.add('visible');
   } catch(e) {
@@ -4176,6 +4187,8 @@ async function breakdownTask() {
 async function breakdownHS() {
   const input=document.getElementById('hsInput').value.trim();
   if(!input){showToast('✏️ Describe your assignment first!');return;}
+  const allowed3 = await checkAIImportLimit();
+  if(!allowed3) return;
   const btn=document.getElementById('hsAiBtn');
   btn.disabled=true;document.getElementById('hsAiBtnText').textContent='⏳ Breaking it down...';
   document.getElementById('hsAiSteps').innerHTML='';document.getElementById('hsAiResult').classList.remove('visible');
@@ -4184,6 +4197,7 @@ async function breakdownHS() {
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     document.getElementById('hsAiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div></div>`).join('');
+    await incrementAIImportCount();
     document.getElementById('hsAiResult').classList.add('visible');
   } catch(e) {
     document.getElementById('hsAiSteps').innerHTML='<div style="font-size:13px;color:var(--rose)">Connection error. Try again.</div>';
@@ -4786,6 +4800,24 @@ function openDrawerScreen(screen) {
   }
   // Child selects for parent screens are populated at app load (loadParentApp)
 
+  // AI import: update usage hint
+  if(screen === 'import-assignment') {
+    const hint = document.getElementById('aiImportUsageHint');
+    if(hint) {
+      if(isPro()) {
+        hint.textContent = '⭐ Family Pro — unlimited AI imports';
+        hint.style.color = 'var(--mint)';
+      } else {
+        const used = currentProfile?.ai_import_count || 0;
+        const remaining = Math.max(0, 3 - used);
+        hint.textContent = remaining > 0
+          ? `${remaining} of 3 free AI imports remaining this month`
+          : '0 free imports left — upgrade for unlimited';
+        hint.style.color = remaining > 0 ? 'var(--gray-400)' : 'var(--rose)';
+      }
+    }
+  }
+
   // Add Task: reset visibility to Private and populate enrolled-class picker
   if(screen === 'add-task') {
     setTaskVisibility('private');
@@ -5194,6 +5226,45 @@ async function dbQuery(queryPromise, timeoutMs=8000, fallback=null) {
     return {data: fallback, error: {message: e.message}};
   }
 }
+
+// ══════════════════════════════════════════
+// AI IMPORT USAGE CAP (3 per user per month)
+// ══════════════════════════════════════════
+async function checkAIImportLimit() {
+  if(isPro()) return true;
+  const {data:profile} = await dbQuery(
+    db.from('profiles').select('ai_import_count, ai_import_reset_at').eq('id', currentUser.id).maybeSingle()
+  );
+  if(!profile) return true;
+  const now = new Date();
+  const resetAt = profile.ai_import_reset_at ? new Date(profile.ai_import_reset_at) : null;
+  const needsReset = !resetAt ||
+    now.getFullYear() > resetAt.getFullYear() ||
+    now.getMonth() > resetAt.getMonth();
+  if(needsReset) {
+    await dbQuery(db.from('profiles').update({
+      ai_import_count: 0,
+      ai_import_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    }).eq('id', currentUser.id));
+    if(currentProfile) currentProfile.ai_import_count = 0;
+    return true;
+  }
+  const count = profile.ai_import_count || 0;
+  if(count >= 3) {
+    showPaywall('ai_import',
+      "You've used your 3 free AI imports this month",
+      'Upgrade to Family Pro for unlimited AI-powered Smart Import every month.');
+    return false;
+  }
+  return true;
+}
+
+async function incrementAIImportCount() {
+  const current = currentProfile?.ai_import_count || 0;
+  await dbQuery(db.from('profiles').update({ ai_import_count: current + 1 }).eq('id', currentUser.id));
+  if(currentProfile) currentProfile.ai_import_count = current + 1;
+}
+
 </script>
 
 <!-- PAYWALL MODAL -->
