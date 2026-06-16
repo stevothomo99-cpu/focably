@@ -1911,7 +1911,7 @@ function footerNav(tab) {
   }
 }
 
-async async function confirmDeleteAccount() {
+async function confirmDeleteAccount() {
   const confirmed = confirm('⚠️ Delete your account?\n\nThis will permanently delete all your data including tasks, XP, trust scores, and family connections.\n\nThis cannot be undone.');
   if(!confirmed) return;
   const doubleConfirm = confirm('Are you absolutely sure? Type OK to confirm permanent deletion.');
