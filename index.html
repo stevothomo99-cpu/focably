@@ -3559,7 +3559,7 @@ async function respondToRedemption(redemptionId, action, btn) {
     }
     showToast('Reward declined');
   }
-  loadManageRewards();
+  await loadParentRedemptions();
 }
 
 // Load redemption requests for parent main view
@@ -3703,6 +3703,10 @@ async function redeemReward(rewardId, childId) {
     })
   );
   if(error) { showToast('Error requesting reward'); return; }
+
+  // Refresh reward tiles immediately so pending status shows
+  const {data:updatedChild} = await dbQuery(db.from('children').select('stars').eq('id', childId).maybeSingle());
+  loadStudentRewards(childId, updatedChild?.stars || 0);
 
   // Notify parent
   const {data:family} = await dbQuery(db.from('families').select('parent_id').eq('id', familyId).maybeSingle());
@@ -5895,6 +5899,12 @@ function handleNotifAction(type, notifId) {
     } else if(currentProfile.role === 'teacher') {
       switchRole('teacher');
       setTimeout(() => document.getElementById('teacher-approval-card')?.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+    }
+  } else if(type === 'reward_approved' || type === 'reward_rejected') {
+    // Refresh student rewards so pending status clears
+    if(currentProfile.role === 'student' && currentChildRecord?.id) {
+      const {data:child} = await dbQuery(db.from('children').select('stars').eq('id', currentChildRecord.id).maybeSingle());
+      loadStudentRewards(currentChildRecord.id, child?.stars || 0);
     }
   } else if(type === 'task_complete' || type === 'nudge') {
     if(currentProfile.role === 'parent') switchRole('parent');
