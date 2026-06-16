@@ -750,7 +750,6 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     <div class="card">
       <div class="card-title">📊 Subject Progress</div>
       <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
-      <div id="joinedClassesParent"></div>
     </div>
 
 
@@ -2084,7 +2083,83 @@ async function openManageChildren() {
     list.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-500);font-size:14px;padding:24px;">No children linked yet.<br><br><button class="publish-btn" onclick="openDrawerScreen(&apos;family-invite&apos;)" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-top:8px;">&#x1F4EC; Add a Child</button></div>';
     return;
   }
-  list.innerHTML = currentChildren.map(function(c) { return '<div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:15px;font-weight:700;color:var(--indigo);">' + (c.name || 'Child') + '</div><div style="font-size:12px;color:var(--gray-500);">&#x2B50; ' + (c.stars||0) + ' stars &nbsp;&middot;&nbsp; &#x1F525; ' + (c.streak||0) + ' streak &nbsp;&middot;&nbsp; Trust: ' + (c.trust_score||0) + '</div></div><button data-child-id="' + c.id + '" data-child-name="' + (c.name||'Child') + '" onclick="confirmUnlinkChild(this.dataset.childId, this.dataset.childName)" style="padding:8px 14px;border-radius:20px;border:1.5px solid #EF4444;background:white;color:#EF4444;font-size:13px;font-weight:700;cursor:pointer;">Unlink</button></div>'; }).join('') + '<div style="margin-top:8px;"><button class="publish-btn" onclick="openDrawerScreen(&apos;family-invite&apos;)" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">&#x1F4EC; Add Another Child</button></div>';
+
+  // Show loading state
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);">Loading...</div>';
+
+  // Fetch classes + assignments for all children
+  const childIds = currentChildren.map(function(c) { return c.id; });
+  const {data:memberships} = await dbQuery(
+    db.from('class_members').select('child_id, classes(id, name, subject, year_group, profiles(full_name))').in('child_id', childIds),
+    8000, []
+  );
+  const {data:assignments} = await dbQuery(
+    db.from('assignments').select('*, tasks(*)').in('child_id', childIds).or('status.eq.active,status.is.null').order('due_date', {ascending:true}),
+    8000, []
+  );
+
+  // Group memberships and assignments by child
+  const childClasses = {};
+  const childAssignments = {};
+  currentChildren.forEach(function(c) { childClasses[c.id] = []; childAssignments[c.id] = []; });
+  (memberships||[]).forEach(function(m) { if(childClasses[m.child_id]) childClasses[m.child_id].push(m.classes); });
+  (assignments||[]).forEach(function(a) { if(childAssignments[a.child_id]) childAssignments[a.child_id].push(a); });
+
+  list.innerHTML = currentChildren.map(function(c) {
+    const classes = childClasses[c.id] || [];
+    const childAsn = childAssignments[c.id] || [];
+
+    // Build class accordion rows
+    const classRows = classes.length ? classes.map(function(cls) {
+      const clsAssignments = childAsn.filter(function(a) { return a.class_id === cls.id; });
+      const totalTasks = clsAssignments.flatMap(function(a) { return a.tasks||[]; }).length;
+      const doneTasks = clsAssignments.flatMap(function(a) { return a.tasks||[]; }).filter(function(t) { return t.completed; }).length;
+      const pct = totalTasks ? Math.round((doneTasks/totalTasks)*100) : 0;
+      const teacher = cls.profiles?.full_name || '';
+
+      const asnRows = clsAssignments.length ? clsAssignments.map(function(a) {
+        const tasks = a.tasks||[];
+        const done = tasks.filter(function(t) { return t.completed; }).length;
+        const apct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
+        const due = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
+        const today = new Date().toISOString().split('T')[0];
+        const isOverdue = a.due_date && a.due_date < today && apct < 100;
+        const col = apct>=100 ? 'var(--mint)' : isOverdue ? 'var(--rose)' : 'var(--violet)';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:12px;font-weight:600;color:var(--indigo);">' + a.title + '</div>' +
+            '<div style="font-size:10px;color:' + (isOverdue?'var(--rose)':'var(--gray-500)') + ';margin:2px 0 4px;">Due ' + due + ' &nbsp;·&nbsp; ' + done + '/' + tasks.length + ' steps</div>' +
+            '<div style="background:var(--gray-100);border-radius:10px;height:4px;"><div style="background:' + col + ';border-radius:10px;height:4px;width:' + apct + '%;"></div></div>' +
+          '</div>' +
+          '<div style="font-size:11px;font-weight:800;color:' + col + ';">' + apct + '%</div>' +
+        '</div>';
+      }).join('') : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;padding:4px 0;">No assignments yet</div>';
+
+      return '<div style="border:1px solid var(--gray-100);border-radius:12px;overflow:hidden;margin-bottom:8px;">' +
+        '<div onclick="var n=this.nextElementSibling;n.style.display=n.style.display==='none'?'block':'none';this.querySelector('.mc-chev').style.transform=n.style.display==='none'?'':' rotate(180deg)'" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:var(--gray-50);">' +
+          '<div style="font-size:20px;">📚</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + cls.name + '</div>' +
+            '<div style="font-size:11px;color:var(--gray-500);">' + (cls.subject||'') + (cls.year_group?' · '+cls.year_group:'') + (teacher?' · '+teacher:'') + ' · ' + clsAssignments.length + ' active · ' + pct + '% done</div>' +
+          '</div>' +
+          '<div class="mc-chev" style="font-size:11px;color:var(--gray-400);transition:transform 0.2s;">▼</div>' +
+        '</div>' +
+        '<div style="display:none;padding:10px 12px;">' + asnRows + '</div>' +
+      '</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--gray-400);padding:8px 0;">No classes enrolled yet</div>';
+
+    return '<div class="card" style="margin-bottom:12px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:700;color:var(--indigo);">' + (c.name||'Child') + '</div>' +
+          '<div style="font-size:12px;color:var(--gray-500);">&#x2B50; ' + (c.stars||0) + ' stars &nbsp;&middot;&nbsp; &#x1F525; ' + (c.streak||0) + ' streak &nbsp;&middot;&nbsp; Trust: ' + (c.trust_score||0) + '</div>' +
+        '</div>' +
+        '<button data-child-id="' + c.id + '" data-child-name="' + (c.name||'Child') + '" onclick="confirmUnlinkChild(this.dataset.childId, this.dataset.childName)" style="padding:8px 14px;border-radius:20px;border:1.5px solid #EF4444;background:white;color:#EF4444;font-size:13px;font-weight:700;cursor:pointer;">Unlink</button>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Classes</div>' +
+      classRows +
+    '</div>';
+  }).join('') + '<div style="margin-top:8px;"><button class="publish-btn" onclick="openDrawerScreen(&apos;family-invite&apos;)" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">&#x1F4EC; Add Another Child</button></div>';
 }
 
 async function confirmUnlinkChild(childId, childName) {
@@ -4873,23 +4948,6 @@ async function loadJoinedClasses(childId) {
   const {data:memberships} = await db.from('class_members')
     .select('*, classes(id, name, subject, year_group, profiles(full_name))')
     .eq('child_id', childId);
-
-  // For parent view — show enrolled classes under subject progress
-  const parentEl = document.getElementById('joinedClassesParent');
-  if(parentEl) {
-    if(!memberships?.length) { parentEl.innerHTML=''; }
-    else {
-      parentEl.innerHTML = '<div style="margin-top:12px;border-top:1px solid var(--gray-100);padding-top:12px;">' +
-        '<div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Enrolled Classes</div>' +
-        memberships.map(m => '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--gray-50);border-radius:10px;margin-bottom:6px;">' +
-          '<div style="font-size:20px;">📚</div>' +
-          '<div style="flex:1"><div style="font-weight:700;font-size:13px;">' + m.classes.name + '</div>' +
-          '<div style="font-size:11px;color:var(--gray-500);">' + (m.classes.subject||'') + (m.classes.year_group ? ' · ' + m.classes.year_group : '') + '</div></div>' +
-          '<div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>' +
-        '</div>').join('') +
-      '</div>';
-    }
-  }
 
   // Legacy joinedClasses element (student primary view if exists)
   const el = document.getElementById('joinedClasses');
