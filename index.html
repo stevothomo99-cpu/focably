@@ -4288,9 +4288,7 @@ async function processBrainDump() {
     let text = (data.content?.[0]?.text || '').trim();
     console.log('Brain dump raw text:', text.substring(0, 200));
     // Strip markdown code fences if present
-    text = text.replace(/```json
-?|```
-?/g, '').trim();
+    text = text.replace(/```json|```/g, '').trim();
 
     try {
       brainDumpTasks = JSON.parse(text);
