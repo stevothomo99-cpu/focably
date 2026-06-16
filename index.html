@@ -1472,7 +1472,11 @@ function getStripe() {
 }
 
 function isPro() {
-  return currentFamily?.subscription_status === 'pro' || currentFamily?.subscription_status === 'school_attached';
+  // Parent: check family subscription
+  if(currentFamily?.subscription_status === 'pro' || currentFamily?.subscription_status === 'school_attached') return true;
+  // Student: check profile subscription (inherited from family at link time)
+  if(currentProfile?.subscription_status === 'pro' || currentProfile?.subscription_status === 'school_attached') return true;
+  return false;
 }
 
 let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
@@ -2451,9 +2455,10 @@ async function loadStudentApp() {
         hsAvatarEl.textContent = avatar;
       }
     }
-    // Apply saved HS theme
+    // Apply saved HS theme — save to Supabase if no theme set yet
     const hsTheme = currentProfile.theme && HS_THEMES[currentProfile.theme] ? currentProfile.theme : 'vanilla';
-    applyHSTheme(hsTheme, false);
+    const shouldSave = !currentProfile.theme || !HS_THEMES[currentProfile.theme];
+    applyHSTheme(hsTheme, shouldSave);
   }
   isNavigating = false;
   // Load assignments — this will show the right panel once child record is confirmed
