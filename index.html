@@ -2042,17 +2042,20 @@ async function loadProfile() {
   showScreen('loading');
   setLoadingStatus('Loading your profile...');
   console.log('loadProfile: starting for', currentUser.email);
+  // Clear any stale auth errors so they don't flash during load
+  const authErrEl = document.getElementById('authError');
+  if(authErrEl) { authErrEl.textContent = ''; authErrEl.style.display = 'none'; }
   
-  // Hard timeout — show retry button after 12 seconds
+  // Hard timeout — show retry button after 25 seconds
   const hardTimeout = setTimeout(() => {
-    setLoadingStatus('Taking longer than usual...');
+    setLoadingStatus('Taking longer than usual — almost there...');
     showRetryButton();
-  }, 12000);
+  }, 25000);
 
   try {
     console.log('loadProfile: fetching profile...');
     const profilePromise = db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-    const profileTimeout = new Promise(resolve => setTimeout(() => resolve({data:null, error:{message:'timeout'}}), 15000));
+    const profileTimeout = new Promise(resolve => setTimeout(() => resolve({data:null, error:{message:'timeout'}}), 22000));
     const profileRes = await Promise.race([profilePromise, profileTimeout]);
     let profile = profileRes.data;
     let profileError = profileRes.error;
