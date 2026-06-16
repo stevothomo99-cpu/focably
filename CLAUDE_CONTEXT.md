@@ -453,6 +453,13 @@ Then build in this order:
 - Settings screen scroll fixed — `overflow-y:auto; max-height:calc(100vh - 60px)`
 - Theme card insertion made bulletproof — static `<div id="hsThemeCardPlaceholder">` in HTML
 
+**Pro subscription propagation — fully built:**
+- `profiles.subscription_status` is the runtime source of truth for students (not `currentFamily`)
+- `linkToFamily()` — child joining a Pro family inherits `subscription_status` immediately on link
+- `stripe-webhook` Edge Function updated — `setFamilySubscription()` helper fetches all children in family and updates each `profiles.subscription_status` on payment AND on cancellation
+- Three scenarios covered: ✅ parent pays → existing kids Pro, ✅ child joins after payment → inherits Pro, ✅ parent cancels → all kids back to free
+- **Remember:** JWT verification must be OFF on stripe-webhook after every redeploy
+
 **Next session TODO:**
 - Subscription Status screen (plan details, renewal date, Stripe customer portal manage/cancel link)
 - License gate on Create School (validate FOCABLY-XXXX-XXXX against licenses table)
