@@ -5887,7 +5887,7 @@ async function markAllNotifsRead() {
   document.getElementById('markAllBtn').style.display = 'none';
 }
 
-function handleNotifAction(type, notifId) {
+async function handleNotifAction(type, notifId) {
   markNotifRead(notifId);
   closeNotifPanel();
   // Route to the right place
