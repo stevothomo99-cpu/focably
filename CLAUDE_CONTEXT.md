@@ -575,6 +575,18 @@ Then build in this order:
 - HubSpot waitlist debug (Forms API switched, console logging added — check error on next test signup)
 - Consider: stripe live mode → test mode toggle for dev vs prod
 
+**Privacy & Legal — completed Session 6:**
+- Privacy Policy drafted and deployed to both focablyed.com and focably.vercel.app (/privacy-policy.html)
+- Covers AU (Privacy Act 1988, APPs, NDB scheme) and NZ (Privacy Act 2020) in single document
+- Data residency: assumed Sydney ap-southeast-2 (Supabase Pro) — update Supabase plan to confirm
+- All third parties disclosed: Supabase, Stripe, Anthropic, Vercel, HubSpot
+- Privacy Policy link added to landing page footer
+- ⚖️ Legal & Privacy card added to app Settings screen (Privacy Policy link + Delete Account)
+- confirmDeleteAccount() function built — double-confirmed, deletes in correct FK order
+- ⚠️ Manual TODO: Add ABN to privacy policy ("ABN to be inserted" placeholder)
+- ⚠️ Manual TODO: Set up privacy@focablyed.com email inbox (forward to main email)
+- ⚠️ Manual TODO: Confirm Supabase plan is Pro with ap-southeast-2 (Sydney) region selected
+
 ### 16 Jun 2026 (Session 5) — Landing rebrand, Stripe payments, AI cap
 
 **Landing page (focably-Landing repo):**
