@@ -414,6 +414,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
 
 </style>
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
 </head>
 <body>
 <div class="toast" id="toast"></div>
@@ -798,6 +799,27 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Import Assignment</div>
     </div>
+    <!-- Microsoft Teams Connect Card -->
+    <div class="card" style="margin-bottom:0;border:1.5px solid #0078D4;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#0078D4;display:flex;align-items:center;justify-content:center;font-size:18px;">🟦</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:#1E3A5F;">Microsoft Teams</div>
+          <div style="font-size:11px;color:#3B82F6;" id="teamsConnectionStatus">Not connected</div>
+        </div>
+        <div style="margin-left:auto;">
+          <button id="teamsConnectBtn" onclick="connectMicrosoftTeams()" style="padding:7px 14px;border-radius:20px;background:#0078D4;color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;">Connect</button>
+        </div>
+      </div>
+      <div id="teamsAssignmentsList" style="display:none;">
+        <div style="font-size:12px;font-weight:700;color:#1E3A5F;margin-bottom:8px;">Your Teams Assignments</div>
+        <div id="teamsAssignmentsContent"></div>
+      </div>
+      <p style="font-size:11px;color:#3B82F6;margin:0;">Sign in with your Microsoft/school account to import assignments directly from Teams.</p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0;"><div style="flex:1;height:1px;background:var(--gray-100);"></div><div style="font-size:11px;color:var(--gray-400);">or paste manually</div><div style="flex:1;height:1px;background:var(--gray-100);"></div></div>
+
     <div class="card">
       <div class="card-title">📥 Paste &amp; Import</div>
       <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Paste assignment details from Teams, email, Google Classroom — anywhere. We'll pull out the key details automatically.</p>
@@ -4119,6 +4141,120 @@ async function parentAddTask() {
   // Refresh stats and return to main parent view
   await loadChildStats(childId);
   closeDrawerScreen();
+}
+
+// ── Microsoft Teams OAuth ──────────────────────────────────────────────────────
+
+const MS_CLIENT_ID = '2593af2c-94ef-47ec-aa9a-40de24336aca';
+const MS_REDIRECT_URI = 'https://focably.vercel.app';
+const MS_SCOPES = ['User.Read', 'EduAssignments.ReadBasic'];
+
+let msalInstance = null;
+let msTeamsAccount = null;
+
+function getMsalInstance() {
+  if (!msalInstance) {
+    msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: MS_CLIENT_ID,
+        authority: 'https://login.microsoftonline.com/common',
+        redirectUri: MS_REDIRECT_URI,
+      },
+      cache: { cacheLocation: 'sessionStorage' }
+    });
+  }
+  return msalInstance;
+}
+
+async function connectMicrosoftTeams() {
+  const btn = document.getElementById('teamsConnectBtn');
+  const status = document.getElementById('teamsConnectionStatus');
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    const msal = getMsalInstance();
+    await msal.initialize();
+    const response = await msal.loginPopup({ scopes: MS_SCOPES });
+    msTeamsAccount = response.account;
+    status.textContent = 'Connected as ' + (msTeamsAccount.name || msTeamsAccount.username);
+    btn.textContent = 'Refresh';
+    btn.disabled = false;
+    showToast('✅ Microsoft account connected!');
+    await loadTeamsAssignments();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Connect';
+    if (e.errorCode !== 'user_cancelled') {
+      showToast('❌ Could not connect: ' + (e.message || e.errorCode));
+    }
+  }
+}
+
+async function loadTeamsAssignments() {
+  const status = document.getElementById('teamsConnectionStatus');
+  const listDiv = document.getElementById('teamsAssignmentsList');
+  const content = document.getElementById('teamsAssignmentsContent');
+  if (!msTeamsAccount) return;
+
+  content.innerHTML = '<div style="font-size:12px;color:var(--gray-400);text-align:center;padding:8px;">Loading assignments…</div>';
+  listDiv.style.display = 'block';
+
+  try {
+    const msal = getMsalInstance();
+    await msal.initialize();
+    const tokenResponse = await msal.acquireTokenSilent({
+      scopes: MS_SCOPES,
+      account: msTeamsAccount
+    });
+
+    // Fetch assignments from MS Graph Education API
+    const resp = await fetch('https://graph.microsoft.com/v1.0/education/me/assignments?$top=20&$orderby=dueDateTime desc', {
+      headers: { Authorization: 'Bearer ' + tokenResponse.accessToken }
+    });
+
+    if (!resp.ok) throw new Error('Graph API error: ' + resp.status);
+    const data = await resp.json();
+    const assignments = data.value || [];
+
+    if (!assignments.length) {
+      content.innerHTML = '<div style="font-size:12px;color:var(--gray-400);text-align:center;padding:8px;">No assignments found in Teams.</div>';
+      return;
+    }
+
+    content.innerHTML = assignments.map(function(a) {
+      const due = a.dueDateTime ? new Date(a.dueDateTime).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
+      const title = a.displayName || 'Untitled';
+      const subject = a.classId ? '' : '';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:white;margin-bottom:6px;border:1px solid #DBEAFE;">' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + title + '</div>' +
+          '<div style="font-size:11px;color:var(--gray-400);">Due: ' + due + '</div>' +
+        '</div>' +
+        '<button data-title="' + title.replace(/"/g,'') + '" data-due="' + (a.dueDateTime||'') + '" data-desc="' + ((a.instructions?.content||'').replace(/"/g,'').substring(0,200)) + '" onclick="importTeamsAssignment(this.dataset.title, this.dataset.due, this.dataset.desc)" style="padding:5px 12px;border-radius:20px;background:#0078D4;color:white;border:none;font-size:11px;font-weight:700;cursor:pointer;">Import</button>' +
+      '</div>';
+    }).join('');
+
+  } catch(e) {
+    content.innerHTML = '<div style="font-size:12px;color:#EF4444;text-align:center;padding:8px;">Could not load assignments: ' + (e.message||'Unknown error') + '</div>';
+  }
+}
+
+function importTeamsAssignment(title, dueDateTime, description) {
+  // Pre-fill the import confirmation card
+  document.getElementById('importTitle').value = title || '';
+  document.getElementById('importDue').value = dueDateTime ? new Date(dueDateTime).toISOString().split('T')[0] : '';
+  document.getElementById('importDesc').value = description || '';
+  document.getElementById('importSubject').value = '';
+  document.getElementById('importConfirmCard').style.display = 'block';
+
+  // Show child/class pickers based on role
+  const childWrap = document.getElementById('importChildSelectWrap');
+  const classWrap = document.getElementById('importClassWrap');
+  if (childWrap && currentProfile?.role === 'parent') childWrap.style.display = 'block';
+  if (classWrap && currentProfile?.role === 'teacher') classWrap.style.display = 'block';
+
+  showToast('✅ Assignment imported — check details below');
+  document.getElementById('importConfirmCard').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ── Import Assignment functions ──────────────────────────────────────────────
