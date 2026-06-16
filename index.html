@@ -5472,8 +5472,16 @@ async function refreshCurrentView() {
     if(currentProfile.role === 'student') {
       await loadStudentAssignments(currentProfile.age_group);
     } else if(currentProfile.role === 'parent') {
+      // Re-fetch children in case a new child linked since last load
+      if(currentFamily) {
+        const {data:freshChildren} = await dbQuery(db.from('children').select('*').eq('family_id', currentFamily.id), 8000, []);
+        currentChildren = freshChildren || [];
+        renderChildTabs();
+        if(currentChildren.length && !selectedChildId) selectedChildId = currentChildren[0].id;
+      }
       if(selectedChildId) await loadChildStats(selectedChildId);
       await loadApprovalQueues();
+      await loadParentRedemptions();
     } else if(currentProfile.role === 'teacher') {
       if(selectedClassId) await loadTeacherClassAssignments(selectedClassId);
       await loadApprovalQueues();
