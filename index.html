@@ -633,10 +633,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
     <!-- HS MODE -->
     <div id="hs-mode" style="display:none;">
-      <div class="hs-header">
-        <span class="student-avatar" id="hsAvatar">🎓</span>
-        <div class="hs-name" id="hsName">Hey there! 👋</div>
-        <div style="font-size:13px;opacity:0.85;margin-bottom:14px;color:var(--hs-header-text,white);">Keep up the great work</div>
+      <div class="hs-header" style="position:relative;">
+        <!-- Avatar — top right, tappable to change -->
+        <div id="hsAvatarWrap" onclick="openDrawerScreen('change-avatar')"
+          oncontextmenu="openDrawerScreen('change-avatar');return false;"
+          title="Change avatar"
+          style="position:absolute;top:0;right:0;cursor:pointer;z-index:10;">
+          <div style="position:relative;width:64px;height:64px;">
+            <div id="hsAvatar" style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.2);">🎓</div>
+            <!-- Edit pencil overlay -->
+            <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid rgba(255,255,255,0.3);">✏️</div>
+          </div>
+        </div>
+        <!-- Name + subtitle -->
+        <div style="padding-right:72px;">
+          <div class="hs-name" id="hsName">Hey there! 👋</div>
+          <div style="font-size:13px;opacity:0.85;margin-bottom:14px;color:var(--hs-header-text,white);">Keep up the great work</div>
+        </div>
+        <!-- XP section -->
         <div class="xp-section">
           <div class="xp-ring-wrap">
             <svg width="64" height="64" viewBox="0 0 64 64">
@@ -2099,7 +2113,7 @@ function updateAvatarDisplay(age, emoji, photoDataURL) {
         const img = document.createElement('img');
         img.src = photoDataURL;
         img.style.cssText = id==='hsAvatar'
-          ? 'width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.3);'
+          ? 'width:100%;height:100%;border-radius:50%;object-fit:cover;'
           : 'width:56px;height:56px;border-radius:50%;object-fit:cover;';
         el.appendChild(img);
       }
@@ -2253,10 +2267,11 @@ async function loadStudentApp() {
         hsAvatarEl.innerHTML='';
         const img = document.createElement('img');
         img.src = currentProfile.avatar_photo;
-        img.style.cssText='width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.3);';
+        img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
         hsAvatarEl.appendChild(img);
       } else {
         hsAvatarEl.innerHTML='';
+        hsAvatarEl.style.fontSize='40px';
         hsAvatarEl.textContent = avatar;
       }
     }
