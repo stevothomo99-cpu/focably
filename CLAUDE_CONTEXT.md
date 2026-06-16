@@ -398,6 +398,114 @@ Then build in this order:
 
 ---
 
+
+---
+
+## Post-MVP Feature Roadmap
+
+### 🧠 High Priority — High Impact
+
+**Brain Dump Mode** ⭐ TOP PRIORITY
+- Student voice-records or free-types everything on their mind
+- Claude API organises it into structured tasks automatically
+- Voice or text → AI parses → tasks appear in their list
+- Most ADHD-native feature on the roadmap — unique differentiator
+- Leverages existing Claude API integration
+
+**Streak Freeze**
+- Spend XP to protect a streak (Duolingo mechanic)
+- ADHD users are highly streak-motivated — losing one is devastating
+- Simple XP deduction + streak_freeze_count on profiles table
+
+**Daily Digest Push Notification**
+- Morning summary: tasks due this week, trust score movement, XP earned
+- Uses existing push notification infrastructure (VAPID/send-push Edge Function)
+- Configurable time in Settings
+
+**Overdue Task Escalation**
+- Auto-notifies parent when task is 24hrs overdue
+- Edge Function cron job checking due dates
+- Parent gets push + optional email
+
+**Parent Weekly Email Summary**
+- Tasks completed, trust score movement, XP earned, streaks
+- Sent every Sunday evening
+- Resend or SendGrid integration (~$0/month at this scale)
+
+### 🎯 Differentiating Features
+
+**Assignment Templates**
+- Pre-filled AI step structures for common types: Essay, Lab Report, Presentation, Case Study
+- Student picks template → AI pre-populates steps → they customise
+- Reduces friction for common assignment types
+
+**Mood Check-in**
+- "How are you feeling today?" on app open (optional, dismissable)
+- Affects XP multiplier for the day
+- Flags to parent if consistently low (3+ days)
+- ADHD-aware — acknowledges emotional regulation is part of the challenge
+
+**Celebration Moments**
+- Confetti + sound + animation on task completion
+- Dopamine hit — critical for ADHD engagement
+- Configurable in Settings (some users find it distracting)
+
+**Study Music Integration**
+- Built-in lo-fi playlist / focus music
+- YouTube embed or Spotify Web Playback SDK
+- ADHD users widely report music helps focus
+
+### 👥 Social / Community Features
+
+**Anonymous Class Leaderboard**
+- XP leaderboard within a class (anonymous usernames)
+- Friendly competition — opt-in per teacher
+- Teacher controls visibility
+
+**Study Buddy**
+- Pair two students working on same assignment
+- See each other's progress (steps completed)
+- Encouragement notifications
+
+**Teacher Shoutouts**
+- Teacher sends a "Great work!" badge to a student
+- Appears in student's notification bell + XP bonus
+- Simple, high-value teacher engagement feature
+
+### 🚀 Platform Expansion
+
+**Solo App (Uni/Older Teen) — Separate Product**
+- Same Supabase/Claude/Stripe infrastructure
+- No parent-teacher loop — pure personal productivity
+- Microsoft Teams OAuth (student connects own school account)
+- Canvas LMS integration
+- Calendar view with study block planner
+- Target: 18-25 ADHD students at university
+- Natural cross-sell from Focably family product
+- Same ADHD marketing communities
+- Marginal infrastructure cost (~$0 additional fixed)
+- Working names explored: Meridian, Chisel, Briefd, Clairo
+- Business case: same CAC, same infrastructure, second revenue stream
+
+**In-App Support Agent**
+- Claude-powered chat widget in hamburger menu
+- Context-aware — knows user's profile, role, subscription
+- Handles: login issues, billing questions, how-to walkthroughs, bug reports
+- Logs unresolved issues to Supabase support_tickets table
+- Escalates to Steve only when genuinely needed
+- Cost: ~$0.01-0.03 per conversation — essentially free at this scale
+- Competitive advantage in ADHD market — instant, patient, never makes user feel stupid
+
+**Microsoft Teams OAuth (Student-initiated)**
+- Student taps "Connect Microsoft Teams" in Focably
+- Standard OAuth popup — signs in with school account
+- Requests EduAssignments.Read scope only
+- Pulls assignments directly — no school IT involvement
+- Dev mode: up to 25 users before Microsoft verification required
+- Requires Azure AD app registration (free, ~10 mins)
+
+---
+
 ## Session Log
 
 > _Most recent at top._
