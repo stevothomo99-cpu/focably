@@ -41,7 +41,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 #screen-loading{display:flex;align-items:center;justify-content:center;background:var(--indigo);}
 #screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;}
 #screen-onboarding{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;text-align:center;flex-direction:column;}
-#screen-app{display:none;}
+#screen-app{display:none;background:var(--hs-body-bg,var(--gray-50));transition:background 0.3s;}
 #screen-settings{overflow-y:auto;max-height:calc(100vh - 60px);}
 
 /* LOADING */
@@ -110,24 +110,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
 /* LAYOUT */
 .scroll-content{padding:14px 14px 90px;max-width:440px;margin:0 auto;}
-.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);}
-.card-title{font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #E5E7EB;display:flex;padding:8px 0 14px;box-shadow:0 -4px 16px rgba(30,27,75,0.07);z-index:99;}
+.card{background:var(--hs-card-bg,white);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(30,27,75,0.07);color:var(--hs-card-text,var(--indigo));transition:background 0.3s,color 0.3s;}
+.card-title{font-size:12px;font-weight:700;color:var(--hs-subtext,var(--gray-500));text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--hs-card-bg,white);border-top:1px solid rgba(0,0,0,0.1);display:flex;padding:8px 0 14px;box-shadow:0 -4px 16px rgba(0,0,0,0.15);z-index:99;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;}
 .nav-icon{font-size:20px;}
-.nav-label{font-size:10px;font-weight:600;color:var(--gray-500);}
-.nav-item.active .nav-label{color:var(--violet);}
-.nav-item.active .nav-icon{filter:drop-shadow(0 0 2px rgba(124,58,237,0.4));}
+.nav-label{font-size:10px;font-weight:600;color:var(--hs-subtext,var(--gray-500));transition:color 0.3s;}
+.nav-item.active .nav-label{color:var(--hs-primary,var(--violet));}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 3px var(--hs-primary,rgba(124,58,237,0.6)));}
 .toast{position:fixed;top:66px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--indigo);color:white;padding:10px 22px;border-radius:30px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(30,27,75,0.35);opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* TRUST BADGE */
 .trust-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;}
-.trust-verify{background:#FFF1F2;color:var(--rose);}
-.trust-check{background:#FFF7ED;color:var(--amber);}
-.trust-trust{background:#ECFDF5;color:var(--mint);}
+.trust-verify{background:rgba(244,63,94,0.12);color:var(--rose);}
+.trust-check{background:rgba(245,158,11,0.12);color:var(--amber);}
+.trust-trust{background:rgba(16,185,129,0.12);color:var(--mint);}
 .trust-champion{background:var(--gray-100);color:var(--violet);}
-.trust-bar-wrap{background:var(--gray-100);border-radius:10px;height:8px;margin:8px 0 4px;}
+.trust-bar-wrap{background:rgba(128,128,128,0.15);border-radius:10px;height:8px;margin:8px 0 4px;}
 .trust-bar-fill{border-radius:10px;height:8px;transition:width 0.8s ease;}
 
 /* QUEST STYLES */
@@ -171,7 +171,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
 /* HS STYLES */
 .hs-header{background:var(--hs-header-grad,linear-gradient(135deg,var(--violet) 0%,var(--indigo) 100%));border-radius:20px;padding:20px;margin-bottom:12px;color:var(--hs-header-text,white);transition:background 0.4s;}
-.hs-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:2px;}
+.hs-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;margin-bottom:2px;color:var(--hs-header-text,white);}
 .xp-section{display:flex;align-items:center;gap:14px;}
 .xp-ring-wrap{position:relative;width:64px;height:64px;flex-shrink:0;}
 .xp-ring-wrap svg{transform:rotate(-90deg);}
@@ -182,19 +182,19 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .xp-bar-fill{background:linear-gradient(90deg,var(--hs-xp-fill,var(--amber)),var(--hs-primary-light,var(--amber-light)));border-radius:10px;height:8px;transition:width 1s ease,background 0.4s;}
 .hs-streak{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;font-size:12px;margin-top:10px;}
 .hs-task{border-radius:10px;margin-bottom:7px;overflow:hidden;}
-.hs-task-row{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--gray-50);border:1.5px solid transparent;transition:all 0.2s;cursor:pointer;}
+.hs-task-row{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;background:var(--hs-body-bg,var(--gray-50));border:1.5px solid transparent;transition:all 0.2s;cursor:pointer;}
 .hs-task-row:hover{border-color:var(--violet-light);}
-.hs-task.done .hs-task-row{background:#F0FDF4;border-color:var(--mint-light);}
-.hs-task.pending .hs-task-row{background:#FFF7ED;border-color:var(--amber-light);cursor:default;}
-.hs-task.rejected .hs-task-row{background:#FFF1F2;border-color:#FECDD3;cursor:default;}
+.hs-task.done .hs-task-row{background:var(--hs-task-done-bg,#F0FDF4);border-color:var(--hs-task-done-border,var(--mint-light));}
+.hs-task.pending .hs-task-row{background:rgba(245,158,11,0.1);border-color:var(--amber-light);cursor:default;}
+.hs-task.rejected .hs-task-row{background:rgba(244,63,94,0.1);border-color:rgba(244,63,94,0.3);cursor:default;}
 .hs-check{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--gray-200);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;background:white;font-size:11px;}
 .hs-task.done .hs-check{background:var(--mint);border-color:var(--mint);color:white;}
 .hs-task.pending .hs-check{background:var(--amber);border-color:var(--amber);color:white;}
 .hs-task.rejected .hs-check{background:var(--rose);border-color:var(--rose);color:white;}
 .hs-task-text{font-size:13px;font-weight:500;line-height:1.4;flex:1;}
-.hs-task.done .hs-task-text{text-decoration:line-through;color:var(--gray-500);}
+.hs-task.done .hs-task-text{text-decoration:line-through;color:var(--hs-subtext,var(--gray-500));}
 .hs-task-xp{font-size:11px;font-weight:700;color:var(--amber);white-space:nowrap;}
-.hs-proof-area{padding:10px 11px;background:#FFFBEB;border-top:1px solid var(--amber-light);display:none;}
+.hs-proof-area{padding:10px 11px;background:var(--hs-body-bg,#FFFBEB);border-top:1px solid var(--hs-accent2,var(--amber-light));display:none;}
 .hs-proof-area.visible{display:block;}
 .hs-rejection-area{padding:10px 11px;background:#FFF1F2;border-top:1px solid #FECDD3;display:none;}
 .hs-rejection-area.visible{display:block;font-size:12px;color:var(--rose);}
@@ -206,7 +206,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .child-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;}
 .child-tab.active{background:var(--violet);color:white;border-color:var(--violet);}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.stat-card{background:white;border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(30,27,75,0.07);}
+.stat-card{background:var(--hs-card-bg,white);border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(30,27,75,0.07);color:var(--hs-card-text,var(--indigo));transition:background 0.3s;}
 .stat-lbl{font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px;}
 .stat-val{font-family:'Nunito',sans-serif;font-size:28px;font-weight:900;line-height:1;}
 .stat-sub{font-size:11px;color:var(--gray-500);margin-top:3px;}
@@ -636,7 +636,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div class="hs-header">
         <span class="student-avatar" id="hsAvatar">🎓</span>
         <div class="hs-name" id="hsName">Hey there! 👋</div>
-        <div style="font-size:13px;opacity:0.75;margin-bottom:14px;">Keep up the great work</div>
+        <div style="font-size:13px;opacity:0.85;margin-bottom:14px;color:var(--hs-header-text,white);">Keep up the great work</div>
         <div class="xp-section">
           <div class="xp-ring-wrap">
             <svg width="64" height="64" viewBox="0 0 64 64">
@@ -646,9 +646,9 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
             <div class="xp-level-num" id="xpLevel">1</div>
           </div>
           <div>
-            <div style="font-size:11px;opacity:0.7;margin-bottom:3px;">Level <span id="xpLevelLabel">1</span> — Focus Cadet</div>
+            <div style="font-size:11px;opacity:0.85;margin-bottom:3px;color:var(--hs-header-text,white);">Level <span id="xpLevelLabel">1</span> — Focus Cadet</div>
             <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
-            <div style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;" id="xpPts">⚡ 0 XP</div>
+            <div style="font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:var(--hs-primary-light,var(--amber));" id="xpPts">⚡ 0 XP</div>
           </div>
         </div>
         <div class="hs-streak">🔥 <span id="hsStreakCount">0</span>-day streak</div>
@@ -659,10 +659,10 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div class="card-title">🛡️ Trust Score</div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div class="trust-badge trust-verify" id="hsTrustBadge">🔴 Verify Mode</div>
-          <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--indigo);" id="hsTrustScoreNum">0</div>
+          <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--hs-card-text,var(--indigo));" id="hsTrustScoreNum">0</div>
         </div>
         <div class="trust-bar-wrap"><div class="trust-bar-fill" id="hsTrustBarFill" style="width:0%;background:var(--rose);"></div></div>
-        <div style="font-size:11px;color:var(--gray-500);" id="hsTrustScoreLabel">Complete verified tasks to build your trust score</div>
+        <div style="font-size:11px;color:var(--hs-subtext,var(--gray-500));" id="hsTrustScoreLabel">Complete verified tasks to build your trust score</div>
       </div>
 
       <div id="hsClassTilesContainer"></div>
@@ -1351,15 +1351,15 @@ const HS_THEMES = {
     name:'Midnight', emoji:'🌙', free:true, dark:true,
     desc:'Pure dark mode',
     vars:{
-      '--hs-primary':'#A78BFA','--hs-primary-dark':'#7C3AED','--hs-primary-light':'#DDD6FE',
-      '--hs-accent':'#34D399','--hs-accent2':'#FBBF24',
-      '--hs-header-grad':'linear-gradient(135deg,#0F0C29 0%,#1E1B4B 100%)',
-      '--hs-header-text':'#EDE9FE',
-      '--hs-body-bg':'#0D0B1E','--hs-card-bg':'#1A1730','--hs-card-text':'#EDE9FE',
-      '--hs-subtext':'#A78BFA',
-      '--hs-task-done-bg':'#052E1C','--hs-task-done-border':'#34D399',
-      '--hs-xp-fill':'#A78BFA','--hs-trust-bar':'#34D399',
-      '--hs-badge-bg':'rgba(167,139,250,0.2)','--hs-badge-text':'#DDD6FE',
+      '--hs-primary':'#C084FC','--hs-primary-dark':'#A855F7','--hs-primary-light':'#E9D5FF',
+      '--hs-accent':'#22D3EE','--hs-accent2':'#F472B6',
+      '--hs-header-grad':'linear-gradient(135deg,#000000 0%,#09090F 60%,#130D2E 100%)',
+      '--hs-header-text':'#C084FC',
+      '--hs-body-bg':'#06040F','--hs-card-bg':'#120E24','--hs-card-text':'#F3E8FF',
+      '--hs-subtext':'#C084FC',
+      '--hs-task-done-bg':'#0A1628','--hs-task-done-border':'#22D3EE',
+      '--hs-xp-fill':'#C084FC','--hs-trust-bar':'#22D3EE',
+      '--hs-badge-bg':'rgba(192,132,252,0.2)','--hs-badge-text':'#E9D5FF',
     }
   },
 
@@ -1507,12 +1507,7 @@ function applyHSTheme(key, save) {
     appEl.style.background = 'var(--hs-body-bg)';
     appEl.style.color = t.dark ? 'var(--hs-card-text)' : '';
   }
-  // Apply card text colour to all cards for dark themes
-  document.querySelectorAll('#view-student .card, #screen-settings .card').forEach(el => {
-    el.style.background = t.dark ? 'var(--hs-card-bg)' : '';
-    el.style.color = t.dark ? 'var(--hs-card-text)' : '';
-    el.style.borderColor = t.dark ? 'rgba(255,255,255,0.08)' : '';
-  });
+  // CSS vars handle card theming automatically — no JS override needed
   // Update profile immediately so re-renders show correct active state
   if(currentProfile) currentProfile.theme = key;
   // Persist to Supabase if requested
