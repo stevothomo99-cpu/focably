@@ -277,6 +277,11 @@ ALTER TABLE profiles ADD CONSTRAINT profiles_school_role_check
 ALTER TABLE classes ADD COLUMN IF NOT EXISTS direct_student_enrol boolean DEFAULT false;
 ```
 
+### SQL needed before testing photo avatar
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_photo text;
+```
+
 ### Known Bugs / Issues
 - (none currently open)
 
@@ -410,6 +415,48 @@ Then build in this order:
   - Google Play: 15% flat vs Apple's 30% year 1
 - **Web funnel strategy:** Drive parents to focablyed.com → Stripe → then download app
 - **Session 4 build plan locked** (see Session 4 Build Plan section)
+
+### 16 Jun 2026 (Session 6) — HS Theme System, Photo Avatar, CSS var refactor, Bug fixes
+
+**HS Theme System — fully built:**
+- 10 evocative themes: ✨ Vanilla, 🌙 Midnight (free); ⚡ Ancient Lightning, 🌸 Soft Hour, 🤖 Neural, ⚽ Match Day, 🎮 Respawn, 🌿 Off Grid, 🎨 Studio, 🔥 Grunge (Pro)
+- `HS_THEMES` object with full CSS var sets per theme (header grad, body bg, card bg, card text, subtext, accent, XP fill, trust bar, badge colours)
+- `applyHSTheme(key, save)` — injects CSS vars into `:root`, updates `currentProfile.theme` synchronously, persists to Supabase
+- Theme picker as **own drawer page** — 🎨 My Theme in student hamburger menu (HS only)
+- Tile previews show actual header gradient + card background so themes are instantly distinguishable
+- Pro gate: free users see 2 tiles + locked grid + Upgrade button; Pro users see all 10
+- First-login prompt: after HS onboarding completes, theme drawer opens automatically (400ms delay)
+- Active tile updates on first tap (sync fix — was async before)
+
+**CSS var refactor — comprehensive:**
+- `.card`, `.stat-card` → `var(--hs-card-bg, white)` + `var(--hs-card-text, indigo)`
+- `.card-title`, `.nav-label`, task text → `var(--hs-subtext)`
+- `.bottom-nav` → `var(--hs-card-bg)` background
+- `.hs-task-row` → `var(--hs-body-bg)` background
+- `.hs-task.done/pending/rejected` → rgba backgrounds (work on dark themes)
+- Trust badges → rgba backgrounds
+- Nav active state → `var(--hs-primary)`
+- XP ring/bar → `var(--hs-xp-fill)` + `var(--hs-primary-light)`
+- `screen-app` → `var(--hs-body-bg)` background
+- All HS text elements use CSS vars — no JS card override needed
+
+**Photo Avatar:**
+- Change Avatar drawer now has two tabs: 🎭 Emoji and 📸 Photo
+- Photo tab: tap to open camera (selfie) or gallery (`capture="user"` on file input)
+- Client-side compress + crop to 200×200 circle via Canvas (~15-30KB output)
+- Saves as base64 to new `profiles.avatar_photo` column (run SQL above)
+- Displays in HS header, Settings card, updates live on save
+- Switching back to emoji clears photo and vice versa
+
+**Bug fixes:**
+- `loadProfile` triple-fire fixed — `profileLoadInProgress` flag prevents onAuthStateChange racing with window.load
+- Settings screen scroll fixed — `overflow-y:auto; max-height:calc(100vh - 60px)`
+- Theme card insertion made bulletproof — static `<div id="hsThemeCardPlaceholder">` in HTML
+
+**Next session TODO:**
+- Subscription Status screen (plan details, renewal date, Stripe customer portal manage/cancel link)
+- License gate on Create School (validate FOCABLY-XXXX-XXXX against licenses table)
+- Consider: stripe live mode → test mode toggle for dev vs prod
 
 ### 16 Jun 2026 (Session 5) — Landing rebrand, Stripe payments, AI cap
 
