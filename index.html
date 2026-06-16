@@ -966,6 +966,11 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:4px;">School Name</div>
         <input class="form-input" type="text" id="newSchoolName" placeholder="e.g. Sunshine Coast Grammar">
       </div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:4px;">License Key 🔑</div>
+        <input class="form-input" type="text" id="newSchoolLicenseKey" placeholder="FOCABLY-XXXX-XXXX" style="font-family:monospace;font-size:15px;letter-spacing:1px;" autocapitalize="characters">
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Contact <strong>schools@focablyed.com</strong> to obtain a license key.</div>
+      </div>
       <button class="publish-btn" onclick="createSchool()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">Create School ✓</button>
     </div>
   </div>
@@ -4484,18 +4489,54 @@ function openSchoolSetup() {
 async function createSchool() {
   const name = document.getElementById('newSchoolName').value.trim();
   if(!name) { showToast('Enter your school name'); return; }
-  // Generate a simple 6-char invite code
+
+  // ── License gate ──
+  const licenseKey = (document.getElementById('newSchoolLicenseKey')?.value || '').trim().toUpperCase();
+  if(!licenseKey) { showToast('❌ A license key is required to create a school'); return; }
+
+  // Validate key format FOCABLY-XXXX-XXXX
+  if(!/^FOCABLY-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(licenseKey)) {
+    showToast('❌ Invalid key format — should be FOCABLY-XXXX-XXXX');
+    return;
+  }
+
+  // Check license exists, is unused, and not expired
+  const {data:license, error:licError} = await dbQuery(
+    db.from('licenses').select('*').eq('key', licenseKey).maybeSingle(),
+    8000, null
+  );
+  if(licError || !license) {
+    showToast('❌ License key not found — contact schools@focablyed.com');
+    return;
+  }
+  if(license.school_id) {
+    showToast('❌ This license key is already in use');
+    return;
+  }
+  if(license.expires_at && new Date(license.expires_at) < new Date()) {
+    showToast('❌ This license key has expired — contact schools@focablyed.com');
+    return;
+  }
+
+  // ── Create the school ──
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
-  const expires = new Date(Date.now() + 30*24*60*60*1000).toISOString(); // 30 days
-  // Create the school
+  const expires = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+
   const {data:school, error} = await dbQuery(
-    db.from('schools').insert({name, invite_code:code, invite_code_expires_at:expires}).select().maybeSingle(),
+    db.from('schools').insert({name, invite_code:code, invite_code_expires_at:expires, subscription_status:'active'}).select().maybeSingle(),
     8000, null
   );
   if(error || !school) { showToast('❌ Error creating school: '+(error?.message||'unknown')); return; }
-  // Link this teacher as admin
+
+  // ── Activate license ──
+  await dbQuery(
+    db.from('licenses').update({school_id: school.id, activated_at: new Date().toISOString()}).eq('key', licenseKey),
+    8000, null
+  );
+
+  // ── Link this teacher as admin ──
   const {error:profErr} = await dbQuery(
     db.from('profiles').update({school_id:school.id, school_role:'admin'}).eq('id',currentUser.id),
     8000, null
@@ -4504,6 +4545,7 @@ async function createSchool() {
   currentProfile.school_id = school.id;
   currentProfile.school_role = 'admin';
   currentSchool = school;
+
   // Update badge
   const badge = document.getElementById('teacherSchoolBadge');
   if(badge) { badge.textContent = '🏫 '+school.name+' (Admin)'; badge.style.display='block'; }
