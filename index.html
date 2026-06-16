@@ -3115,8 +3115,7 @@ async function linkToFamily() {
     profile_id: currentUser.id,
     family_id: family.id,
     name: currentProfile.full_name,
-    age_group: currentProfile.age_group,
-    theme: currentProfile.theme
+    age_group: currentProfile.age_group
   }).select().maybeSingle();
   console.log('linkToFamily: insert result=', newChild, 'error=', error?.message);
   if(error){showToast('❌ Could not link account: ' + error.message);return;}
