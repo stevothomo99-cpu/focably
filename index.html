@@ -50,6 +50,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 .loading-dots{display:flex;gap:8px;margin-top:20px;justify-content:center;}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--violet-light);animation:bounce 1.2s infinite;}
 .dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.3);}}
 @keyframes bounce{0%,80%,100%{transform:scale(0.8);opacity:0.5;}40%{transform:scale(1.2);opacity:1;}}
 
 /* AUTH */
@@ -698,6 +699,20 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       </div>
     </div>
 
+    <div id="parent-redemption-card" style="display:none;background:linear-gradient(135deg,#FFF7ED,#FEF3C7);border:2px solid #F59E0B;border-radius:16px;padding:14px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="position:relative;display:inline-block;">
+            🎁
+            <span id="redemptionPulseDot" style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:#EF4444;border-radius:50%;animation:pulse 1.5s infinite;"></span>
+          </span>
+          <div style="font-size:15px;font-weight:800;color:#92400E;">Reward Requests</div>
+        </div>
+        <button onclick="openDrawerScreen('redemption-history')" style="font-size:11px;color:#92400E;background:rgba(146,64,14,0.1);border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-weight:600;">History →</button>
+      </div>
+      <div id="parent-redemption-queue"></div>
+    </div>
+
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-lbl">Tasks This Week</div><div class="stat-val" id="pTasksDone" style="color:var(--mint)">—</div><div class="stat-sub" id="pTasksSub">loading...</div></div>
       <div class="stat-card"><div class="stat-lbl">Streak</div><div class="stat-val" id="pStreak" style="color:var(--amber)">—</div><div class="stat-sub">days in a row</div></div>
@@ -716,11 +731,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="parentSubjectProgress"><div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">Select a child above</div></div>
     </div>
 
-    <div id="parent-redemption-card" class="card" style="display:none;">
-      <div class="card-title">🎁 Reward Requests</div>
-      <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">Your child wants to redeem a reward!</p>
-      <div id="parent-redemption-queue"></div>
-    </div>
+
 
     <div id="parent-approval-card" class="card" style="display:none;">
       <div class="card-title">✅ Step Approvals</div>
@@ -889,6 +900,15 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Manage Children</div>
     </div>
     <div id="manageChildrenList"></div>
+  </div>
+
+  <!-- REDEMPTION HISTORY SCREEN -->
+  <div id="screen-redemption-history" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Reward History</div>
+    </div>
+    <div id="redemptionHistoryList"><div style="text-align:center;padding:32px;color:var(--gray-400);font-size:14px;">Loading...</div></div>
   </div>
 
   <!-- JOIN CLASS SCREEN -->
@@ -3540,6 +3560,56 @@ async function respondToRedemption(redemptionId, action, btn) {
 }
 
 // Load redemption requests for parent main view
+async function openRedemptionHistory() {
+  openDrawerScreen('redemption-history');
+  await loadRedemptionHistory();
+}
+
+async function loadRedemptionHistory() {
+  const list = document.getElementById('redemptionHistoryList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400);font-size:14px;">Loading...</div>';
+
+  let query;
+  if (currentProfile?.role === 'parent') {
+    const childIds = currentChildren.map(c => c.id);
+    if (!childIds.length) { list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400);font-size:14px;">No children linked yet.</div>'; return; }
+    query = db.from('redemptions').select('*, rewards(title,emoji,star_cost), children(name)').in('child_id', childIds).order('requested_at', {ascending:false}).limit(50);
+  } else {
+    // Student
+    if (!currentChildRecord?.id) { list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400);font-size:14px;">No history yet.</div>'; return; }
+    query = db.from('redemptions').select('*, rewards(title,emoji,star_cost)').eq('child_id', currentChildRecord.id).order('requested_at', {ascending:false}).limit(50);
+  }
+
+  const {data:redemptions} = await dbQuery(query, 8000, []);
+  if (!redemptions || !redemptions.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400);font-size:14px;">No reward history yet.</div>';
+    return;
+  }
+
+  const statusStyle = {
+    pending:  'background:#FEF3C7;color:#92400E;',
+    approved: 'background:#D1FAE5;color:#065F46;',
+    rejected: 'background:#FEE2E2;color:#991B1B;'
+  };
+  const statusLabel = { pending:'⏳ Pending', approved:'✅ Approved', rejected:'❌ Rejected' };
+
+  list.innerHTML = redemptions.map(function(r) {
+    const date = new Date(r.requested_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+    const childLine = currentProfile?.role === 'parent' ? '<div style="font-size:11px;color:var(--gray-500);">' + (r.children?.name||'Child') + '</div>' : '';
+    const st = r.status || 'pending';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--gray-50);margin-bottom:8px;">' +
+      '<div style="font-size:24px;">' + (r.rewards?.emoji||'🎁') + '</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:14px;font-weight:700;color:var(--indigo);">' + (r.rewards?.title||'Reward') + '</div>' +
+        childLine +
+        '<div style="font-size:11px;color:var(--gray-400);margin-top:2px;">⭐ ' + (r.rewards?.star_cost||0) + ' stars · ' + date + '</div>' +
+      '</div>' +
+      '<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;' + (statusStyle[st]||statusStyle.pending) + '">' + (statusLabel[st]||st) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
 async function loadParentRedemptions() {
   const card = document.getElementById('parent-redemption-card');
   const queue = document.getElementById('parent-redemption-queue');
@@ -5397,6 +5467,7 @@ function renderDrawerItems() {
       { icon:'👶', label:'Manage Children', action:`openManageChildren()`, disabled: false },
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
       { icon:'🎁', label:'Manage Rewards', action:`openDrawerScreen('manage-rewards')`, disabled: false },
+      { icon:'📜', label:'Reward History', action:`openDrawerScreen('redemption-history')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'📬', label:'Family Invite Code', action:`openDrawerScreen('family-invite')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
@@ -5409,6 +5480,7 @@ function renderDrawerItems() {
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
+      { icon:'📜', label:'Reward History', action:`openDrawerScreen('redemption-history')`, disabled: false },
     ];
     // Add My Theme for HS students
     if(currentProfile?.age_group === 'highschool') {
@@ -5432,7 +5504,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -5451,6 +5523,10 @@ function openDrawerScreen(screen) {
   if(target) target.style.display = 'block';
 
   // Populate class dropdown for new assignment, default to current class
+  if(screen === 'redemption-history') {
+    loadRedemptionHistory();
+  }
+
   if(screen === 'new-assignment') {
     const dd = document.getElementById('assignmentClass');
     if(dd) {
