@@ -569,6 +569,7 @@ Then build in this order:
 - Manual: Add ABN to privacy policy
 - ✅ Manual: privacy@focablyed.com set up as alias on steve@focablyed.com
 - Manual: Confirm Supabase Pro + Sydney (ap-southeast-2) region
+- Manual: Rotate Anthropic API key — current key was pasted in chat (exposed). Regenerate at console.anthropic.com, update directly in index.html on GitHub (line ~1461, the ANTHROPIC_KEY constant)
 - Manual: Add focablyed.com.au to Vercel
 
 
