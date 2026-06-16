@@ -5025,7 +5025,7 @@ async function selectClass(classId) {
 async function loadTeacherClassAssignments(classId) {
   // Load assignments for this class with task completion data
   const {data:assignments} = await dbQuery(
-    db.from('assignments').select('*, tasks(*), children(name), parent_created').eq('class_id', classId).eq('status','active').order('due_date',{ascending:true}),
+    db.from('assignments').select('*, tasks(*), children(name), parent_created').eq('class_id', classId).or('status.eq.active,status.is.null').order('due_date',{ascending:true}),
     8000, []
   );
 
@@ -5295,7 +5295,7 @@ async function publishAssignment() {
   const cls = teacherClasses.find(c=>c.id===classId);
   const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classId);
   if(!members?.length){showToast('No students in class yet');return;}
-  const assignments=members.map(m=>({created_by:currentUser.id,class_id:classId,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:cls?.subject||''}));
+  const assignments=members.map(m=>({created_by:currentUser.id,class_id:classId,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:cls?.subject||'',status:'active'}));
   // Upload file first if one is attached
   let fileUrl = null;
   if(pendingAssignmentFile) {
