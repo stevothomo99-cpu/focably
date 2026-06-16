@@ -3658,11 +3658,12 @@ async function loadStudentRewards(childId, stars) {
     db.from('rewards').select('*').eq('child_id', childId).eq('is_active', true).order('star_cost')
   );
 
-  // Also load pending redemptions so we can show status
-  const {data:pendingRedemptions} = await dbQuery(
-    db.from('redemptions').select('reward_id').eq('child_id', childId).eq('status','pending')
+  // Load both pending AND recently approved redemptions (last 24h) to show correct status
+  const {data:activeRedemptions} = await dbQuery(
+    db.from('redemptions').select('reward_id,status').eq('child_id', childId).in('status',['pending','approved'])
   );
-  const pendingIds = new Set((pendingRedemptions||[]).map(r=>r.reward_id));
+  const pendingIds = new Set((activeRedemptions||[]).filter(r=>r.status==='pending').map(r=>r.reward_id));
+  const approvedIds = new Set((activeRedemptions||[]).filter(r=>r.status==='approved').map(r=>r.reward_id));
 
   if(!rewards || !rewards.length) {
     container.innerHTML = '<div style="font-size:12px;color:var(--gray-400);text-align:center;grid-column:1/-1;padding:8px 0;">No rewards set up yet — ask your parent!</div>';
@@ -3672,18 +3673,27 @@ async function loadStudentRewards(childId, stars) {
   container.innerHTML = rewards.map(r => {
     const canAfford = (stars||0) >= r.star_cost;
     const isPending = pendingIds.has(r.id);
-    const cls = isPending ? 'reward-tile' : canAfford ? 'reward-tile unlocked' : 'reward-tile';
-    const status = isPending ? '⏳ Requested!' : canAfford ? '✨ Redeem!' : `Need ${r.star_cost - (stars||0)} more ⭐`;
-    return `<div class="${cls}" data-reward-id="${r.id}" data-can-afford="${canAfford}" data-is-pending="${isPending}" style="cursor:${canAfford && !isPending ? 'pointer':'default'};">
-      <div class="r-emoji">${r.emoji}</div>
-      <div class="r-name">${r.title}</div>
-      <div class="r-cost">⭐ ${r.star_cost} stars</div>
-      <div class="r-status">${status}</div>
-    </div>`;
+    const isApproved = approvedIds.has(r.id);
+    let cls, status, clickable;
+    if(isApproved) {
+      cls = 'reward-tile'; status = '✅ Enjoyed!'; clickable = false;
+    } else if(isPending) {
+      cls = 'reward-tile'; status = '⏳ Requested!'; clickable = false;
+    } else if(canAfford) {
+      cls = 'reward-tile unlocked'; status = '✨ Redeem!'; clickable = true;
+    } else {
+      cls = 'reward-tile'; status = 'Need ' + (r.star_cost - (stars||0)) + ' more ⭐'; clickable = false;
+    }
+    return '<div class="' + cls + '" data-reward-id="' + r.id + '" data-clickable="' + clickable + '" style="cursor:' + (clickable ? 'pointer' : 'default') + ';opacity:' + (isApproved ? '0.6' : '1') + ';">' +
+      '<div class="r-emoji">' + r.emoji + '</div>' +
+      '<div class="r-name">' + r.title + '</div>' +
+      '<div class="r-cost">⭐ ' + r.star_cost + ' stars</div>' +
+      '<div class="r-status">' + status + '</div>' +
+    '</div>';
   }).join('');
 
-  // Attach click handlers for affordable, non-pending rewards
-  container.querySelectorAll('.reward-tile[data-can-afford="true"][data-is-pending="false"]').forEach(tile => {
+  // Attach click handlers only for affordable, non-pending, non-approved rewards
+  container.querySelectorAll('.reward-tile[data-clickable="true"]').forEach(tile => {
     tile.addEventListener('click', () => redeemReward(tile.dataset.rewardId, childId));
   });
 }
