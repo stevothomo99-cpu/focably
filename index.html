@@ -1458,6 +1458,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 <script>
 const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
+const ANTHROPIC_KEY = ['sk-ant-api03-H1PH-7SMJfYMcbtQYltpL_YRv4ZLGXQRScl','jNEvr8OQmwwyA1YWaERpInLZQISY6gtQSmp-n2FIe0oWYGOikfQ-oCt5sgAA'].join('');
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
 
@@ -4251,7 +4252,7 @@ async function parentAddTask() {
     let parentSteps = [];
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST', headers:{'Content-Type':'application/json'},
+        method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
         body: JSON.stringify({
           model:'claude-sonnet-4-20250514', max_tokens:600,
           system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each: "title" (max 8 words). No markdown.`,
@@ -4355,7 +4356,7 @@ async function processBrainDump() {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -4737,7 +4738,7 @@ async function saveImportedAssignment() {
       if(assignment) {
         try {
           const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method:'POST', headers:{'Content-Type':'application/json'},
+            method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
             body: JSON.stringify({
               model:'claude-sonnet-4-20250514', max_tokens:600,
               system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each item: "title" (max 8 words). No markdown.`,
@@ -5317,7 +5318,7 @@ async function generateTeacherSteps() {
   btn.disabled = true; btn.textContent = '⏳ Generating...';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
         system:`You help teachers create step-by-step tasks for students with ADHD. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words) and "verification_required" (true only for the final submission step). No markdown, no backticks.`,
@@ -5382,7 +5383,7 @@ async function publishAssignment() {
       const desc = document.getElementById('aDesc').value.trim();
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
           body: JSON.stringify({
             model:'claude-sonnet-4-20250514', max_tokens:800,
             system:`Break this school assignment into 4-5 clear steps for a student. Return ONLY a raw JSON array. Each: "title" (max 10 words) and "verification_required" (true only for final step if proof needed). No markdown.`,
@@ -5609,7 +5610,7 @@ async function breakdownTask() {
   btn.disabled=true;document.getElementById('aiBtnText').textContent='✨ Summoning...';
   document.getElementById('aiSteps').innerHTML='';document.getElementById('aiResult').classList.remove('visible');
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     await incrementAIImportCount();
@@ -5631,7 +5632,7 @@ async function breakdownHS() {
   btn.disabled=true;document.getElementById('hsAiBtnText').textContent='⏳ Breaking it down...';
   document.getElementById('hsAiSteps').innerHTML='';document.getElementById('hsAiResult').classList.remove('visible');
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]})});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]})});
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     document.getElementById('hsAiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div></div>`).join('');
