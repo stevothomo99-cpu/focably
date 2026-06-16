@@ -1943,7 +1943,7 @@ async function confirmDeleteAccount() {
   }
 }
 
-function signOut() { await db.auth.signOut(); const n=document.getElementById('navUserName'); if(n) n.textContent=''; showToast('👋 Signed out'); }
+async function signOut() { await db.auth.signOut(); const n=document.getElementById('navUserName'); if(n) n.textContent=''; showToast('👋 Signed out'); }
 
 function setLoadingStatus(msg) {
   const el = document.getElementById('loadingStatus');
