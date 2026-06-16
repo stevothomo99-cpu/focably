@@ -638,7 +638,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div id="hsAvatarWrap" onclick="openDrawerScreen('change-avatar')"
           oncontextmenu="openDrawerScreen('change-avatar');return false;"
           title="Change avatar"
-          style="position:absolute;top:0;right:0;cursor:pointer;z-index:10;">
+          style="position:absolute;top:4px;right:4px;cursor:pointer;z-index:10;">
           <div style="position:relative;width:64px;height:64px;">
             <div id="hsAvatar" style="width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.2);">🎓</div>
             <!-- Edit pencil overlay -->
@@ -1351,6 +1351,7 @@ function isPro() {
 
 let currentUser = null, currentProfile = null, currentFamily = null, currentSchool = null;
 let profileLoadInProgress = false;
+let currentChildRecord = null; // set when student's child record is found
 let currentChildren = [], selectedChildId = null;
 let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
@@ -1604,9 +1605,10 @@ function renderHSThemePickerInto(container) {
     });
     html += `</div>
       <button onclick="showPaywall('upgrade','Unlock All Themes','Get 8 more theme skins + teacher connection + unlimited AI')" 
-        style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--violet),var(--violet-dark));color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;">
-        ⭐ Upgrade to Unlock
+        style="width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--violet),var(--violet-dark));color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:8px;">
+        🎨 Unlock All Themes + Create Your Own
       </button>
+      <p style="font-size:11px;color:var(--gray-500);text-align:center;margin:0;">Mix colours, pick your vibe — Pro only</p>
     </div>`;
   } else {
     // Pro user — show all themes
@@ -1940,6 +1942,21 @@ async function confirmDeleteAccount() {
     showScreen('auth');
   } catch(e) {
     showToast('❌ Could not delete account: ' + e.message + '\n\nEmail privacy@focablyed.com for manual deletion.');
+  }
+}
+
+async function confirmUnlinkFamily() {
+  const confirmed = confirm('Unlink from your family?\n\nYou will lose access to parent-assigned tasks and proof verification. You can re-link anytime with a new family invite code.');
+  if(!confirmed) return;
+  try {
+    if(!currentChildRecord) { showToast('No family link found'); return; }
+    await dbQuery(db.from('children').delete().eq('id', currentChildRecord.id), 5000, null);
+    currentChildRecord = null;
+    showToast('✅ Unlinked from family');
+    closeDrawer();
+    await loadStudentAssignments(currentProfile.age_group);
+  } catch(e) {
+    showToast('❌ Could not unlink: ' + e.message);
   }
 }
 
@@ -2296,6 +2313,7 @@ async function loadStudentAssignments(ageGroup) {
   console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
   if(!child) {
     console.log('loadStudentAssignments: no child found — showing link card');
+    currentChildRecord = null;
     document.getElementById('linkAccountCard').style.display='block';
     document.getElementById('primary-mode').style.display='none';
     // For HS students, show the hs-mode header (greeting + XP ring) so they see their name,
@@ -2308,6 +2326,7 @@ async function loadStudentAssignments(ageGroup) {
     }
     return;
   }
+  currentChildRecord = child; // store for hamburger menu family link check
   document.getElementById('linkAccountCard').style.display='none';
   updateTrustDisplay(child, ageGroup==='primary'?'':'hs');
   if(ageGroup==='primary'){document.getElementById('primary-mode').style.display='block';}
@@ -5344,6 +5363,7 @@ function renderDrawerItems() {
       proItem,
     ];
   } else if(role === 'student') {
+    const hasFamily = !!currentChildRecord; // set when child record found in loadStudentAssignments
     items = [
       { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
@@ -5353,6 +5373,10 @@ function renderDrawerItems() {
     // Add My Theme for HS students
     if(currentProfile?.age_group === 'highschool') {
       items.splice(items.length - 1, 0, { icon:'🎨', label:'My Theme', action:`openDrawerScreen('themes')`, disabled: false });
+    }
+    // Family link — show Unlink if linked, otherwise nothing in menu (tile is shown on home screen)
+    if(hasFamily) {
+      items.push({ icon:'🔗', label:'Unlink Family', action:`confirmUnlinkFamily()`, note:'Remove connection to your family account', disabled: false });
     }
   }
 
