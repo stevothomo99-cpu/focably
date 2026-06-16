@@ -893,6 +893,24 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
   </div>
 
+  <!-- FAMILY PRO SUBSCRIPTION SCREEN -->
+  <div id="screen-subscription" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">My Subscription</div>
+    </div>
+    <div id="subscriptionContent"></div>
+  </div>
+
+  <!-- SCHOOL SUBSCRIPTION SCREEN -->
+  <div id="screen-school-subscription" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">School License</div>
+    </div>
+    <div id="schoolSubscriptionContent"></div>
+  </div>
+
   <!-- MANAGE CHILDREN SCREEN -->
   <div id="screen-manage-children" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -3563,6 +3581,142 @@ async function respondToRedemption(redemptionId, action, btn) {
 }
 
 // Load redemption requests for parent main view
+async function loadSubscriptionScreen() {
+  const el = document.getElementById('subscriptionContent');
+  if (!el) return;
+
+  const status = currentFamily?.subscription_status || 'free';
+  const stripeCustomerId = currentFamily?.stripe_customer_id;
+  const stripeSubId = currentFamily?.stripe_subscription_id;
+
+  if (status === 'free') {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:24px;">' +
+      '<div style="font-size:40px;margin-bottom:12px;">🌱</div>' +
+      '<div style="font-size:17px;font-weight:800;color:var(--indigo);margin-bottom:6px;">Free Plan</div>' +
+      '<div style="font-size:13px;color:var(--gray-500);margin-bottom:20px;">Upgrade to Family Pro to unlock teacher connections, unlimited children, themes and more.</div>' +
+      '<button class="publish-btn" onclick="showPaywall('upgrade','Upgrade to Family Pro','Unlock teacher connections, unlimited children, themes and more.')" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">⭐ Upgrade to Family Pro</button>' +
+    '</div>';
+    return;
+  }
+
+  if (status === 'school_attached') {
+    el.innerHTML = '<div class="card">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+        '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--violet),#5B21B6);display:flex;align-items:center;justify-content:center;font-size:22px;">🏫</div>' +
+        '<div><div style="font-size:16px;font-weight:800;color:var(--indigo);">School-Attached Pro</div>' +
+        '<div style="font-size:12px;color:var(--gray-500);">Included with your school's license</div></div>' +
+      '</div>' +
+      '<div style="background:#ECFDF5;border-radius:10px;padding:12px;margin-bottom:12px;">' +
+        '<div style="font-size:12px;font-weight:700;color:#065F46;">✅ Active — covered by school license</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--gray-500);">Your Family Pro access is included as part of your school's FocablyED license. Contact your school admin for billing questions.</div>' +
+    '</div>';
+    return;
+  }
+
+  // Pro — fetch latest family data for renewal info
+  const {data:freshFamily} = await dbQuery(db.from('families').select('*').eq('parent_id', currentUser.id).maybeSingle());
+  const planLabel = freshFamily?.stripe_subscription_id?.includes('annual') ? 'Family Pro — Annual' : 'Family Pro — Monthly';
+
+  el.innerHTML = '<div class="card" style="margin-bottom:12px;">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--violet),#5B21B6);display:flex;align-items:center;justify-content:center;font-size:22px;">⭐</div>' +
+      '<div><div style="font-size:16px;font-weight:800;color:var(--indigo);">Family Pro</div>' +
+      '<div style="font-size:12px;color:var(--gray-500);">Full access for your family</div></div>' +
+    '</div>' +
+    '<div style="background:#ECFDF5;border-radius:10px;padding:12px;margin-bottom:16px;">' +
+      '<div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:4px;">✅ Active</div>' +
+      '<div style="font-size:13px;color:#065F46;">All features unlocked for your family</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+      '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Plan</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + (freshFamily?.stripe_subscription_id ? 'Monthly $9.99' : 'Family Pro') + '</div>' +
+      '</div>' +
+      '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Billing</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--indigo);">Via Stripe</div>' +
+      '</div>' +
+    '</div>' +
+    '<button onclick="openStripePortal()" class="publish-btn" style="background:linear-gradient(135deg,#0F172A,#1E293B);margin-bottom:8px;">🔗 Manage / Cancel Subscription</button>' +
+    '<div style="font-size:11px;color:var(--gray-400);text-align:center;">Opens Stripe's secure billing portal</div>' +
+  '</div>' +
+  '<div class="card">' +
+    '<div class="card-title">✅ What's included</div>' +
+    '<div style="font-size:13px;color:var(--gray-600);line-height:1.8;">' +
+      '👨‍👩‍👧 Unlimited children<br>' +
+      '🏫 Teacher class connections<br>' +
+      '🎨 Full theme library<br>' +
+      '🤖 Unlimited AI imports<br>' +
+      '🔔 Push notifications<br>' +
+      '🎁 Rewards system' +
+    '</div>' +
+  '</div>';
+}
+
+async function openStripePortal() {
+  // Stripe Customer Portal — requires portal to be enabled in Stripe dashboard
+  // Portal URL is generated server-side; for now open Stripe billing directly
+  const stripePortalUrl = 'https://billing.stripe.com/p/login/test_00000000'; // Replace with live portal URL after enabling in Stripe
+  showToast('Opening billing portal…');
+  window.open(stripePortalUrl, '_blank');
+}
+
+async function loadSchoolSubscriptionScreen() {
+  const el = document.getElementById('schoolSubscriptionContent');
+  if (!el) return;
+  if (!currentSchool) {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:24px;color:var(--gray-500);">No school loaded.</div>';
+    return;
+  }
+
+  // Fetch license for this school
+  const {data:license} = await dbQuery(
+    db.from('licenses').select('*').eq('school_id', currentSchool.id).maybeSingle()
+  );
+
+  const status = currentSchool.subscription_status || 'trial';
+  const statusColors = {trial:'#FEF3C7', active:'#ECFDF5', past_due:'#FFF1F2', cancelled:'#F1F5F9'};
+  const statusText = {trial:'⏳ Trial', active:'✅ Active', past_due:'⚠️ Past Due', cancelled:'❌ Cancelled'};
+  const tierLabels = {small:'School Small (≤300 students)', medium:'School Medium (≤800 students)', large:'School Large (Unlimited)', platinum:'School Platinum (Full coverage)'};
+  const tierPrices = {small:'$990/yr', medium:'$1,990/yr', large:'$3,490/yr', platinum:'$5,990/yr'};
+
+  const expiry = license?.expires_at ? new Date(license.expires_at).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'Not set';
+  const activated = license?.activated_at ? new Date(license.activated_at).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'Not set';
+
+  el.innerHTML = '<div class="card" style="margin-bottom:12px;">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#0F172A,#334155);display:flex;align-items:center;justify-content:center;font-size:22px;">🏫</div>' +
+      '<div><div style="font-size:16px;font-weight:800;color:var(--indigo);">' + (currentSchool.name || 'My School') + '</div>' +
+      '<div style="font-size:12px;color:var(--gray-500);">School License</div></div>' +
+    '</div>' +
+    '<div style="background:' + (statusColors[status]||'#F1F5F9') + ';border-radius:10px;padding:12px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:700;">' + (statusText[status]||status) + '</div>' +
+    '</div>' +
+    (license ? (
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Tier</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + (tierLabels[license.tier]||license.tier||'—') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Price</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + (tierPrices[license.tier]||'—') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Activated</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + activated + '</div>' +
+        '</div>' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:12px;">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Expires</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + expiry + '</div>' +
+        '</div>' +
+      '</div>'
+    ) : '<div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">No license record found. Contact FocablyED to set up your school license.</div>') +
+    '<div style="font-size:12px;color:var(--gray-400);border-top:1px solid var(--gray-100);padding-top:12px;margin-top:4px;">To renew, upgrade, or cancel your school license, contact us at <strong>schools@focablyed.com</strong></div>' +
+  '</div>';
+}
+
 async function openRedemptionHistory() {
   openDrawerScreen('redemption-history');
   await loadRedemptionHistory();
@@ -5469,16 +5623,20 @@ function renderDrawerItems() {
         : sRole === 'pending'
           ? { icon:'⏳', label:'Awaiting school approval', action:`showToast('Your request is pending admin approval')`, disabled: false }
           : { icon:'🏫', label: currentSchool ? currentSchool.name : 'My School', action:`openDrawerScreen('join-school')`, disabled: true, note:'Already in a school' };
+    const licenseItem = currentProfile?.school_role === 'admin'
+      ? { icon:'🔑', label:'School License', action:`openDrawerScreen('school-subscription')`, disabled: false }
+      : null;
     items = [
       { icon:'📤', label:'New Assignment', action:`openDrawerScreen('new-assignment')`, disabled: !teacherClasses?.length, note: !teacherClasses?.length ? 'Create a class first' : '' },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🗄️', label:'Archive & Archived', action:`openDrawerScreen('archive')`, disabled: false },
       { icon:'➕', label:'Create New Class', action:`showCreateClassFromDrawer()`, disabled: false },
       schoolItem,
+      ...(licenseItem ? [licenseItem] : []),
     ];
   } else if(role === 'parent') {
     const proItem = isPro()
-      ? { icon:'⭐', label:'Family Pro — Active', action:`showToast('Your Family Pro subscription is active!')`, disabled: false }
+      ? { icon:'⭐', label:'Family Pro — Active', action:`openDrawerScreen('subscription')`, disabled: false }
       : { icon:'⭐', label:'Upgrade to Family Pro', action:`showPaywall('upgrade','Upgrade to Family Pro','Unlock teacher connections, unlimited children, themes and more.')`, disabled: false };
     items = [
       { icon:'👶', label:'Manage Children', action:`openManageChildren()`, disabled: false },
@@ -5521,7 +5679,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -5542,6 +5700,14 @@ function openDrawerScreen(screen) {
   // Populate class dropdown for new assignment, default to current class
   if(screen === 'redemption-history') {
     loadRedemptionHistory();
+  }
+
+  if(screen === 'subscription') {
+    loadSubscriptionScreen();
+  }
+
+  if(screen === 'school-subscription') {
+    loadSchoolSubscriptionScreen();
   }
 
   if(screen === 'new-assignment') {
