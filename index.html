@@ -607,6 +607,16 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div class="quest-streak">🔥 <span id="streakCount">0</span>-day streak</div>
       </div>
 
+      <!-- BRAIN DUMP BUTTON -->
+      <div onclick="openDrawerScreen('brain-dump')" style="background:linear-gradient(135deg,#7C3AED,#4C1D95);border-radius:16px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,0.3);">
+        <div style="font-size:36px;animation:pulse 2s infinite;">🧠</div>
+        <div>
+          <div style="font-size:16px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">Brain Dump</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Tip everything out — I'll sort it for you</div>
+        </div>
+        <div style="margin-left:auto;font-size:20px;">→</div>
+      </div>
+
       <!-- TRUST SCORE -->
       <div class="card" id="trustCard">
         <div class="card-title">🛡️ Trust Score</div>
@@ -668,6 +678,16 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           </div>
         </div>
         <div class="hs-streak">🔥 <span id="hsStreakCount">0</span>-day streak</div>
+      </div>
+
+      <!-- BRAIN DUMP BUTTON HS -->
+      <div onclick="openDrawerScreen('brain-dump')" style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(76,29,149,0.2));border:1.5px solid rgba(124,58,237,0.4);border-radius:16px;padding:14px 18px;margin:12px 12px 0;display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <div style="font-size:32px;animation:pulse 2s infinite;">🧠</div>
+        <div>
+          <div style="font-size:15px;font-weight:900;color:var(--hs-header-text,white);font-family:'Nunito',sans-serif;">Brain Dump</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px;">Tip everything out — I'll sort it</div>
+        </div>
+        <div style="margin-left:auto;font-size:18px;color:rgba(255,255,255,0.6);">→</div>
       </div>
 
       <!-- TRUST SCORE HS -->
@@ -932,6 +952,37 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">School License</div>
     </div>
     <div id="schoolSubscriptionContent"></div>
+  </div>
+
+  <!-- BRAIN DUMP SCREEN -->
+  <div id="screen-brain-dump" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">🧠 Brain Dump</div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1.5px solid #DDD6FE;">
+      <div style="font-size:28px;text-align:center;margin-bottom:8px;">🧠</div>
+      <div style="font-size:15px;font-weight:800;color:var(--indigo);text-align:center;margin-bottom:6px;font-family:'Nunito',sans-serif;">Tip everything out</div>
+      <p style="font-size:13px;color:var(--gray-500);text-align:center;margin-bottom:14px;">Type everything that's on your mind — assignments, tasks, worries, deadlines. Don't worry about structure. I'll sort it out.</p>
+      <div style="position:relative;">
+        <textarea id="brainDumpInput" class="form-input" rows="8" placeholder="e.g. Science assignment due Friday, need to study for maths test, haven't started the English essay, football practice tomorrow, need to email Mr Smith..."></textarea>
+        <button id="brainDumpVoiceBtn" onclick="toggleBrainDumpVoice()" style="position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:var(--violet);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Speak instead">🎤</button>
+      </div>
+      <div id="brainDumpVoiceStatus" style="font-size:11px;color:var(--violet);text-align:center;margin-top:4px;display:none;">🎤 Listening… tap mic to stop</div>
+      <button id="brainDumpBtn" onclick="processBrainDump()" class="publish-btn" style="background:linear-gradient(135deg,#7C3AED,#4C1D95);margin-top:12px;">🧠 Sort It Out</button>
+      <div id="brainDumpHint" style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:6px;"></div>
+    </div>
+
+    <!-- Results card — hidden until Claude responds -->
+    <div id="brainDumpResults" style="display:none;margin-top:12px;">
+      <div class="card">
+        <div class="card-title">✅ Here's what I found</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Review each task below, edit anything that looks off, then save the ones you want.</p>
+        <div id="brainDumpTaskList"></div>
+        <button onclick="saveBrainDumpTasks()" class="publish-btn" style="background:linear-gradient(135deg,var(--mint),var(--indigo));margin-top:8px;">💾 Save All Tasks</button>
+      </div>
+    </div>
   </div>
 
   <!-- MANAGE CHILDREN SCREEN -->
@@ -4149,6 +4200,167 @@ async function parentAddTask() {
   closeDrawerScreen();
 }
 
+// ── Brain Dump ──────────────────────────────────────────────────────────────────
+
+let brainDumpRecognition = null;
+let brainDumpListening = false;
+let brainDumpTasks = [];
+
+function toggleBrainDumpVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice not supported on this browser — try Chrome');
+    return;
+  }
+  if (brainDumpListening) {
+    brainDumpRecognition?.stop();
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  brainDumpRecognition = new SpeechRecognition();
+  brainDumpRecognition.continuous = true;
+  brainDumpRecognition.interimResults = false;
+  brainDumpRecognition.lang = 'en-AU';
+
+  brainDumpRecognition.onstart = function() {
+    brainDumpListening = true;
+    const btn = document.getElementById('brainDumpVoiceBtn');
+    const status = document.getElementById('brainDumpVoiceStatus');
+    if(btn) { btn.style.background = '#EF4444'; btn.textContent = '⏹'; }
+    if(status) status.style.display = 'block';
+  };
+  brainDumpRecognition.onresult = function(e) {
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript + ' ';
+    }
+    const input = document.getElementById('brainDumpInput');
+    if(input) input.value = (input.value + ' ' + transcript).trim();
+  };
+  brainDumpRecognition.onend = function() {
+    brainDumpListening = false;
+    const btn = document.getElementById('brainDumpVoiceBtn');
+    const status = document.getElementById('brainDumpVoiceStatus');
+    if(btn) { btn.style.background = 'var(--violet)'; btn.textContent = '🎤'; }
+    if(status) status.style.display = 'none';
+  };
+  brainDumpRecognition.start();
+}
+
+async function processBrainDump() {
+  const input = document.getElementById('brainDumpInput')?.value.trim();
+  if(!input) { showToast('Type something first!'); return; }
+
+  // AI import cap check
+  if(!isPro()) {
+    const used = currentProfile?.ai_import_count || 0;
+    if(used >= 3) { showPaywall('upgrade','Upgrade for unlimited Brain Dumps','Free accounts get 3 AI imports per month. Upgrade to Family Pro for unlimited.'); return; }
+  }
+
+  const btn = document.getElementById('brainDumpBtn');
+  const hint = document.getElementById('brainDumpHint');
+  const results = document.getElementById('brainDumpResults');
+  if(btn) { btn.disabled = true; btn.textContent = '🧠 Thinking…'; }
+  if(results) results.style.display = 'none';
+
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.
+
+Brain dump:
+' + input
+        }]
+      })
+    });
+
+    const data = await response.json();
+    let text = (data.content?.[0]?.text || '').trim();
+    // Strip markdown code fences if present
+    text = text.replace(/```json|```/g, '').trim();
+    brainDumpTasks = JSON.parse(text);
+
+    if(!Array.isArray(brainDumpTasks) || !brainDumpTasks.length) {
+      showToast('Could not find any tasks — try adding more detail');
+      return;
+    }
+
+    // Update AI import count
+    const newCount = (currentProfile?.ai_import_count || 0) + 1;
+    await dbQuery(db.from('profiles').update({ai_import_count: newCount, ai_import_reset_at: currentProfile?.ai_import_reset_at || new Date().toISOString()}).eq('id', currentUser.id));
+    if(currentProfile) currentProfile.ai_import_count = newCount;
+
+    // Render tasks
+    const list = document.getElementById('brainDumpTaskList');
+    if(list) {
+      list.innerHTML = brainDumpTasks.map(function(t, i) {
+        return '<div style="border:1px solid var(--gray-100);border-radius:10px;padding:12px;margin-bottom:8px;">' +
+          '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
+            '<input type="checkbox" id="bdCheck' + i + '" checked style="margin-top:3px;cursor:pointer;width:16px;height:16px;">' +
+            '<input type="text" value="' + (t.title||'').replace(/"/g,'') + '" id="bdTitle' + i + '" class="form-input" style="flex:1;font-weight:700;">' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<input type="text" value="' + (t.subject||'').replace(/"/g,'') + '" id="bdSubject' + i + '" class="form-input" placeholder="Subject" style="flex:1;">' +
+            '<input type="date" value="' + (t.due_date||'') + '" id="bdDue' + i + '" class="form-input" style="flex:1;">' +
+          '</div>' +
+          (t.notes ? '<div style="font-size:11px;color:var(--gray-400);margin-top:4px;">' + t.notes + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    if(results) results.style.display = 'block';
+    results?.scrollIntoView({behavior:'smooth', block:'start'});
+    showToast('🧠 Found ' + brainDumpTasks.length + ' tasks!');
+
+  } catch(e) {
+    showToast('❌ Could not process — try again');
+    console.error('Brain dump error:', e);
+  } finally {
+    if(btn) { btn.disabled = false; btn.textContent = '🧠 Sort It Out'; }
+  }
+}
+
+async function saveBrainDumpTasks() {
+  if(!brainDumpTasks.length) return;
+  const childId = currentChildRecord?.id;
+  if(!childId) { showToast('No student record found'); return; }
+
+  let saved = 0;
+  for(let i = 0; i < brainDumpTasks.length; i++) {
+    const checked = document.getElementById('bdCheck' + i)?.checked;
+    if(!checked) continue;
+    const title = document.getElementById('bdTitle' + i)?.value.trim();
+    const subject = document.getElementById('bdSubject' + i)?.value.trim();
+    const due = document.getElementById('bdDue' + i)?.value || null;
+    if(!title) continue;
+
+    await dbQuery(db.from('assignments').insert({
+      child_id: childId,
+      created_by: currentUser.id,
+      title,
+      description: subject || null,
+      due_date: due,
+      status: 'pending',
+      parent_created: false
+    }), 8000, null);
+    saved++;
+  }
+
+  showToast('✅ ' + saved + ' task' + (saved !== 1 ? 's' : '') + ' saved!');
+  brainDumpTasks = [];
+  document.getElementById('brainDumpInput').value = '';
+  document.getElementById('brainDumpResults').style.display = 'none';
+  closeDrawerScreen();
+  await loadStudentAssignments(currentProfile?.age_group);
+}
+
 // ── Microsoft Teams OAuth ──────────────────────────────────────────────────────
 
 const MS_CLIENT_ID = '2593af2c-94ef-47ec-aa9a-40de24336aca';
@@ -5875,6 +6087,7 @@ function renderDrawerItems() {
   } else if(role === 'student') {
     const hasFamily = !!currentChildRecord; // set when child record found in loadStudentAssignments
     items = [
+      { icon:'🧠', label:'Brain Dump', action:`openDrawerScreen('brain-dump')`, disabled: false },
       { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
@@ -5903,7 +6116,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription','brain-dump'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
