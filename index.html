@@ -612,7 +612,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div style="font-size:36px;animation:pulse 2s infinite;">🧠</div>
         <div>
           <div style="font-size:16px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">Brain Dump</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Tip everything out — I'll sort it for you</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Tell Squirrel everything — she'll sort it out 🐿️</div>
         </div>
         <div style="margin-left:auto;font-size:20px;">→</div>
       </div>
@@ -685,7 +685,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div style="font-size:32px;animation:pulse 2s infinite;">🧠</div>
         <div>
           <div style="font-size:15px;font-weight:900;color:var(--hs-header-text,white);font-family:'Nunito',sans-serif;">Brain Dump</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px;">Tip everything out — I'll sort it</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px;">Tell Squirrel — she'll sort it 🐿️</div>
         </div>
         <div style="margin-left:auto;font-size:18px;color:rgba(255,255,255,0.6);">→</div>
       </div>
@@ -843,9 +843,9 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
 
     <div class="card">
       <div class="card-title">📥 Paste &amp; Import</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Paste assignment details from Teams, email, Google Classroom — anywhere. We'll pull out the key details automatically.</p>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Paste assignment details from Teams, email, Google Classroom — anywhere. Squirrel will pull out the key details automatically. 🐿️</p>
       <textarea class="form-input" id="importPasteInput" rows="6" placeholder="Paste the assignment text here…&#10;&#10;e.g. Science — Chapter 5 Review&#10;Due: Friday 20 June&#10;Read pages 45–60 and answer questions 1–5 in your workbook."></textarea>
-      <button class="publish-btn" id="importParseBtn" onclick="parseImportedAssignment()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);margin-top:4px;">✨ Extract Details</button>
+      <button class="publish-btn" id="importParseBtn" onclick="parseImportedAssignment()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);margin-top:4px;">🐿️ Ask Squirrel</button>
       <div id="aiImportUsageHint" style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:6px;"></div>
     </div>
 
@@ -958,19 +958,19 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
   <div id="screen-brain-dump" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
-      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">🧠 Brain Dump</div>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">🐿️ Brain Dump with Squirrel</div>
     </div>
 
     <div class="card" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1.5px solid #DDD6FE;">
       <div style="font-size:28px;text-align:center;margin-bottom:8px;">🧠</div>
       <div style="font-size:15px;font-weight:800;color:var(--indigo);text-align:center;margin-bottom:6px;font-family:'Nunito',sans-serif;">Tip everything out</div>
-      <p style="font-size:13px;color:var(--gray-500);text-align:center;margin-bottom:14px;">Type everything that's on your mind — assignments, tasks, worries, deadlines. Don't worry about structure. I'll sort it out.</p>
+      <p style="font-size:13px;color:var(--gray-500);text-align:center;margin-bottom:14px;">Type everything on your mind — assignments, deadlines, worries, random thoughts. Don't worry about order. Squirrel will organise it for you.</p>
       <div style="position:relative;">
         <textarea id="brainDumpInput" class="form-input" rows="8" placeholder="e.g. Science assignment due Friday, need to study for maths test, haven't started the English essay, football practice tomorrow, need to email Mr Smith..."></textarea>
         <button id="brainDumpVoiceBtn" onclick="toggleBrainDumpVoice()" style="position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:var(--violet);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Speak instead">🎤</button>
       </div>
       <div id="brainDumpVoiceStatus" style="font-size:11px;color:var(--violet);text-align:center;margin-top:4px;display:none;">🎤 Listening… tap mic to stop</div>
-      <button id="brainDumpBtn" onclick="processBrainDump()" class="publish-btn" style="background:linear-gradient(135deg,#7C3AED,#4C1D95);margin-top:12px;">🧠 Sort It Out</button>
+      <button id="brainDumpBtn" onclick="processBrainDump()" class="publish-btn" style="background:linear-gradient(135deg,#7C3AED,#4C1D95);margin-top:12px;">🐿️ Squirrel, sort this!</button>
       <div id="brainDumpHint" style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:6px;"></div>
     </div>
 
@@ -1128,11 +1128,11 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);" id="aiScreenTitle">Break Any Task</div>
     </div>
     <div class="card">
-      <div class="card-title" id="aiCardTitle">🧙 Quest Wizard — Break Any Task</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell the wizard your quest and it will split it into manageable steps!</p>
+      <div class="card-title" id="aiCardTitle">🐿️ Ask Squirrel — Break Any Task</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:11px;" id="aiCardSub">Tell Squirrel your task and she'll split it into manageable steps!</p>
       <textarea class="form-input" id="questInput" rows="3" placeholder="e.g. Write a book report about Charlotte's Web, due next week..."></textarea>
       <button class="ai-btn" id="aiBtn" onclick="breakdownTask()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">
-        <span>✨</span><span id="aiBtnText">Get My Quest Steps</span>
+        <span>✨</span><span id="aiBtnText">🐿️ Ask Squirrel</span>
       </button>
       <div class="ai-result" id="aiResult">
         <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
@@ -1142,7 +1142,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div id="hsAiWrap" style="display:none;">
         <textarea class="form-input" id="hsInput" rows="3" placeholder="e.g. Write a 500-word essay on climate change, due Thursday..."></textarea>
         <button class="ai-btn" id="hsAiBtn" onclick="breakdownHS()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">
-          <span>✨</span><span id="hsAiBtnText">Break into Steps</span>
+          <span>✨</span><span id="hsAiBtnText">🐿️ Ask Squirrel</span>
         </button>
         <div class="ai-result" id="hsAiResult">
           <div style="font-size:12px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Your Steps</div>
@@ -3731,7 +3731,7 @@ async function loadSubscriptionScreen() {
       '👨‍👩‍👧 Unlimited children<br>' +
       '🏫 Teacher class connections<br>' +
       '🎨 Full theme library<br>' +
-      '🤖 Unlimited AI imports<br>' +
+      '🐿️ Unlimited Squirrel requests<br>' +
       '🔔 Push notifications<br>' +
       '🎁 Rewards system' +
     '</div>' +
@@ -4253,13 +4253,13 @@ async function processBrainDump() {
   // AI import cap check
   if(!isPro()) {
     const used = currentProfile?.ai_import_count || 0;
-    if(used >= 3) { showPaywall('upgrade','Upgrade for unlimited Brain Dumps','Free accounts get 3 AI imports per month. Upgrade to Family Pro for unlimited.'); return; }
+    if(used >= 3) { showPaywall('upgrade','Upgrade for unlimited Squirrel requests','Free accounts get 3 Squirrel requests per month. Upgrade to Family Pro for unlimited.'); return; }
   }
 
   const btn = document.getElementById('brainDumpBtn');
   const hint = document.getElementById('brainDumpHint');
   const results = document.getElementById('brainDumpResults');
-  if(btn) { btn.disabled = true; btn.textContent = '🧠 Thinking…'; }
+  if(btn) { btn.disabled = true; btn.textContent = '🐿️ Squirrel is thinking…'; }
   if(results) results.style.display = 'none';
 
   const today = new Date().toISOString().split('T')[0];
@@ -4328,13 +4328,13 @@ async function processBrainDump() {
 
     if(results) results.style.display = 'block';
     results?.scrollIntoView({behavior:'smooth', block:'start'});
-    showToast('🧠 Found ' + brainDumpTasks.length + ' tasks!');
+    showToast('🐿️ Squirrel found ' + brainDumpTasks.length + ' tasks!');
 
   } catch(e) {
     showToast('❌ Could not process — try again');
     console.error('Brain dump error:', e);
   } finally {
-    if(btn) { btn.disabled = false; btn.textContent = '🧠 Sort It Out'; }
+    if(btn) { btn.disabled = false; btn.textContent = '🐿️ Squirrel, sort this!'; }
   }
 }
 
@@ -4584,7 +4584,7 @@ No markdown, no backticks, no explanation. Just the JSON object.`,
     showToast('❌ Could not parse — try editing the text and retrying');
     console.error('Import parse error:', e);
   } finally {
-    btn.textContent = '✨ Extract Details'; btn.disabled = false;
+    btn.textContent = '🐿️ Ask Squirrel'; btn.disabled = false;
   }
 }
 
@@ -6099,7 +6099,7 @@ function renderDrawerItems() {
     const hasFamily = !!currentChildRecord; // set when child record found in loadStudentAssignments
     items = [
       { icon:'🧠', label:'Brain Dump', action:`openDrawerScreen('brain-dump')`, disabled: false },
-      { icon:'✨', label:'Break Any Task', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
+      { icon:'🐿️', label:'Ask Squirrel', action:`openDrawerScreen('ai-breakdown')`, disabled: false },
       { icon:'🏫', label:'Join a Class', action:`openDrawerScreen('join-class')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
       { icon:'🎭', label:'Change Avatar', action:`openDrawerScreen('change-avatar')`, disabled: false },
@@ -6173,7 +6173,7 @@ function openDrawerScreen(screen) {
     const hint = document.getElementById('aiImportUsageHint');
     if(hint) {
       if(isPro()) {
-        hint.textContent = '⭐ Family Pro — unlimited AI imports';
+        hint.textContent = '⭐ Family Pro — unlimited Squirrel requests';
         hint.style.color = 'var(--mint)';
       } else {
         const used = currentProfile?.ai_import_count || 0;
@@ -6318,7 +6318,7 @@ function openDrawerScreen(screen) {
       if(aiResult) aiResult.style.display = 'none';
       if(hsWrap) hsWrap.style.display = 'block';
       if(cardTitle) cardTitle.textContent = '🤖 AI Task Breakdown';
-      if(cardSub) cardSub.textContent = 'Paste any assignment and FocablyED will break it into steps.';
+      if(cardSub) cardSub.textContent = 'Paste any assignment and Squirrel will break it into steps for you 🐿️';
       if(screenTitle) screenTitle.textContent = 'Break into Steps';
     } else {
       document.getElementById('questInput').style.display = 'block';
