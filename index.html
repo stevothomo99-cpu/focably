@@ -4273,10 +4273,7 @@ async function processBrainDump() {
         max_tokens: 1000,
         messages: [{
           role: 'user',
-          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.
-
-Brain dump:
-' + input
+          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.\n\nBrain dump:\n' + input
         }]
       })
     });
