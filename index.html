@@ -4267,14 +4267,12 @@ async function processBrainDump() {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.\n\nBrain dump:\n' + dumpText
-        }]
+        system: 'You are a task organiser for a student. Extract all tasks, assignments and to-dos from the brain dump. Return ONLY a raw JSON array, no markdown, no preamble. Each item: {"title":"short task title","subject":"subject or empty string","due_date":"YYYY-MM-DD or null","notes":"any extra detail or empty string"}. Keep titles under 60 chars.',
+        messages: [{role:'user', content:'Today is ' + today + '. Brain dump:\n' + dumpText}]
       })
     });
 
