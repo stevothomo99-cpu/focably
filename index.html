@@ -1552,7 +1552,7 @@ function applyHSTheme(key, save) {
   if(currentProfile) currentProfile.theme = key;
   // Persist to Supabase if requested
   if(save && currentUser) {
-    db.from('profiles').update({theme: key}).eq('id', currentUser.id).catch(e => console.log('Theme save error:', e.message));
+    db.from('profiles').update({theme: key}).eq('id', currentUser.id).then(({error}) => { if(error) console.log('Theme save error:', error.message); });
   }
   // Update theme picker UI if open
   document.querySelectorAll('.hs-theme-card').forEach(el => {
