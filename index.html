@@ -3638,8 +3638,9 @@ async function loadSubscriptionScreen() {
         '<div style="font-size:13px;font-weight:700;color:var(--indigo);">Via Stripe</div>' +
       '</div>' +
     '</div>' +
-    '<button onclick="openStripePortal()" class="publish-btn" style="background:linear-gradient(135deg,#0F172A,#1E293B);margin-bottom:8px;">🔗 Manage / Cancel Subscription</button>' +
-    '<div style="font-size:11px;color:var(--gray-400);text-align:center;">Opens Stripe secure billing portal</div>' +
+    '<button onclick="openStripePortal()" class="publish-btn" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-bottom:8px;">💳 Update Payment Method</button>' +
+    '<div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:16px;">Securely update your card details via Stripe</div>' +
+    '<div style="text-align:center;"><button onclick="confirmCancelSubscription()" style="background:none;border:none;font-size:12px;color:var(--gray-400);cursor:pointer;text-decoration:underline;">Cancel subscription</button></div>' +
   '</div>' +
   '<div class="card">' +
     '<div class="card-title">✅ Whats included</div>' +
@@ -3655,11 +3656,16 @@ async function loadSubscriptionScreen() {
 }
 
 async function openStripePortal() {
-  // Stripe Customer Portal — requires portal to be enabled in Stripe dashboard
-  // Portal URL is generated server-side; for now open Stripe billing directly
   const stripePortalUrl = 'https://billing.stripe.com/p/login/bJe14meC37jBbNu6ko6J200';
   showToast('Opening billing portal…');
   window.open(stripePortalUrl, '_blank');
+}
+
+function confirmCancelSubscription() {
+  const confirmed = confirm('Are you sure you want to cancel?\n\nYou will lose access to:\n• Teacher class connections\n• Unlimited children\n• Full theme library\n• Unlimited AI imports\n\nYour data is safe and you can resubscribe anytime.');
+  if (!confirmed) return;
+  showToast('Opening billing portal…');
+  window.open('https://billing.stripe.com/p/login/bJe14meC37jBbNu6ko6J200', '_blank');
 }
 
 async function loadSchoolSubscriptionScreen() {
