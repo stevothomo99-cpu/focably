@@ -882,6 +882,15 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
     </div>
   </div>
 
+  <!-- MANAGE CHILDREN SCREEN -->
+  <div id="screen-manage-children" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Manage Children</div>
+    </div>
+    <div id="manageChildrenList"></div>
+  </div>
+
   <!-- JOIN CLASS SCREEN -->
   <!-- CREATE SCHOOL SCREEN (teacher) -->
   <div id="screen-create-school" class="scroll-content" style="display:none;">
@@ -1942,6 +1951,36 @@ async function confirmDeleteAccount() {
     showScreen('auth');
   } catch(e) {
     showToast('❌ Could not delete account: ' + e.message + '\n\nEmail privacy@focablyed.com for manual deletion.');
+  }
+}
+
+async function openManageChildren() {
+  openDrawerScreen('manage-children');
+  const list = document.getElementById('manageChildrenList');
+  if (!list) return;
+  if (!currentChildren || !currentChildren.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-500);font-size:14px;padding:24px;">No children linked yet.<br><br><button class="publish-btn" onclick="openDrawerScreen('family-invite')" style="background:linear-gradient(135deg,var(--violet),#5B21B6);margin-top:8px;">&#x1F4EC; Add a Child</button></div>';
+    return;
+  }
+  list.innerHTML = currentChildren.map(function(c) { return '<div class="card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:15px;font-weight:700;color:var(--indigo);">' + (c.name || 'Child') + '</div><div style="font-size:12px;color:var(--gray-500);">&#x2B50; ' + (c.stars||0) + ' stars &nbsp;&middot;&nbsp; &#x1F525; ' + (c.streak||0) + ' streak &nbsp;&middot;&nbsp; Trust: ' + (c.trust_score||0) + '</div></div><button data-child-id="' + c.id + '" data-child-name="' + (c.name||'Child') + '" onclick="confirmUnlinkChild(this.dataset.childId, this.dataset.childName)" style="padding:8px 14px;border-radius:20px;border:1.5px solid #EF4444;background:white;color:#EF4444;font-size:13px;font-weight:700;cursor:pointer;">Unlink</button></div>'; }).join('') + '<div style="margin-top:8px;"><button class="publish-btn" onclick="openDrawerScreen('family-invite')" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">&#x1F4EC; Add Another Child</button></div>';
+}
+
+async function confirmUnlinkChild(childId, childName) {
+  const confirmed = confirm('Unlink ' + childName + ' from your family?\n\nTheir account stays active but they will lose access to parent-assigned tasks and your family connection.\n\nThis cannot be undone.');
+  if (!confirmed) return;
+  try {
+    const {error} = await dbQuery(db.from('children').delete().eq('id', childId), 8000, null);
+    if (error) throw error;
+    currentChildren = currentChildren.filter(function(c) { return c.id !== childId; });
+    if (selectedChildId === childId) {
+      selectedChildId = currentChildren[0] ? currentChildren[0].id : null;
+    }
+    renderChildTabs();
+    if (selectedChildId) loadChildStats(selectedChildId);
+    showToast('\u2705 ' + childName + ' unlinked from your family');
+    openManageChildren();
+  } catch(e) {
+    showToast('\u274C Could not unlink: ' + e.message);
   }
 }
 
@@ -5355,6 +5394,7 @@ function renderDrawerItems() {
       ? { icon:'⭐', label:'Family Pro — Active', action:`showToast('Your Family Pro subscription is active!')`, disabled: false }
       : { icon:'⭐', label:'Upgrade to Family Pro', action:`showPaywall('upgrade','Upgrade to Family Pro','Unlock teacher connections, unlimited children, themes and more.')`, disabled: false };
     items = [
+      { icon:'👶', label:'Manage Children', action:`openManageChildren()`, disabled: false },
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
       { icon:'🎁', label:'Manage Rewards', action:`openDrawerScreen('manage-rewards')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
@@ -5392,7 +5432,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
