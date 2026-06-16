@@ -510,6 +510,68 @@ Then build in this order:
 
 > _Most recent at top._
 
+### 16 Jun 2026 (Session 7) — Unlink Child, Rewards Flow, Subscription Screens, Teams OAuth
+
+**Manage Children (parent hamburger):**
+- New drawer screen showing all linked children with name, stars, streak, trust score
+- Unlink button per child — confirms, deletes children row, refreshes child tabs live
+- Fixed syntax error (single quotes in onclick)
+- Empty state with Add a Child button
+
+**Rewards flow — fixed and completed:**
+- Created `redemptions` table in Supabase (was missing — caused 404)
+- Added missing columns to `rewards` table: `created_by`, `child_id`, `emoji`, `star_cost`, `is_active`
+- Fixed `respondToRedemption` calling wrong function (was `loadManageRewards`, now `loadParentRedemptions`)
+- Made `handleNotifAction` async (was throwing await error)
+- Fixed `loadStudentRewards` to track `approved` state — tiles show ✅ Enjoyed! and are non-clickable after approval
+- Reward tiles refresh immediately after student redeems (no waiting for poll)
+- Student tiles refresh when `reward_approved`/`reward_rejected` notification arrives
+
+**Reward alert card — parent dashboard:**
+- Moved redemption card to TOP of parent dashboard (above stat grid)
+- Styled as amber/orange alert with pulsing red dot — impossible to miss
+- History → button opens Reward History drawer
+
+**Reward History drawer:**
+- Shows all redemptions (pending/approved/rejected) with status badge, date, child name, stars
+- Accessible from parent hamburger (📜 Reward History) and student hamburger (both primary + HS)
+- Auto-loads when screen opens
+
+**Subscription Status screens — two types:**
+- **Family Pro screen** (parent hamburger ⭐): active status, plan info, 💳 Update Payment Method (prominent), "Manage subscription ›" expands nested menu with billing history + Cancel (buried, confirm dialog before portal opens)
+- **School License screen** (teacher hamburger 🔑, admin only): school name, status badge, tier, price, activated/expiry dates, contact email for renewals
+- Free users see upgrade prompt; school_attached users see read-only school coverage notice
+- Stripe Customer Portal URL: `https://billing.stripe.com/p/login/bJe14meC37jBbNu6ko6J200`
+- `confirmCancelSubscription()` — confirm dialog lists everything they lose before opening portal
+- `toggleManageSubMenu()` — shows/hides nested cancel menu
+
+**FocablyED branding fix:**
+- Nav logo, auth screen, loading screen, onboarding — all had "Focably ED" gap caused by flex gap treating span as separate child
+- Fixed: outer `white-space:nowrap` span keeps word together; "Focably" = white, "ED" = #A78BFA (light violet)
+
+**Microsoft Teams OAuth — student + teacher import:**
+- Azure AD app registered: FocablyED, client ID `2593af2c-94ef-47ec-aa9a-40de24336aca`
+- Permissions: `User.Read`, `EduAssignments.ReadBasic`
+- Redirect URI: `https://focably.vercel.app` (SPA type)
+- MSAL 2.38.0 loaded via CDN
+- Import Assignment screen now has Teams connect card (student + teacher only, hidden for parent)
+- Connect → OAuth popup → MS login → pulls last 20 Teams assignments via Graph API
+- Each assignment has Import button → pre-fills confirmation card (class picker for teacher, standard for student)
+- Disconnect button clears sessionStorage and resets UI
+- Session persists until tab close (sessionStorage) or manual disconnect
+
+**Next session TODO (Session 8):**
+- Push notifications end-to-end test (proof submit → parent, approved/rejected → student)
+- License gate on Create School (validate FOCABLY-XXXX-XXXX against licenses table)
+- HubSpot waitlist debug
+- Brain Dump mode ⭐ top post-MVP priority
+- Code refactor — split ~6,500 line index.html before building second product
+- Manual: Add ABN to privacy policy
+- Manual: Set up privacy@focablyed.com forwarding
+- Manual: Confirm Supabase Pro + Sydney (ap-southeast-2) region
+- Manual: Add focablyed.com.au to Vercel
+
+
 ### 15 Jun 2026 (Session 3, wrap-up chat) — Strategy, monetisation, pricing finalised
 - **Go-to-market confirmed:** Parent-first — target 50 Family Pro families before active school sales
 - **School build stays in** — credibility layer for future B2B, not removed
@@ -568,12 +630,7 @@ Then build in this order:
 - Three scenarios covered: ✅ parent pays → existing kids Pro, ✅ child joins after payment → inherits Pro, ✅ parent cancels → all kids back to free
 - **Remember:** JWT verification must be OFF on stripe-webhook after every redeploy
 
-**Next session TODO (Session 7):**
-- ✅ Verify push notifications firing end-to-end in production (proof submit → parent, proof approved/rejected → student, task assigned → student)
-- Subscription Status screen (plan details, renewal date, Stripe customer portal manage/cancel link)
-- License gate on Create School (validate FOCABLY-XXXX-XXXX against licenses table)
-- HubSpot waitlist debug (Forms API switched, console logging added — check error on next test signup)
-- Consider: stripe live mode → test mode toggle for dev vs prod
+**Next session TODO (Session 7):** ✅ COMPLETED — see Session 7 log
 
 **Privacy & Legal — completed Session 6:**
 - Privacy Policy drafted and deployed to both focablyed.com and focably.vercel.app (/privacy-policy.html)
