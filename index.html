@@ -800,7 +800,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Import Assignment</div>
     </div>
     <!-- Microsoft Teams Connect Card -->
-    <div class="card" style="margin-bottom:0;border:1.5px solid #0078D4;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);">
+    <div id="teamsImportCard" class="card" style="margin-bottom:0;border:1.5px solid #0078D4;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div style="width:36px;height:36px;border-radius:8px;background:#0078D4;display:flex;align-items:center;justify-content:center;font-size:18px;">🟦</div>
         <div>
@@ -818,7 +818,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
       <p style="font-size:11px;color:#3B82F6;margin:0;">Sign in with your Microsoft/school account to import assignments directly from Teams.</p>
     </div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin:12px 0;"><div style="flex:1;height:1px;background:var(--gray-100);"></div><div style="font-size:11px;color:var(--gray-400);">or paste manually</div><div style="flex:1;height:1px;background:var(--gray-100);"></div></div>
+    <div id="teamsImportDivider" style="display:flex;align-items:center;gap:8px;margin:12px 0;"><div style="flex:1;height:1px;background:var(--gray-100);"></div><div style="font-size:11px;color:var(--gray-400);">or paste manually</div><div style="flex:1;height:1px;background:var(--gray-100);"></div></div>
 
     <div class="card">
       <div class="card-title">📥 Paste &amp; Import</div>
@@ -4247,11 +4247,25 @@ function importTeamsAssignment(title, dueDateTime, description) {
   document.getElementById('importSubject').value = '';
   document.getElementById('importConfirmCard').style.display = 'block';
 
-  // Show child/class pickers based on role
+  // Show pickers based on role
   const childWrap = document.getElementById('importChildSelectWrap');
   const classWrap = document.getElementById('importClassWrap');
-  if (childWrap && currentProfile?.role === 'parent') childWrap.style.display = 'block';
-  if (classWrap && currentProfile?.role === 'teacher') classWrap.style.display = 'block';
+  const role = currentProfile?.role;
+  if (childWrap) childWrap.style.display = role === 'parent' ? 'block' : 'none';
+  if (classWrap) {
+    if (role === 'teacher') {
+      classWrap.style.display = 'block';
+      // Populate class picker
+      const picker = document.getElementById('importClassPicker');
+      if(picker && teacherClasses?.length) {
+        picker.innerHTML = '<option value="">— Select a class —</option>' +
+          teacherClasses.map(c => '<option value="' + c.id + '">' + c.name + ' — ' + (c.subject||'') + '</option>').join('');
+        if(selectedClassId) picker.value = selectedClassId;
+      }
+    } else {
+      classWrap.style.display = 'none';
+    }
+  }
 
   showToast('✅ Assignment imported — check details below');
   document.getElementById('importConfirmCard').scrollIntoView({behavior:'smooth', block:'start'});
@@ -5955,6 +5969,20 @@ function openDrawerScreen(screen) {
     document.getElementById('importConfirmCard').style.display = 'none';
     document.getElementById('importChildSelectWrap').style.display = 'none';
     document.getElementById('importClassWrap').style.display = 'none';
+
+    // Show Teams card for students + teachers only
+    const teamsCard = document.getElementById('teamsImportCard');
+    const teamsDivider = document.getElementById('teamsImportDivider');
+    const role = currentProfile?.role;
+    const showTeams = role === 'student' || role === 'teacher';
+    if(teamsCard) teamsCard.style.display = showTeams ? 'block' : 'none';
+    if(teamsDivider) teamsDivider.style.display = showTeams ? 'flex' : 'none';
+
+    // Reset Teams list if switching users
+    if(showTeams) {
+      const listDiv = document.getElementById('teamsAssignmentsList');
+      if(listDiv && !msTeamsAccount) listDiv.style.display = 'none';
+    }
   }
 
   if(screen === 'themes') {
