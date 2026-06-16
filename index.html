@@ -2870,6 +2870,14 @@ async function linkToFamily() {
   }).select().maybeSingle();
   console.log('linkToFamily: insert result=', newChild, 'error=', error?.message);
   if(error){showToast('❌ Could not link account: ' + error.message);return;}
+  // ── Inherit family subscription status onto child's profile ──
+  // Covers the case where parent already paid Pro before child joined
+  const familySubStatus = family.subscription_status || 'free';
+  if(familySubStatus === 'pro' || familySubStatus === 'school_attached') {
+    await dbQuery(db.from('profiles').update({subscription_status: familySubStatus}).eq('id', currentUser.id), 5000, null);
+    currentProfile.subscription_status = familySubStatus;
+    console.log('linkToFamily: inherited subscription_status =', familySubStatus);
+  }
   // Set appReady BEFORE navigating so auth state change can't interrupt
   appReady = true;
   showToast('✅ Linked to family!');
