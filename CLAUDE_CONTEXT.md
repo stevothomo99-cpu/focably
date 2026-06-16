@@ -32,7 +32,7 @@
   - focablyed.app ✅ (app-specific)
   - facably.com, facably.app, facablyed.com, facablyed.app ✅ (typo purchases — keep as redirects)
 - **DNS:** Crazy Domains nameservers → Vercel (ns1.vercel-dns.com, ns2.vercel-dns.com)
-- **M365 email setup in progress:** MX record added to focablyed.com in Crazy Domains (ms14690949.msv1.invalid, priority 50). Awaiting DNS propagation + verification. TXT/CNAME records still to add. Target mailboxes: steve@, kim@, hello@, schools@, support@focablyed.com
+- **M365 email:** ✅ Fully set up. focablyed.com verified in M365. DNS managed via Vercel (ns1/ns2.vercel-dns.com). Mailboxes: steve@ (primary licensed), hello@/privacy@/noreply@ (aliases on steve@), support@ (shared mailbox, no extra licence). schools@ to add when needed.
 - **Note:** focably.com was domain-sniped by Namecheap — never use Namecheap again. Consider migrating to Cloudflare Registrar long term.
 
 ---
@@ -567,7 +567,7 @@ Then build in this order:
 - Brain Dump mode ⭐ top post-MVP priority
 - Code refactor — split ~6,500 line index.html before building second product
 - Manual: Add ABN to privacy policy
-- Manual: Set up privacy@focablyed.com forwarding
+- ✅ Manual: privacy@focablyed.com set up as alias on steve@focablyed.com
 - Manual: Confirm Supabase Pro + Sydney (ap-southeast-2) region
 - Manual: Add focablyed.com.au to Vercel
 
@@ -641,7 +641,7 @@ Then build in this order:
 - ⚖️ Legal & Privacy card added to app Settings screen (Privacy Policy link + Delete Account)
 - confirmDeleteAccount() function built — double-confirmed, deletes in correct FK order
 - ⚠️ Manual TODO: Add ABN to privacy policy ("ABN to be inserted" placeholder)
-- ⚠️ Manual TODO: Set up privacy@focablyed.com email inbox (forward to main email)
+- ✅ privacy@focablyed.com set up as alias on steve@focablyed.com (M365)
 - ⚠️ Manual TODO: Confirm Supabase plan is Pro with ap-southeast-2 (Sydney) region selected
 
 ### 16 Jun 2026 (Session 5) — Landing rebrand, Stripe payments, AI cap
