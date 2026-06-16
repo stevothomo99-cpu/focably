@@ -807,8 +807,9 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
           <div style="font-size:14px;font-weight:800;color:#1E3A5F;">Microsoft Teams</div>
           <div style="font-size:11px;color:#3B82F6;" id="teamsConnectionStatus">Not connected</div>
         </div>
-        <div style="margin-left:auto;">
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
           <button id="teamsConnectBtn" onclick="connectMicrosoftTeams()" style="padding:7px 14px;border-radius:20px;background:#0078D4;color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;">Connect</button>
+          <button id="teamsDisconnectBtn" onclick="disconnectMicrosoftTeams()" style="display:none;padding:7px 14px;border-radius:20px;background:none;color:#3B82F6;border:1.5px solid #3B82F6;font-size:12px;font-weight:700;cursor:pointer;">Disconnect</button>
         </div>
       </div>
       <div id="teamsAssignmentsList" style="display:none;">
@@ -4179,6 +4180,8 @@ async function connectMicrosoftTeams() {
     status.textContent = 'Connected as ' + (msTeamsAccount.name || msTeamsAccount.username);
     btn.textContent = 'Refresh';
     btn.disabled = false;
+    const disconnectBtn = document.getElementById('teamsDisconnectBtn');
+    if(disconnectBtn) disconnectBtn.style.display = 'block';
     showToast('✅ Microsoft account connected!');
     await loadTeamsAssignments();
   } catch(e) {
@@ -4188,6 +4191,20 @@ async function connectMicrosoftTeams() {
       showToast('❌ Could not connect: ' + (e.message || e.errorCode));
     }
   }
+}
+
+function disconnectMicrosoftTeams() {
+  msTeamsAccount = null;
+  sessionStorage.clear();
+  const status = document.getElementById('teamsConnectionStatus');
+  const btn = document.getElementById('teamsConnectBtn');
+  const disconnectBtn = document.getElementById('teamsDisconnectBtn');
+  const listDiv = document.getElementById('teamsAssignmentsList');
+  if(status) status.textContent = 'Not connected';
+  if(btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+  if(disconnectBtn) disconnectBtn.style.display = 'none';
+  if(listDiv) listDiv.style.display = 'none';
+  showToast('Disconnected from Microsoft');
 }
 
 async function loadTeamsAssignments() {
