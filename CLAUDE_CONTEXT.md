@@ -715,3 +715,60 @@ Then build in this order:
 
 **Session start:** paste this file, state what to build.
 **Session end:** ask Claude to update CLAUDE_CONTEXT.md.
+
+### 16 Jun 2026 (Session 7, continued) — Brain Dump, Squirrel AI, License Gate, Landing Page AI Section
+
+**Brain Dump mode — fully built:**
+- 🐿️ Brain Dump button on both primary and HS student home screens (pulsing, prominent)
+- Drawer screen: text input + 🎤 voice button (Web Speech API, en-AU, Chrome/Safari)
+- Claude API (claude-sonnet-4-20250514) extracts tasks into JSON array with title, subject, due_date, notes
+- Results render as editable cards (title, subject, due date, checkbox)
+- Save All Tasks → saves checked tasks to assignments table, refreshes student view
+- Gated: counts against AI import cap (3/month free, unlimited Pro)
+- Fixed: CORS issue (wrong model string), broken regex, broken prompt string (literal newlines)
+
+**Squirrel AI character — introduced throughout app:**
+- Squirrel is FocablyED's AI mascot (the orange squirrel from the logo, named by the team)
+- Brain Dump: "Tell Squirrel everything — she'll sort it out 🐿️" / "🐿️ Squirrel, sort this!" / "🐿️ Squirrel found N tasks!"
+- Task Breakdown: "🐿️ Ask Squirrel — Break Any Task" / "🐿️ Ask Squirrel" button
+- Smart Import: "Squirrel will pull out the key details automatically 🐿️" / "🐿️ Ask Squirrel" button
+- Hamburger menu: 🐿️ Ask Squirrel (replaces ✨ Break Any Task)
+- Subscription screen: "🐿️ Unlimited Squirrel requests"
+- Squirrel referred to as "she"
+
+**License gate on Create School:**
+- License key field added to Create School screen (FOCABLY-XXXX-XXXX format)
+- Regex validation before hitting Supabase
+- Checks: key exists, not already assigned to a school, not expired
+- On success: school created with subscription_status='active', license row updated with school_id + activated_at
+- To issue a key: INSERT INTO licenses (key, tier, max_students, expires_at) VALUES ('FOCABLY-XXXX-XXXX', 'small', 300, '2027-12-31')
+
+**Landing page — AI features section added:**
+- New dark indigo section between "How it works" and screenshots
+- Six feature cards: Brain Dump, AI Task Breakdown, Smart Import, Themes, Teams Import, Stars/XP/Rewards
+- Each card has colour-coded badge (ADHD-first / For everyone / Smart import)
+- Copy focused on student pain points
+
+**ABN added to privacy policy (both repos):**
+- Your Finance Dept Pty Ltd (ABN 95 129 679 205)
+
+**FocablyED.com.au DNS:**
+- Already added to Vercel (focably-landing project)
+- DNS records added in Crazy Domains — awaiting propagation
+
+**Microsoft Teams OAuth:**
+- Azure AD app: FocablyED, client ID 2593af2c-94ef-47ec-aa9a-40de24336aca
+- Permissions: User.Read, EduAssignments.ReadBasic
+- Redirect URI: https://focably.vercel.app (SPA)
+- Disconnect button added — clears sessionStorage
+
+**Next session TODO (Session 8):**
+- Email notifications system (Resend or SendGrid):
+  - Overdue task warnings to parents
+  - Weekly digest for parents (Sunday evening)
+  - Task completion notifications
+  - Reward approval/rejection to student
+- Push notifications end-to-end test
+- HubSpot waitlist debug
+- Celebration moments (confetti on task complete)
+- V1.0 launch checklist review
