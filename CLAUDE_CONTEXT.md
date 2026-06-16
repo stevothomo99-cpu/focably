@@ -568,9 +568,11 @@ Then build in this order:
 - Three scenarios covered: ✅ parent pays → existing kids Pro, ✅ child joins after payment → inherits Pro, ✅ parent cancels → all kids back to free
 - **Remember:** JWT verification must be OFF on stripe-webhook after every redeploy
 
-**Next session TODO:**
+**Next session TODO (Session 7):**
+- ✅ Verify push notifications firing end-to-end in production (proof submit → parent, proof approved/rejected → student, task assigned → student)
 - Subscription Status screen (plan details, renewal date, Stripe customer portal manage/cancel link)
 - License gate on Create School (validate FOCABLY-XXXX-XXXX against licenses table)
+- HubSpot waitlist debug (Forms API switched, console logging added — check error on next test signup)
 - Consider: stripe live mode → test mode toggle for dev vs prod
 
 ### 16 Jun 2026 (Session 5) — Landing rebrand, Stripe payments, AI cap
