@@ -4247,8 +4247,8 @@ function toggleBrainDumpVoice() {
 }
 
 async function processBrainDump() {
-  const input = document.getElementById('brainDumpInput')?.value.trim();
-  if(!input) { showToast('Type something first!'); return; }
+  const dumpText = document.getElementById('brainDumpInput')?.value.trim();
+  if(!dumpText) { showToast('Type something first!'); return; }
 
   // AI import cap check
   if(!isPro()) {
@@ -4273,16 +4273,34 @@ async function processBrainDump() {
         max_tokens: 1000,
         messages: [{
           role: 'user',
-          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.\n\nBrain dump:\n' + input
+          content: 'You are a task organiser for a student. Today is ' + today + '. Extract all tasks, assignments and to-dos from this brain dump. Return ONLY a JSON array of tasks, no other text. Each task: {"title":"...","subject":"...","due_date":"YYYY-MM-DD or null","notes":"..."}. Keep titles short (under 60 chars). Group similar items. Today is ' + today + '.\n\nBrain dump:\n' + dumpText
         }]
       })
     });
 
     const data = await response.json();
+    console.log('Brain dump API response:', JSON.stringify(data).substring(0, 300));
+
+    if(!response.ok || data.error) {
+      console.error('Brain dump API error:', data.error || data);
+      showToast('❌ API error: ' + (data.error?.message || response.status));
+      return;
+    }
+
     let text = (data.content?.[0]?.text || '').trim();
+    console.log('Brain dump raw text:', text.substring(0, 200));
     // Strip markdown code fences if present
-    text = text.replace(/```json|```/g, '').trim();
-    brainDumpTasks = JSON.parse(text);
+    text = text.replace(/```json
+?|```
+?/g, '').trim();
+
+    try {
+      brainDumpTasks = JSON.parse(text);
+    } catch(parseErr) {
+      console.error('Brain dump JSON parse error:', parseErr, 'text was:', text);
+      showToast('❌ Could not parse response — try again');
+      return;
+    }
 
     if(!Array.isArray(brainDumpTasks) || !brainDumpTasks.length) {
       showToast('Could not find any tasks — try adding more detail');
