@@ -3729,6 +3729,13 @@ async function respondToRedemption(redemptionId, action, btn) {
         body: `Your parent approved: ${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'your reward'}. Enjoy!`
       }));
       await sendPushToUser(studentId, '🎉 Reward Approved!', `Your parent approved: ${redemption.rewards?.title||'your reward'}. Enjoy!`);
+      // Email student
+      sendTransactionalEmail('reward_approved', {
+        studentId,
+        rewardTitle: redemption.rewards?.title || 'your reward',
+        rewardEmoji: redemption.rewards?.emoji || '🎁',
+        starCost: redemption.rewards?.star_cost || 0
+      });
     }
     showToast('🎉 Reward approved!');
   } else {
@@ -3742,6 +3749,12 @@ async function respondToRedemption(redemptionId, action, btn) {
         title: '😔 Not Yet',
         body: `${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'Your reward request'} wasn't approved this time. Keep earning!`
       }));
+      // Email student
+      sendTransactionalEmail('reward_rejected', {
+        studentId,
+        rewardTitle: redemption.rewards?.title || 'your reward',
+        rewardEmoji: redemption.rewards?.emoji || '🎁'
+      });
     }
     showToast('Reward declined');
   }
@@ -4067,6 +4080,14 @@ async function redeemReward(rewardId, childId) {
       body: `${child?.name||'Your child'} wants to redeem: ${reward.emoji} ${reward.title} (⭐ ${reward.star_cost} stars)`
     }));
     await sendPushToUser(family.parent_id, '🎁 Reward Request!', `${child?.name||'Your child'} wants to redeem: ${reward.title}`);
+    // Email parent
+    sendTransactionalEmail('reward_requested', {
+      parentId: family.parent_id,
+      studentName: child?.name || 'Your child',
+      rewardTitle: reward.title,
+      rewardEmoji: reward.emoji,
+      starCost: reward.star_cost
+    });
   }
 
   showToast('🎁 Request sent to your parent!');
@@ -5941,6 +5962,13 @@ async function resolveApproval(taskId, childId, action, fromRole) {
         title: sTitle, body: sBody
       }));
       await sendPushToUser(studentId, sTitle, sBody);
+      // Email student
+      if(action === 'approve') {
+        const {data:taskData} = await dbQuery(db.from('tasks').select('star_value').eq('id', taskId).maybeSingle());
+        sendTransactionalEmail('proof_approved', { studentId, taskTitle: t?.title || 'Your task', stars: taskData?.star_value || 0 });
+      } else {
+        sendTransactionalEmail('proof_rejected', { studentId, taskTitle: t?.title || 'Your task' });
+      }
     }
   } catch(e) { console.log('Student notify error:', e.message); }
 }
