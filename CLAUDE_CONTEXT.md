@@ -731,11 +731,19 @@ Then build in this order:
 - All 4 Edge Functions have Verify JWT OFF: `send-transactional`, `send-digest`, `send-warnings`, `send-push`, `stripe-webhook`
 - App wired: `sendTransactionalEmail(type, data)` helper added, called at all trigger points
 
+**HubSpot waitlist pipeline — fully built and live:**
+- Waitlist form → Supabase → `hubspot-sync` Edge Function → HubSpot Contact + Deal
+- HubSpot Service Key stored as `HUBSPOT_TOKEN` Supabase secret
+- Contact properties: `focably_role`, `focablyed_challenge`, `focablyed_interests`, `focablyed_source`, `focablyed_num_children`, `focablyed_school_year`, `focablyed_adhd_flag`, `focablyed_school_type`
+- Deal at stage `appointmentscheduled`, linked to Contact via v4 associations API (associationTypeId: 3)
+- Form validation: Name, Email, Role (step 1) + How you heard about us + Mobile (step 3) all required
+- Vercel Pro plan activated this session
+
 **Next session TODO (Session 9):**
 - ⬜ Test email notifications end-to-end (submit proof → check parent email, approve reward → check student email)
-- ⬜ HubSpot waitlist debug
 - ⬜ V1.0 launch checklist review — what's left before handing link to real families
-- ⬜ Rotate exposed keys: Anthropic API key (console.anthropic.com) + Resend API key (resend.com) + GitHub PAT
+- ⬜ Rotate ALL exposed keys: Anthropic API key + Resend API key + GitHub PATs + HubSpot Service Key
+- ⬜ Delete test contacts/deals from HubSpot (Peter, Sue, John, Kevin, Kerry test entries)
 
 ### 16 Jun 2026 (Session 7, continued) — Brain Dump, Squirrel AI, License Gate, Landing Page AI Section
 
