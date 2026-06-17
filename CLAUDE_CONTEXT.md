@@ -717,6 +717,26 @@ Then build in this order:
 **Session start:** paste this file, state what to build.
 **Session end:** ask Claude to update CLAUDE_CONTEXT.md.
 
+### 17 Jun 2026 (Session 8) — Resend Email Notifications
+
+**Email infrastructure — fully built and live:**
+- 3 Supabase Edge Functions deployed: `send-transactional`, `send-digest`, `send-warnings`
+- `send-transactional` — instant triggers: proof submitted → parent, proof approved/rejected → student, reward approved/rejected → student, reward requested → parent
+- `send-digest` — weekly Sunday 6pm AEST summary to all parents (tasks done, stars, XP, streaks, overdue count)
+- `send-warnings` — daily 7am AEST overdue/due-soon alerts to parents (grouped by child, colour-coded urgency)
+- All emails branded: squirrel logo, indigo/violet gradient header, FocablyED footer with privacy policy link
+- Sends from `notifications@focablyed.com` (Resend domain verified ✅)
+- Resend API key stored as Supabase Edge Function secret `RESEND_API_KEY`
+- pg_cron enabled, both scheduled jobs registered (`weekly-digest`, `daily-warnings`)
+- All 4 Edge Functions have Verify JWT OFF: `send-transactional`, `send-digest`, `send-warnings`, `send-push`, `stripe-webhook`
+- App wired: `sendTransactionalEmail(type, data)` helper added, called at all trigger points
+
+**Next session TODO (Session 9):**
+- ⬜ Test email notifications end-to-end (submit proof → check parent email, approve reward → check student email)
+- ⬜ HubSpot waitlist debug
+- ⬜ V1.0 launch checklist review — what's left before handing link to real families
+- ⬜ Rotate exposed keys: Anthropic API key (console.anthropic.com) + Resend API key (resend.com) + GitHub PAT
+
 ### 16 Jun 2026 (Session 7, continued) — Brain Dump, Squirrel AI, License Gate, Landing Page AI Section
 
 **Brain Dump mode — fully built:**
