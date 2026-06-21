@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.focablyed.app.twa",
+    "sha256_cert_fingerprints": ["BF:8A:0B:81:5A:CD:29:2B:11:4F:5D:3D:FF:D0:EB:04:9A:4F:6E:0E:D8:58:FA:D9:91:89:DF:B3:B8:B3:8D:54"]
+  }
+}]
