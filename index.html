@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#7B2FBE">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>FocablyED</title>
 <meta name="version" content="20260615234139">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png">
-<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png">
-<meta name="theme-color" content="#1E1B4B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6948,6 +6948,11 @@ async function handleStripeReturn() {
     <p style="text-align:center;font-size:11px;color:var(--gray-400);margin-top:12px;">Cancel anytime. Secure payment via Stripe.</p>
   </div>
 </div>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
 </body>
 </html>
 
