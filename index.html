@@ -3186,7 +3186,8 @@ async function linkToFamily() {
     showToast('⏰ This code has expired — ask for a new one');return;
   }
   // Create child record linked to this family and profile
-  const {data:existingRows} = await db.from('children').select('id').eq('profile_id',currentUser.id).limit(1);
+  // Check if this profile is already linked to ANY family
+  const {data:existingRows} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, []);
   if(existingRows?.length){
     showToast('✅ Already linked — loading your app!');
     appReady = true;
