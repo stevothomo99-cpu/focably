@@ -3187,7 +3187,13 @@ async function linkToFamily() {
   }
   // Create child record linked to this family and profile
   const {data:existingRows} = await db.from('children').select('id').eq('profile_id',currentUser.id).limit(1);
-  if(existingRows?.length){showToast('Already linked!');return;}
+  if(existingRows?.length){
+    showToast('✅ Already linked — loading your app!');
+    appReady = true;
+    await new Promise(resolve => setTimeout(resolve, 400));
+    await loadStudentApp();
+    return;
+  }
 
   // ── Paywall gate: check if family already has a child (2nd child = Pro required) ──
   const {data:familyChildren} = await dbQuery(db.from('children').select('id').eq('family_id',family.id));
@@ -3222,6 +3228,8 @@ async function linkToFamily() {
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
+    // Small delay to ensure insert has propagated before querying
+    await new Promise(resolve => setTimeout(resolve, 800));
     await loadStudentApp();
   }
 }
