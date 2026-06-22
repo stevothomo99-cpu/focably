@@ -3185,10 +3185,10 @@ async function linkToFamily() {
   if(family.invite_code_expires_at && new Date(family.invite_code_expires_at) < new Date()){
     showToast('⏰ This code has expired — ask for a new one');return;
   }
-  // Create child record linked to this family and profile
   // Check if this profile is already linked to ANY family
-  const {data:existingRows} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, []);
-  if(existingRows?.length){
+  const {data:existingRows, error:existingErr} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, null);
+  console.log('linkToFamily: existingRows=', existingRows, 'err=', existingErr?.message);
+  if(existingRows && existingRows.length > 0){
     showToast('✅ Already linked — loading your app!');
     appReady = true;
     await new Promise(resolve => setTimeout(resolve, 400));
@@ -3226,11 +3226,11 @@ async function linkToFamily() {
   // Set appReady BEFORE navigating so auth state change can't interrupt
   appReady = true;
   showToast('✅ Linked to family!');
+  // Small delay to ensure insert has propagated before querying
+  await new Promise(resolve => setTimeout(resolve, 800));
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
-    // Small delay to ensure insert has propagated before querying
-    await new Promise(resolve => setTimeout(resolve, 800));
     await loadStudentApp();
   }
 }
