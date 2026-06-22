@@ -717,6 +717,56 @@ Then build in this order:
 **Session start:** paste this file, state what to build.
 **Session end:** ask Claude to update CLAUDE_CONTEXT.md.
 
+### 23 Jun 2026 (Session 9) — Go-to-Market Strategy, Store Listing, Bug Fixes
+
+**Google Play Console:**
+- Identity verification approved ✅
+- Apple Developer Program — signing up tonight (enroll as organisation, not individual — cleaner for future entity transfer)
+
+**Brand strategy locked:**
+- Tagline: `The system isn't broken. It just wasn't built with your child in mind.`
+- Hero message: `Stop asking "what homework do you have?" FocablyED already knows.`
+- Squirrel origin story: named after ADHD distraction reflex ("SQUIRREL!" from Pixar's UP — Zoe's lived experience). Acorn parable = one small step builds into something bigger.
+- Two-audience funnel: Parent downloads (empathy/credibility sell) → Child uses (cute squirrel mascot works for ADHD kids who also like cutesy things)
+
+**Freemium vs Pro value proposition — locked:**
+- Freemium: Squirrel breaks down assignments once parent/child have the info. Parent still has to extract assignment details from child.
+- Pro: Teacher connects → assignments arrive automatically before child gets home. Nobody has to ask anyone anything.
+- Teacher is always FREE to use. Parent pays to connect and see teacher-assigned tasks.
+
+**Play Store listing copy — locked:**
+- App name: `FocablyED`
+- Short description: `The system wasn't built for your child. FocablyED was.`
+- Full description: Written around parent pain narrative (week after week, year after year), three-way loop (student/parent/teacher), Squirrel AI, freemium/Pro split. See store listing draft in session chat.
+
+**Founder Facebook post — locked:**
+- Post as Steve (dad), not as brand
+- Strategy: join ADHD parent Facebook groups, participate genuinely 2-3 weeks, then post
+- Post text finalised — leads with "My daughter has ADHD. She's 15." / nightly homework question / "How did you manage this?"
+- Follow-up post (day 2) reveals the app after comments roll in
+- Target metric: 50 paying families, not follower count
+
+**Bug fix — linkToFamily duplicate children:**
+- Symptom: entering family invite code kept creating duplicate child records in `children` table without navigating away from link screen
+- Root cause 1: `existingRows` check used bare `db.from` (not `dbQuery`) — timed out silently, returned nothing, bypassed duplicate check
+- Root cause 2: `dbQuery` default fallback was `[]` not `null` — length check on empty array always false
+- Fix 1: Changed `existingRows` query to use `dbQuery` with `null` default
+- Fix 2: Changed check to `existingRows && existingRows.length > 0`
+- Fix 3: If already linked, load the app instead of dead-ending with toast
+- Fix 4: Added 800ms delay after insert before `loadStudentApp()` to allow Supabase propagation
+- Status: pushed, still investigating — console logs added to confirm which path fires
+
+**Next session TODO (Session 10):**
+- ⬜ Confirm linkToFamily bug fully resolved (check console logs, clean duplicate Chewies from children table)
+- ⬜ Test email notifications end-to-end (submit proof → parent email, approve reward → student email)
+- ⬜ Rotate ALL exposed keys: Anthropic API key, Resend API key, GitHub PATs, HubSpot Service Key
+- ⬜ Screenshots for Play Store (Chrome DevTools → device toolbar → Capture screenshot, or shots.so)
+- ⬜ Feature graphic 1024×512px in Canva (brand kit kAGUTESm9aE, deep purple #7B2FBE, XP gold #F9CA24)
+- ⬜ App icon 512×512px in Canva
+- ⬜ Apple Developer Program enrollment (as organisation)
+- ⬜ Landing page rewrite with new brand copy
+- ⬜ Delete test contacts/deals from HubSpot
+
 ### 17 Jun 2026 (Session 8) — Resend Email Notifications
 
 **Email infrastructure — fully built and live:**
