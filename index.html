@@ -3240,7 +3240,25 @@ async function linkToFamily() {
     age_group: currentProfile.age_group
   }).select().maybeSingle();
   console.log('linkToFamily: insert result=', newChild, 'error=', error?.message);
-  if(error){showToast('❌ Could not link account: ' + error.message);return;}
+  if(error) {
+    // Unique constraint violation = already linked (race condition or prior attempt)
+    // Treat as success — find their existing row and load the app
+    if(error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique')) {
+      console.log('linkToFamily: unique constraint hit — already linked, loading app');
+      const {data:existingChild} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 5000, null);
+      currentChildRecord = existingChild?.[0] || null;
+      appReady = true;
+      linkToFamilyInProgress = false;
+      showToast('✅ Already linked — loading your app!');
+      await new Promise(resolve => setTimeout(resolve, 400));
+      if(!currentProfile.age_group) { showScreen('onboarding'); } else { await loadStudentApp(); }
+      return;
+    }
+    showToast('❌ Could not link account: ' + error.message);
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
+  }
   // ── Inherit family subscription status onto child's profile ──
   // Covers the case where parent already paid Pro before child joined
   const familySubStatus = family.subscription_status || 'free';
