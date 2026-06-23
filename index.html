@@ -2506,7 +2506,7 @@ async function completeOnboarding() {
   }
 }
 // ── STUDENT APP ──
-async function loadStudentApp() {
+async function loadStudentApp(knownChild) {
   setFooterActive('home');
   isNavigating = true;
   appReady = true;
@@ -2550,20 +2550,23 @@ async function loadStudentApp() {
     applyHSTheme(hsTheme, shouldSave);
   }
   isNavigating = false;
-  // Load assignments — this will show the right panel once child record is confirmed
-  loadStudentAssignments(age).catch(e => console.log('Assignment load error:', e.message));
+  // Load assignments — pass knownChild to skip DB query if we just linked
+  loadStudentAssignments(age, knownChild).catch(e => console.log('Assignment load error:', e.message));
   requestNotificationPermission();
   startNotifPolling();
 }
 
-async function loadStudentAssignments(ageGroup) {
+async function loadStudentAssignments(ageGroup, knownChild) {
   // Safety check — if no age group yet send to onboarding
   if(!ageGroup) { showScreen('onboarding'); return; }
   console.log('loadStudentAssignments: fetching child for user', currentUser.id);
-  // Use limit(1) instead of maybeSingle to handle any duplicate records gracefully
-  const {data:children, error:childError} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 8000, []);
-  const child = children?.[0] || currentChildRecord || null;
-  console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
+  // If we already have the child record (e.g. just linked), skip the DB query
+  let child = knownChild || null;
+  if(!child) {
+    const {data:children} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 8000, []);
+    child = children?.[0] || currentChildRecord || null;
+  }
+  console.log('loadStudentAssignments: child=', child);
   if(!child) {
     console.log('loadStudentAssignments: no child found — showing link card');
     currentChildRecord = null;
@@ -3277,7 +3280,7 @@ async function linkToFamily() {
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
-    await loadStudentApp();
+    await loadStudentApp(newChild);
   }
 }
 
