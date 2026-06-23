@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.focablyED.com",
+        "sha256_cert_fingerprints": ["AE:EA:D5:A8:E5:3C:F1:29:4D:38:C7:88:BA:5C:F4:06:8C:AC:62:A3:DB:B5:99:C0:B4:7C:B5:56:50:42:0E:2B"]
+      }
+    }]
