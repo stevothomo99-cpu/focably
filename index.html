@@ -588,7 +588,7 @@ body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo
         <div style="font-size:13px;font-weight:600;color:var(--gray-700);">Enter Family Invite Code</div>
         <div class="link-input-row">
           <input class="link-input" type="text" id="inviteCodeInput" placeholder="ABC123" maxlength="6">
-          <button class="link-btn" onclick="linkToFamily()">Link ✓</button>
+          <button class="link-btn" id="linkFamilyBtn" onclick="linkToFamily()">Link ✓</button>
         </div>
       </div>
     </div>
@@ -3177,13 +3177,33 @@ function applyTheme(t) {
 }
 
 // ── LINK TO FAMILY ──
+let linkToFamilyInProgress = false;
 async function linkToFamily() {
+  // Prevent double-tap duplicates
+  if(linkToFamilyInProgress) return;
+  linkToFamilyInProgress = true;
+  const btn = document.getElementById('linkFamilyBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Linking…'; }
+
   const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
-  if(code.length!==6){showToast('Enter the 6-character code');return;}
-  const {data:family} = await db.from('families').select('*').eq('invite_code',code).maybeSingle();
-  if(!family){showToast('❌ Code not found — check with your parent');return;}
+  if(code.length!==6){
+    showToast('Enter the 6-character code');
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
+  }
+  const {data:family} = await dbQuery(db.from('families').select('*').eq('invite_code',code).maybeSingle(), 8000, null);
+  if(!family){
+    showToast('❌ Code not found — check with your parent');
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
+  }
   if(family.invite_code_expires_at && new Date(family.invite_code_expires_at) < new Date()){
-    showToast('⏰ This code has expired — ask for a new one');return;
+    showToast('⏰ This code has expired — ask for a new one');
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
   }
   // Check if this profile is already linked to ANY family
   const {data:existingRows, error:existingErr} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, null);
@@ -3191,6 +3211,7 @@ async function linkToFamily() {
   if(existingRows && existingRows.length > 0){
     showToast('✅ Already linked — loading your app!');
     appReady = true;
+    linkToFamilyInProgress = false;
     await new Promise(resolve => setTimeout(resolve, 400));
     await loadStudentApp();
     return;
@@ -3225,6 +3246,7 @@ async function linkToFamily() {
   }
   // Set appReady BEFORE navigating so auth state change can't interrupt
   appReady = true;
+  linkToFamilyInProgress = false;
   showToast('✅ Linked to family!');
   // Small delay to ensure insert has propagated before querying
   await new Promise(resolve => setTimeout(resolve, 800));
