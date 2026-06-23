@@ -2492,7 +2492,8 @@ async function completeOnboarding() {
   if(!selectedAge){showToast('Pick your age group!');return;}
   if(selectedAge==='primary'&&!selectedTheme){showToast('Pick a quest world!');return;}
   const avatar = selectedAvatar || (selectedAge==='primary' ? '🧙' : '🎓');
-  await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme,avatar}).eq('id',currentUser.id);
+  const {error:saveErr} = await dbQuery(db.from('profiles').update({age_group:selectedAge,theme:selectedTheme,avatar}).eq('id',currentUser.id), 8000, null);
+  if(saveErr){ showToast('Could not save profile: ' + saveErr.message); return; }
   currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme; currentProfile.avatar=avatar;
   // Also update children row in case age_group was null when they linked
   if(currentChildRecord?.id) {
