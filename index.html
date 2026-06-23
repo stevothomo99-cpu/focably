@@ -2494,6 +2494,11 @@ async function completeOnboarding() {
   const avatar = selectedAvatar || (selectedAge==='primary' ? '🧙' : '🎓');
   await db.from('profiles').update({age_group:selectedAge,theme:selectedTheme,avatar}).eq('id',currentUser.id);
   currentProfile.age_group=selectedAge; currentProfile.theme=selectedTheme; currentProfile.avatar=avatar;
+  // Also update children row in case age_group was null when they linked
+  if(currentChildRecord?.id) {
+    await dbQuery(db.from('children').update({age_group:selectedAge}).eq('id',currentChildRecord.id), 5000, null);
+    currentChildRecord.age_group = selectedAge;
+  }
   await loadStudentApp();
   // HS students: prompt to pick a theme right after onboarding
   if(selectedAge === 'highschool') {
@@ -2557,7 +2562,7 @@ async function loadStudentAssignments(ageGroup) {
   console.log('loadStudentAssignments: fetching child for user', currentUser.id);
   // Use limit(1) instead of maybeSingle to handle any duplicate records gracefully
   const {data:children, error:childError} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 8000, []);
-  const child = children?.[0] || null;
+  const child = children?.[0] || currentChildRecord || null;
   console.log('loadStudentAssignments: child=', child, 'error=', childError?.message);
   if(!child) {
     console.log('loadStudentAssignments: no child found — showing link card');
@@ -3244,12 +3249,13 @@ async function linkToFamily() {
     currentProfile.subscription_status = familySubStatus;
     console.log('linkToFamily: inherited subscription_status =', familySubStatus);
   }
+  // Set currentChildRecord directly from insert — no need to re-query, avoids propagation race
+  currentChildRecord = newChild;
   // Set appReady BEFORE navigating so auth state change can't interrupt
   appReady = true;
   linkToFamilyInProgress = false;
   showToast('✅ Linked to family!');
-  // Small delay to ensure insert has propagated before querying
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise(resolve => setTimeout(resolve, 400));
   if(!currentProfile.age_group) {
     showScreen('onboarding');
   } else {
