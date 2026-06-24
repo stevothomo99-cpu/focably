@@ -3355,7 +3355,14 @@ async function loadParentApp() {
   if(proEl) proEl.style.display = isPro() ? 'inline-block' : 'none';
   const navName = document.getElementById('navUserName');
   if(navName) navName.textContent = currentProfile.full_name?.split(' ')[0] || '';
-  let {data:family} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).maybeSingle());
+  let {data:families} = await dbQuery(db.from('families').select('*').eq('parent_id',currentUser.id).order('created_at',{ascending:true}), 8000, []);
+  let family = null;
+  if(families && families.length > 0) {
+    // Prefer the family that has children linked to it
+    const {data:childRows} = await dbQuery(db.from('children').select('family_id').in('family_id', families.map(f=>f.id)), 5000, []);
+    const familyWithChildren = childRows?.length ? families.find(f => childRows.some(c => c.family_id === f.id)) : null;
+    family = familyWithChildren || families[0];
+  }
   if(!family) {
     const {data:nf} = await dbQuery(db.from('families').insert({parent_id:currentUser.id,family_name:(currentProfile.full_name||'My')+"'s Family"}).select().maybeSingle());
     family=nf;
