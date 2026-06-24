@@ -893,7 +893,13 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       </div>
       <div class="form-grp"><label class="form-lbl">Notes (optional)</label><textarea class="form-input" rows="2" id="parentTaskDesc" placeholder="Any extra details..."></textarea></div>
 
-      <!-- Visibility -->
+      <!-- Star Value -->
+      <div class="form-grp">
+        <label class="form-lbl">⭐ Stars for completing</label>
+        <div style="display:flex;gap:8px;">
+          ${[1,2,3,4,5].map(n => `<button type="button" class="star-val-btn" data-val="${n}" onclick="selectTaskStars(${n})" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">${n}⭐</button>`).join('')}
+        </div>
+      </div>
       <div class="form-grp">
         <label class="form-lbl">Visibility</label>
         <div style="display:flex;gap:8px;">
@@ -4319,6 +4325,17 @@ async function uploadAssignmentFile(assignmentId) {
 
 // ── PARENT TASK VISIBILITY ──
 let taskVisibility = 'private'; // 'private' | 'class'
+let selectedTaskStars = 1; // default 1 star
+
+function selectTaskStars(n) {
+  selectedTaskStars = n;
+  document.querySelectorAll('.star-val-btn').forEach(b => {
+    const active = parseInt(b.dataset.val) === n;
+    b.style.background = active ? 'var(--amber)' : 'white';
+    b.style.color = active ? 'white' : 'var(--gray-500)';
+    b.style.borderColor = active ? 'var(--amber)' : 'var(--gray-200)';
+  });
+}
 
 function setTaskVisibility(mode) {
   taskVisibility = mode;
@@ -4415,7 +4432,7 @@ async function parentAddTask() {
       assignment_id: assignment.id,
       child_id: childId,
       title: s.title||title,
-      xp_value: 15, star_value: 1,
+      xp_value: 15, star_value: selectedTaskStars,
       sort_order: i+1,
       verification_required: false
     }));
@@ -6444,6 +6461,8 @@ function openDrawerScreen(screen) {
   if(screen === 'add-task') {
     setTaskVisibility('private');
     populateTaskClassPicker();
+    selectedTaskStars = 1;
+    selectTaskStars(1);
   }
 
   // Family invite: show existing code only if still valid, else just the generate button
