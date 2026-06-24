@@ -1787,6 +1787,7 @@ const trustConfig = {
 (function() {
   let startY = 0;
   let isPulling = false;
+  let pullActive = false;
   let indicator = null;
 
   function getIndicator() {
@@ -1801,24 +1802,27 @@ const trustConfig = {
   }
 
   document.addEventListener('touchstart', e => {
-    // Only trigger if at top of scroll
     if(window.scrollY === 0) {
       startY = e.touches[0].clientY;
       isPulling = true;
+      pullActive = false;
     }
   }, {passive: true});
 
   document.addEventListener('touchmove', e => {
     if(!isPulling) return;
     const dist = e.touches[0].clientY - startY;
-    if(dist > 0 && dist < 120) {
+    if(dist > 8 && window.scrollY === 0) {
+      // Actively prevent the browser pull-to-refresh
+      pullActive = true;
+      e.preventDefault();
       const ind = getIndicator();
       const h = Math.min(dist * 0.6, 60);
       ind.style.height = h + 'px';
       const sq = ind.querySelector('span');
       if(sq) sq.style.opacity = dist > 40 ? '1' : '0';
     }
-  }, {passive: true});
+  }, {passive: false}); // passive:false required to allow preventDefault
 
   document.addEventListener('touchend', async e => {
     if(!isPulling) return;
@@ -1826,10 +1830,13 @@ const trustConfig = {
     const dist = e.changedTouches[0].clientY - startY;
     const ind = getIndicator();
     ind.style.height = '0';
-    if(ind.querySelector('span')) ind.querySelector('span').style.opacity = '0';
-    if(dist > 60 && typeof refreshCurrentView === 'function') {
+    const sq = ind.querySelector('span');
+    if(sq) sq.style.opacity = '0';
+    if(pullActive && dist > 60 && typeof refreshCurrentView === 'function') {
+      pullActive = false;
       await refreshCurrentView();
     }
+    pullActive = false;
   }, {passive: true});
 })();
 
