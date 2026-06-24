@@ -36,7 +36,7 @@
   --hs-xp-fill:#7C3AED; --hs-trust-bar:#10B981;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain;}
 .screen{min-height:100vh;}
 #screen-loading{display:flex;align-items:center;justify-content:center;background:var(--indigo);}
 #screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;}
@@ -1783,6 +1783,56 @@ const trustConfig = {
 };
 
 // ── INIT ──
+// ── PULL TO REFRESH ──
+(function() {
+  let startY = 0;
+  let isPulling = false;
+  let indicator = null;
+
+  function getIndicator() {
+    if(!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'pullIndicator';
+      indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;background:rgba(123,47,190,0.15);transition:height 0.1s;pointer-events:none;';
+      indicator.innerHTML = '<span style="font-size:20px;opacity:0;transition:opacity 0.2s;">🐿️</span>';
+      document.body.appendChild(indicator);
+    }
+    return indicator;
+  }
+
+  document.addEventListener('touchstart', e => {
+    // Only trigger if at top of scroll
+    if(window.scrollY === 0) {
+      startY = e.touches[0].clientY;
+      isPulling = true;
+    }
+  }, {passive: true});
+
+  document.addEventListener('touchmove', e => {
+    if(!isPulling) return;
+    const dist = e.touches[0].clientY - startY;
+    if(dist > 0 && dist < 120) {
+      const ind = getIndicator();
+      const h = Math.min(dist * 0.6, 60);
+      ind.style.height = h + 'px';
+      const sq = ind.querySelector('span');
+      if(sq) sq.style.opacity = dist > 40 ? '1' : '0';
+    }
+  }, {passive: true});
+
+  document.addEventListener('touchend', async e => {
+    if(!isPulling) return;
+    isPulling = false;
+    const dist = e.changedTouches[0].clientY - startY;
+    const ind = getIndicator();
+    ind.style.height = '0';
+    if(ind.querySelector('span')) ind.querySelector('span').style.opacity = '0';
+    if(dist > 60 && typeof refreshCurrentView === 'function') {
+      await refreshCurrentView();
+    }
+  }, {passive: true});
+})();
+
 window.addEventListener('load', async () => {
   // Register service worker first
   if ('serviceWorker' in navigator) {
