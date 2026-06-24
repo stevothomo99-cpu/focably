@@ -755,7 +755,13 @@ Then build in this order:
 - ❌ Wrong: `kAGUTESm9aE` — do not use
 - For landscape outputs use `facebook_cover` or `youtube_banner` design types (not `poster` which defaults to portrait)
 
-**Next session TODO (Session 11):**
+**Rewards bug — partially resolved:**
+- RLS on `rewards` table was blocking both students and parents — policies added
+- Student rewards now showing correctly in Rewards tab ✅
+- Parent Manage Rewards still not showing created rewards — debug console logs added to `loadManageRewards`. Suspect `rewardChildPicker` value not matching or `currentChildren` stale. Needs desktop console investigation next session.
+- Duplicate `families` rows bug fixed — `loadParentApp` now picks family with children rather than using `.maybeSingle()` which fails on multiple rows
+- `families_parent_id_unique` constraint added to Supabase — prevents duplicate family rows
+- Dave's duplicate family rows cleaned up via SQL**
 - ⬜ iOS Capacitor wrapper — Apple Developer Program enrollment pending (enrolling as organisation tonight). Once approved, set up Capacitor on Mac, build iOS IPA, submit to App Store Connect
 - ⬜ Pull-to-refresh — still reloading app on TWA. Three fixes attempted (overscroll-behavior, preventDefault on touchmove, manifest display_override + launch_handler). May require Capacitor to fix properly at native level.
 - ⬜ Install app on Android device via tester link — verify fullscreen (no address bar) ✅ confirmed working
@@ -804,6 +810,17 @@ Then build in this order:
 - Fix 3: If already linked, load the app instead of dead-ending with toast
 - Fix 4: Added 800ms delay after insert before `loadStudentApp()` to allow Supabase propagation
 - Status: pushed, still investigating — console logs added to confirm which path fires
+
+**Next session TODO (Session 11):**
+- ⬜ Manage Rewards display bug — open desktop console as Dave, check loadManageRewards logs (childId value and query result)
+- ⬜ iOS Capacitor wrapper — Apple Developer Program enrollment pending (enrolling tonight as organisation)
+- ⬜ Pull-to-refresh — still reloading on TWA, needs Capacitor for proper fix
+- ⬜ Screenshots for Play Store (minimum 2)
+- ⬜ App icon 512×512px in Canva (brand kit kAHMhpLdWlw)
+- ⬜ Test email notifications end-to-end
+- ⬜ Rotate ALL exposed keys: Anthropic API key, Resend API key, GitHub PATs, HubSpot Service Key
+- ⬜ Landing page rewrite with new brand copy
+- ⬜ Delete test contacts/deals from HubSpot
 
 **Next session TODO (Session 10):**
 - ⬜ Confirm linkToFamily bug fully resolved (check console logs, clean duplicate Chewies from children table)
