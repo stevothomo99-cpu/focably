@@ -3438,7 +3438,7 @@ async function loadChildStats(childId) {
   document.getElementById('pStreak').textContent=`🔥 ${child.streak||0}`;
   document.getElementById('pStars').textContent=child.age_group==='primary'?`⭐ ${child.stars||0}`:`⚡ ${child.xp||0}`;
   document.getElementById('pStarsSub').textContent=child.age_group==='primary'?'Quest stars':'XP earned';
-  const {data:assignments} = await db.from('assignments').select('*, tasks(*), classes(name, subject, profiles(full_name))').eq('child_id',childId).eq('status','active');
+  const {data:assignments} = await dbQuery(db.from('assignments').select('*, tasks(*), classes(name, subject, profiles(full_name))').eq('child_id',childId).eq('status','active'), 8000, []);
   parentAssignmentCache = {};
   (assignments||[]).forEach(a => { parentAssignmentCache[a.id] = a; });
   const allTasks=(assignments||[]).flatMap(a=>a.tasks||[]);
