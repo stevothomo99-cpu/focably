@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "com.focablyed.app.twa",
-    "sha256_cert_fingerprints": ["BF:8A:0B:81:5A:CD:29:2B:11:4F:5D:3D:FF:D0:EB:04:9A:4F:6E:0E:D8:58:FA:D9:91:89:DF:B3:B8:B3:8D:54"]
+    "package_name": "app.focablyED.com",
+    "sha256_cert_fingerprints": ["25:97:9B:1B:92:80:DC:4E:33:C7:50:C3:3A:D4:70:71:C6:E0:DB:12:52:0F:A8:FD:A8:B0:D0:1A:80:8C:9A:43"]
   }
 }]
