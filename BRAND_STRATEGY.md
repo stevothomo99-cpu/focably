@@ -328,8 +328,17 @@ Current landing page needs to be rebuilt around the new brand pillars:
 
 ## Assets Still To Create
 
-- ⬜ App icon — 512×512px PNG (Canva, brand kit kAGUTESm9aE)
-- ⬜ Feature graphic — 1024×512px PNG (Canva)
+- ⬜ App icon — 512×512px PNG (Canva, brand kit kAHMhpLdWlw)
+- ✅ Feature graphic — 1024×500px PNG (created in Canva, uploaded to Play Store)
 - ⬜ Play Store screenshots — minimum 2, up to 8 (Chrome DevTools or shots.so)
 - ⬜ Landing page rewrite
 - ⬜ Facebook profile setup (Steve personal, not brand page)
+
+## Google Play Store — Current Status
+- **Internal Testing: ACTIVE** ✅
+- Package name: `app.focablyED.com`
+- Version: FocablyED_Beta_1.0 (version code 1)
+- TWA via PWABuilder wrapping `https://focably.vercel.app`
+- SHA-256 signing fingerprint: `25:97:9B:1B:92:80:DC:4E:33:C7:50:C3:3A:D4:70:71:C6:E0:DB:12:52:0F:A8:FD:A8:B0:D0:1A:80:8C:9A:43`
+- `assetlinks.json` updated to match ✅
+- Next step: screenshots → promote to open testing → production
