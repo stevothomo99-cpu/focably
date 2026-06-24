@@ -36,7 +36,8 @@
   --hs-xp-fill:#7C3AED; --hs-trust-bar:#10B981;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain;}
+body{font-family:'Inter',sans-serif;background:var(--gray-50);color:var(--indigo);min-height:100vh;overflow-x:hidden;overscroll-behavior-y:none;}
+html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
 .screen{min-height:100vh;}
 #screen-loading{display:flex;align-items:center;justify-content:center;background:var(--indigo);}
 #screen-auth{display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;}
