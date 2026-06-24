@@ -3716,6 +3716,7 @@ async function loadManageRewards() {
   const list = document.getElementById('manageRewardsList');
   const reqCard = document.getElementById('redemptionRequestsCard');
   const reqList = document.getElementById('redemptionRequestsList');
+  console.log('loadManageRewards: childId=', childId, 'currentChildren=', currentChildren?.map(c=>c.id+':'+c.name));
   if(!list) return;
 
   if(!childId) {
@@ -3727,9 +3728,10 @@ async function loadManageRewards() {
   list.innerHTML = '<div style="font-size:13px;color:var(--gray-400);text-align:center;padding:12px 0;">Loading…</div>';
 
   // Load rewards for this child
-  const {data:rewards} = await dbQuery(
+  const {data:rewards, error:rewardsErr} = await dbQuery(
     db.from('rewards').select('*').eq('child_id', childId).eq('is_active', true).order('star_cost')
   );
+  console.log('loadManageRewards: rewards=', rewards, 'error=', rewardsErr?.message);
   currentRewards = rewards || [];
 
   // Load pending redemptions
