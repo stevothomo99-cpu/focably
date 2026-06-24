@@ -811,8 +811,18 @@ Then build in this order:
 - Fix 4: Added 800ms delay after insert before `loadStudentApp()` to allow Supabase propagation
 - Status: pushed, still investigating — console logs added to confirm which path fires
 
+**Session 10 continued — Testing & Bug Fixes:**
+- ✅ Star value picker (1-5⭐) added to Add Task screen for parents — `selectedTaskStars` variable, `selectTaskStars()` function, wired into `parentAddTask()`
+- ✅ Enrolled Classes card added to parent dashboard — always shows classes child is in even with no assignments, with subject/year group/teacher name
+- ✅ Assignments query in `loadChildStats` wrapped in `dbQuery` — was bare `db.from()`, silently timing out
+- ✅ Private tasks appear in Subject Progress as "📚 Home Tasks — Added by you" tile
+- ⚠️ TWA cache issue — Android requires "Clear Data" (not just Clear Cache) after deploys to pick up latest code. Recurring pain point until Capacitor wrapper built.
+- ⚠️ Manage Rewards still not showing for parent Dave — debug logs added, needs desktop console investigation
+- ⚠️ Pull-to-refresh — 3 fix attempts (overscroll-behavior, preventDefault, manifest launch_handler). Still reloading. Needs Capacitor.
+
 **Next session TODO (Session 11):**
 - ⬜ Manage Rewards display bug — open desktop console as Dave, check loadManageRewards logs (childId value and query result)
+- ⬜ TWA cache issue — Clear Data (not just Clear Cache) needed on Android after every deploy. Capacitor wrapper will fix permanently.
 - ⬜ iOS Capacitor wrapper — Apple Developer Program enrollment pending (enrolling tonight as organisation)
 - ⬜ Pull-to-refresh — still reloading on TWA, needs Capacitor for proper fix
 - ⬜ Screenshots for Play Store (minimum 2)
