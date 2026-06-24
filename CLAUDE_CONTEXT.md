@@ -285,6 +285,9 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_photo text;
 ### Known Bugs / Issues
 - (none currently open)
 
+### Supabase constraints added
+- `children_profile_id_unique` UNIQUE constraint on `children.profile_id` — prevents duplicate child rows at DB level
+
 ---
 
 ## Session 4 Build Plan
@@ -716,6 +719,52 @@ Then build in this order:
 
 **Session start:** paste this file, state what to build.
 **Session end:** ask Claude to update CLAUDE_CONTEXT.md.
+
+### 24 Jun 2026 (Session 10) — linkToFamily Bug Resolution, Google Play Internal Testing Live
+
+**linkToFamily bug — fully resolved:**
+- Root cause: `loadStudentAssignments` queried DB immediately after insert — Supabase propagation delay meant child row returned null, showing link card again
+- Fix 1: `linkToFamilyInProgress` flag + button disabled on first tap — prevents double-tap race condition
+- Fix 2: `dbQuery` wrapper added to family lookup (was bare `db.from()`)
+- Fix 3: `newChild` passed directly from insert result through `loadStudentApp(knownChild)` → `loadStudentAssignments(ageGroup, knownChild)` — bypasses DB query entirely on first link, no propagation delay
+- Fix 4: Unique constraint violation (error code 23505) handled gracefully — treated as "already linked", finds existing row and loads app
+- Fix 5: `completeOnboarding` now uses `dbQuery` wrapper for profile save, shows error toast if save fails
+- Fix 6: `completeOnboarding` also updates `children.age_group` in case it was null at link time
+- `children_profile_id_unique` UNIQUE constraint added to Supabase — duplicate inserts impossible at DB level
+- **Confirmed working:** 3rd child links correctly, parent sees all 3 children, no duplicates. Cache was masking fixes during testing — always use incognito for definitive test.
+
+**Google Play Store — Internal Testing LIVE:**
+- App published as `FocablyED_Beta_1.0` on Internal testing track
+- Package name: `app.focablyED.com`
+- TWA (Trusted Web Activity) wrapping PWA at `https://focably.vercel.app`
+- Generated via PWABuilder — AAB uploaded to Play Console, signed by Google (recommended option selected)
+- Store listing complete: short description, full description, category (Education), tags, privacy policy URL, data safety, content rating, target audience, sign-in details (steve@tph.net.au)
+- 2 testers added (Test_list_1), tester invite link copied
+- `assetlinks.json` updated with correct SHA-256 fingerprint (`25:97:9B:1B:92:80:DC:4E:33:C7:50:C3:3A:D4:70:71:C6:E0:DB:12:52:0F:A8:FD:A8:B0:D0:1A:80:8C:9A:43`) and correct package name (`app.focablyED.com`)
+- Feature graphic created in Canva (brand kit kAHMhpLdWlw "Focably") — YouTube banner format resized to 1024×500px
+- **Address bar:** TWA will run fullscreen now that `assetlinks.json` fingerprint matches — verify on device
+
+**PWABuilder notes (important for future runs):**
+- Package name must be `app.focablyED.com` — Play Console locks this in on first upload
+- Version code must increment on each new upload (Play Console rejects reused version codes)
+- Select "Let Google manage signing key" — do NOT upload own keystore
+- SHA-256 from signed APK: `25:97:9B:1B:92:80:DC:4E:33:C7:50:C3:3A:D4:70:71:C6:E0:DB:12:52:0F:A8:FD:A8:B0:D0:1A:80:8C:9A:43`
+
+**Canva brand kit — correct ID confirmed:**
+- ✅ Correct brand kit: `kAHMhpLdWlw` (named "Focably")
+- ❌ Wrong: `kAGUTESm9aE` — do not use
+- For landscape outputs use `facebook_cover` or `youtube_banner` design types (not `poster` which defaults to portrait)
+
+**Next session TODO (Session 11):**
+- ⬜ iOS Capacitor wrapper — Apple Developer Program enrollment pending (enrolling as organisation tonight). Once approved, set up Capacitor on Mac, build iOS IPA, submit to App Store Connect
+- ⬜ Pull-to-refresh — still reloading app on TWA. Three fixes attempted (overscroll-behavior, preventDefault on touchmove, manifest display_override + launch_handler). May require Capacitor to fix properly at native level.
+- ⬜ Install app on Android device via tester link — verify fullscreen (no address bar) ✅ confirmed working
+- ⬜ Screenshots for Play Store (minimum 2 — use Chrome DevTools device toolbar or shots.so)
+- ⬜ App icon 512×512px in Canva (brand kit kAHMhpLdWlw)
+- ⬜ Test email notifications end-to-end (submit proof → parent email, approve reward → student email)
+- ⬜ Rotate ALL exposed keys: Anthropic API key, Resend API key, GitHub PATs, HubSpot Service Key
+- ⬜ Landing page rewrite with new brand copy
+- ⬜ Delete test contacts/deals from HubSpot
 
 ### 23 Jun 2026 (Session 9) — Go-to-Market Strategy, Store Listing, Bug Fixes
 
