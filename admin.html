@@ -145,6 +145,24 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
     </div>
 
     <div class="section">
+      <div class="section-title">💰 Revenue Estimate <span style="font-weight:600; font-size:12px; color:var(--gray-400); margin-left:6px;">@ <span id="arrPrice"></span>/month</span></div>
+      <div class="grid-2" style="margin-bottom:0;">
+        <div class="metric">
+          <div>
+            <div class="metric-num" id="arrAllUsers">—</div>
+            <div class="metric-label">All-users ARR <span class="muted">(if every user paid)</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div>
+            <div class="metric-num" id="arrNewMonth">—</div>
+            <div class="metric-label">New ARR this month <span class="muted">(last 30 days' signups)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title">📥 Inactive Users Export</div>
       <p style="color:var(--gray-500); font-size:13px; margin-bottom:14px;">Download a CSV (opens in Excel) of users who haven't been active recently. Columns: Name, Email, Mobile, Last Activity, Joined.</p>
       <div class="slicer" id="inactiveSlicer">
@@ -168,6 +186,8 @@ body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--in
 const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
 const ADMIN_EMAILS = ['steve@yourfinancedept.com.au'];
+const MONTHLY_PRICE_AUD = 49;
+const CURRENCY = new Intl.NumberFormat('en-AU', { style:'currency', currency:'AUD', maximumFractionDigits:0 });
 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
@@ -222,11 +242,33 @@ async function checkSession() {
 
 async function onAuthed() {
   document.getElementById('adminEmail').textContent = currentSession.user.email;
+  document.getElementById('arrPrice').textContent = CURRENCY.format(MONTHLY_PRICE_AUD);
   showScreen('admin');
   await detectSchema();
   refreshNewUsers('week');
   refreshActiveUsers('7d');
   refreshInactivePreview('30');
+  refreshArr();
+}
+
+async function refreshArr() {
+  const allEl = document.getElementById('arrAllUsers');
+  const newEl = document.getElementById('arrNewMonth');
+  allEl.textContent = '…'; newEl.textContent = '…';
+
+  const totalRes = await db.from('profiles').select('*', { count: 'exact', head: true });
+  const monthCutoff = new Date(Date.now() - 30*86400000).toISOString();
+  const newRes = await db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', monthCutoff);
+
+  if (totalRes.error || newRes.error) {
+    allEl.textContent = '—'; newEl.textContent = '—';
+    showToast('ARR error: ' + (totalRes.error?.message || newRes.error?.message), 'error');
+    return;
+  }
+  const total = totalRes.count ?? 0;
+  const newCount = newRes.count ?? 0;
+  allEl.textContent = CURRENCY.format(total * MONTHLY_PRICE_AUD * 12);
+  newEl.textContent = CURRENCY.format(newCount * MONTHLY_PRICE_AUD * 12);
 }
 
 async function detectSchema() {
