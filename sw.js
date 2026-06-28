@@ -1,7 +1,14 @@
-const CACHE_NAME = 'focably-v1';
+const CACHE_NAME = 'focably-v2-modular';
 const OFFLINE_URLS = [
   '/',
-  '/index.html'
+  '/index.html',
+  '/js/01-config.js',
+  '/js/02-init.js',
+  '/js/03-auth-onboarding.js',
+  '/js/04-student.js',
+  '/js/05-parent.js',
+  '/js/06-teacher.js',
+  '/js/07-shared.js'
 ];
 
 // ── INSTALL: cache core files ──
