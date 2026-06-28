@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocablyED Admin</title>
+<link rel="icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --indigo: #1E1B4B;
+  --indigo-deep: #0F172A;
+  --violet: #7C3AED;
+  --violet-dark: #5B21B6;
+  --violet-light: #A78BFA;
+  --mint: #10B981;
+  --mint-dark: #059669;
+  --rose: #F43F5E;
+  --amber: #F59E0B;
+  --gray-50: #F8F7FF;
+  --gray-100: #EDE9FE;
+  --gray-200: #DDD6FE;
+  --gray-300: #CBD5E1;
+  --gray-400: #94A3B8;
+  --gray-500: #6B7280;
+  --gray-700: #374151;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--gray-50); color:var(--indigo); min-height:100vh; }
+.nav {
+  background:var(--indigo); padding:14px 24px; display:flex; align-items:center; justify-content:space-between;
+}
+.logo { font-family:'Nunito',sans-serif; font-weight:900; font-size:22px; color:white; letter-spacing:-0.5px; }
+.logo span { color:var(--violet-light); }
+.nav-actions { display:flex; gap:12px; align-items:center; color:rgba(255,255,255,0.8); font-size:13px; }
+.signout { padding:6px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.3); background:transparent; color:white; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+.signout:hover { background:rgba(255,255,255,0.1); }
+.container { max-width:1100px; margin:0 auto; padding:24px 18px; }
+.page-title { font-family:'Nunito',sans-serif; font-weight:900; font-size:26px; margin-bottom:4px; }
+.page-sub { color:var(--gray-500); font-size:13px; margin-bottom:20px; }
+.section { background:white; border-radius:16px; padding:20px; margin-bottom:14px; box-shadow:0 2px 8px rgba(30,27,75,0.07); }
+.section-title { font-family:'Nunito',sans-serif; font-weight:800; font-size:17px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.slicer { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.slicer button {
+  padding:8px 14px; border-radius:24px; border:1px solid var(--gray-200); background:white; color:var(--gray-700);
+  font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:'Inter',sans-serif;
+}
+.slicer button.active { background:var(--violet); border-color:var(--violet); color:white; }
+.slicer button:hover:not(.active) { border-color:var(--violet-light); color:var(--violet-dark); }
+.metric { display:flex; align-items:baseline; gap:14px; padding:18px; background:var(--gray-50); border-radius:12px; }
+.metric-num { font-family:'Nunito',sans-serif; font-weight:900; font-size:42px; color:var(--indigo); line-height:1; }
+.metric-label { color:var(--gray-500); font-size:13px; font-weight:500; }
+.btn {
+  padding:10px 18px; border-radius:24px; border:none; background:var(--violet); color:white;
+  font-family:'Inter',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.15s;
+}
+.btn:hover { background:var(--violet-dark); }
+.btn:disabled { background:var(--gray-300); cursor:not-allowed; }
+.auth-box {
+  max-width:380px; margin:80px auto; padding:32px; background:white; border-radius:20px; box-shadow:0 6px 30px rgba(30,27,75,0.12);
+}
+.auth-box h1 { font-family:'Nunito',sans-serif; font-weight:900; font-size:24px; margin-bottom:6px; text-align:center; }
+.auth-box p { color:var(--gray-500); font-size:13px; text-align:center; margin-bottom:20px; }
+.input {
+  width:100%; padding:12px 14px; border:1px solid var(--gray-200); border-radius:10px;
+  font-family:'Inter',sans-serif; font-size:14px; margin-bottom:12px; color:var(--indigo);
+}
+.input:focus { outline:none; border-color:var(--violet); }
+.auth-error { color:var(--rose); font-size:13px; margin-top:10px; text-align:center; min-height:18px; }
+.notice { padding:12px 14px; background:#FEF3C7; border-radius:10px; color:#92400E; font-size:12px; margin-bottom:14px; line-height:1.55; }
+.notice code { background:rgba(0,0,0,0.06); padding:1px 6px; border-radius:4px; font-size:11px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+@media(max-width:700px) { .grid-2 { grid-template-columns:1fr; } }
+.muted { color:var(--gray-400); font-size:12px; }
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  padding:12px 22px; border-radius:24px; color:white; background:var(--indigo);
+  box-shadow:0 6px 24px rgba(0,0,0,0.2); font-size:13px; font-weight:600; z-index:200;
+  opacity:0; transition:opacity 0.2s;
+}
+.toast.show { opacity:1; }
+.toast.error { background:var(--rose); }
+.toast.success { background:var(--mint); }
+</style>
+</head>
+<body>
+
+<div id="screen-auth" style="display:none;">
+  <div class="auth-box">
+    <h1>Focably<span style="color:var(--violet-light);">ED</span> Admin</h1>
+    <p>Restricted access. Sign in with the admin account.</p>
+    <form onsubmit="event.preventDefault(); signIn();">
+      <input id="emailInput" class="input" type="email" placeholder="Email" autocomplete="email" required />
+      <input id="passwordInput" class="input" type="password" placeholder="Password" autocomplete="current-password" required />
+      <button class="btn" style="width:100%;" type="submit">Sign In</button>
+    </form>
+    <div id="authError" class="auth-error"></div>
+  </div>
+</div>
+
+<div id="screen-admin" style="display:none;">
+  <nav class="nav">
+    <div class="logo">Focably<span>ED</span> Admin</div>
+    <div class="nav-actions">
+      <span id="adminEmail"></span>
+      <button class="signout" onclick="signOut()">Sign out</button>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="page-title">User Dashboard</div>
+    <div class="page-sub">Snapshot of new and active users on FocablyED.</div>
+
+    <div id="schemaWarning" class="notice" style="display:none;"></div>
+
+    <div class="grid-2">
+      <div class="section">
+        <div class="section-title">📈 New Users</div>
+        <div class="slicer" id="newUsersSlicer">
+          <button data-period="week" class="active">This Week</button>
+          <button data-period="month">This Month</button>
+          <button data-period="year">This Year</button>
+          <button data-period="all">All Time</button>
+        </div>
+        <div class="metric">
+          <div class="metric-num" id="newUsersCount">—</div>
+          <div class="metric-label" id="newUsersLabel">new users</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">✨ Active Users</div>
+        <div class="slicer" id="activeUsersSlicer">
+          <button data-period="7d" class="active">Last 7 days</button>
+          <button data-period="14d">Last 14 days</button>
+          <button data-period="month">Last 30 days</button>
+          <button data-period="year">Last year</button>
+          <button data-period="all">All time</button>
+        </div>
+        <div class="metric">
+          <div class="metric-num" id="activeUsersCount">—</div>
+          <div class="metric-label" id="activeUsersLabel">active users</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📥 Inactive Users Export</div>
+      <p style="color:var(--gray-500); font-size:13px; margin-bottom:14px;">Download a CSV (opens in Excel) of users who haven't been active recently. Columns: Name, Email, Mobile, Last Activity, Joined.</p>
+      <div class="slicer" id="inactiveSlicer">
+        <button data-period="30" class="active">Inactive &gt; 30 days</button>
+        <button data-period="60">Inactive &gt; 60 days</button>
+        <button data-period="90">Inactive &gt; 90 days</button>
+        <button data-period="never">Never active</button>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+        <button class="btn" id="downloadBtn" onclick="downloadInactiveCsv()">Download CSV</button>
+        <span id="inactivePreview" class="muted"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
+const ADMIN_EMAILS = ['steve@yourfinancedept.com.au'];
+
+const { createClient } = supabase;
+const db = createClient(SUPA_URL, SUPA_KEY);
+
+let currentSession = null;
+let HAS_PHONE = true;
+let HAS_LAST_ACTIVE = true;
+
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type || '');
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+function showScreen(name) {
+  document.getElementById('screen-auth').style.display = name === 'auth' ? 'block' : 'none';
+  document.getElementById('screen-admin').style.display = name === 'admin' ? 'block' : 'none';
+}
+
+async function signIn() {
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+  const pwd = document.getElementById('passwordInput').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  if (!ADMIN_EMAILS.includes(email)) {
+    errEl.textContent = 'This email is not authorised for admin access.';
+    return;
+  }
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pwd });
+  if (error) { errEl.textContent = error.message; return; }
+  currentSession = data.session;
+  await onAuthed();
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  currentSession = null;
+  showScreen('auth');
+}
+
+async function checkSession() {
+  const { data } = await db.auth.getSession();
+  if (data?.session && ADMIN_EMAILS.includes(data.session.user.email)) {
+    currentSession = data.session;
+    await onAuthed();
+  } else {
+    showScreen('auth');
+  }
+}
+
+async function onAuthed() {
+  document.getElementById('adminEmail').textContent = currentSession.user.email;
+  showScreen('admin');
+  await detectSchema();
+  refreshNewUsers('week');
+  refreshActiveUsers('7d');
+  refreshInactivePreview('30');
+}
+
+async function detectSchema() {
+  const probe = await db.from('profiles').select('phone, last_active_at').limit(1);
+  const errMsg = probe.error?.message || '';
+  HAS_PHONE = !/column.*phone.*does not exist/i.test(errMsg);
+  HAS_LAST_ACTIVE = !/column.*last_active_at.*does not exist/i.test(errMsg);
+  const missing = [];
+  if (!HAS_PHONE) missing.push('phone');
+  if (!HAS_LAST_ACTIVE) missing.push('last_active_at');
+  if (missing.length) {
+    const w = document.getElementById('schemaWarning');
+    w.style.display = 'block';
+    w.innerHTML = '⚠️ Missing columns on <code>profiles</code>: <strong>' + missing.join(', ') + '</strong>. ' +
+      'Run <code>admin-migrations.sql</code> (in the repo) in Supabase Studio → SQL Editor to enable full functionality.';
+  }
+}
+
+function cutoffDate(period) {
+  const now = new Date();
+  switch (period) {
+    case 'week':   return new Date(now.getTime() - 7*86400000).toISOString();
+    case 'month':  return new Date(now.getTime() - 30*86400000).toISOString();
+    case 'year':   return new Date(now.getTime() - 365*86400000).toISOString();
+    case '7d':     return new Date(now.getTime() - 7*86400000).toISOString();
+    case '14d':    return new Date(now.getTime() - 14*86400000).toISOString();
+    case 'all':    return null;
+    default:       return null;
+  }
+}
+
+async function refreshNewUsers(period) {
+  const el = document.getElementById('newUsersCount');
+  const lblEl = document.getElementById('newUsersLabel');
+  el.textContent = '…';
+  let q = db.from('profiles').select('*', { count: 'exact', head: true });
+  const cutoff = cutoffDate(period);
+  if (cutoff) q = q.gte('created_at', cutoff);
+  const { count, error } = await q;
+  if (error) { el.textContent = '—'; showToast('Error: ' + error.message, 'error'); return; }
+  el.textContent = (count ?? 0).toLocaleString();
+  const labels = { week:'new users this week', month:'new users last 30 days', year:'new users last year', all:'total users all-time' };
+  lblEl.textContent = labels[period] || 'new users';
+}
+
+async function refreshActiveUsers(period) {
+  const el = document.getElementById('activeUsersCount');
+  const lblEl = document.getElementById('activeUsersLabel');
+  el.textContent = '…';
+  if (!HAS_LAST_ACTIVE && period !== 'all') {
+    el.textContent = '—';
+    lblEl.textContent = 'add last_active_at column to enable';
+    return;
+  }
+  let q = db.from('profiles').select('*', { count: 'exact', head: true });
+  const cutoff = cutoffDate(period);
+  if (cutoff && HAS_LAST_ACTIVE) q = q.gte('last_active_at', cutoff);
+  const { count, error } = await q;
+  if (error) { el.textContent = '—'; showToast('Error: ' + error.message, 'error'); return; }
+  el.textContent = (count ?? 0).toLocaleString();
+  const labels = { '7d':'active in last 7 days', '14d':'active in last 14 days', month:'active in last 30 days', year:'active in last year', all:'total users (all time)' };
+  lblEl.textContent = labels[period] || 'active users';
+}
+
+function inactivePeriodCutoff(period) {
+  if (period === 'never') return null;
+  const days = parseInt(period, 10);
+  return new Date(Date.now() - days*86400000).toISOString();
+}
+
+async function fetchInactiveRows(period) {
+  const cols = ['id','full_name','email','created_at','role'];
+  if (HAS_PHONE) cols.push('phone');
+  if (HAS_LAST_ACTIVE) cols.push('last_active_at');
+  let q = db.from('profiles').select(cols.join(','));
+  if (period === 'never') {
+    if (HAS_LAST_ACTIVE) q = q.is('last_active_at', null);
+  } else {
+    const cutoff = inactivePeriodCutoff(period);
+    if (HAS_LAST_ACTIVE) {
+      q = q.or('last_active_at.lt.' + cutoff + ',last_active_at.is.null');
+    } else {
+      q = q.lt('created_at', cutoff);
+    }
+  }
+  q = q.order('full_name', { ascending: true, nullsFirst: false });
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function refreshInactivePreview(period) {
+  const el = document.getElementById('inactivePreview');
+  el.textContent = 'counting…';
+  try {
+    const rows = await fetchInactiveRows(period);
+    el.textContent = rows.length.toLocaleString() + ' user' + (rows.length===1?'':'s') + ' match';
+  } catch (e) {
+    el.textContent = '';
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function downloadInactiveCsv() {
+  const btn = document.getElementById('downloadBtn');
+  btn.disabled = true; btn.textContent = 'Preparing…';
+  try {
+    const period = document.querySelector('#inactiveSlicer button.active').dataset.period;
+    const rows = await fetchInactiveRows(period);
+    const csv = toCsv(rows);
+    const stamp = new Date().toISOString().slice(0,10);
+    const tag = period === 'never' ? 'never-active' : 'inactive-' + period + 'd';
+    downloadBlob('﻿' + csv, 'focablyed-' + tag + '-' + stamp + '.csv', 'text/csv;charset=utf-8;');
+    showToast('Downloaded ' + rows.length + ' row' + (rows.length===1?'':'s'), 'success');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Download CSV';
+  }
+}
+
+function csvEscape(v) {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function toCsv(rows) {
+  const headers = ['Name','Email','Mobile','Role','Last Activity','Joined'];
+  const lines = [headers.join(',')];
+  for (const r of rows) {
+    lines.push([
+      csvEscape(r.full_name || ''),
+      csvEscape(r.email || ''),
+      csvEscape(r.phone || ''),
+      csvEscape(r.role || ''),
+      csvEscape(r.last_active_at ? new Date(r.last_active_at).toISOString().slice(0,10) : ''),
+      csvEscape(r.created_at ? new Date(r.created_at).toISOString().slice(0,10) : '')
+    ].join(','));
+  }
+  return lines.join('\r\n');
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+function wireSlicer(id, handler) {
+  const slicer = document.getElementById(id);
+  slicer.addEventListener('click', e => {
+    const b = e.target.closest('button[data-period]');
+    if (!b) return;
+    slicer.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    handler(b.dataset.period);
+  });
+}
+wireSlicer('newUsersSlicer', refreshNewUsers);
+wireSlicer('activeUsersSlicer', refreshActiveUsers);
+wireSlicer('inactiveSlicer', refreshInactivePreview);
+
+checkSession();
+</script>
+</body>
+</html>

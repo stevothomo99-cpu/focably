@@ -2348,6 +2348,9 @@ async function loadProfile() {
     currentProfile = profile;
     console.log('loadProfile: routing to', profile.role, 'age_group=', profile.age_group);
 
+    // Stamp last_active_at (fire-and-forget; ignore errors if column missing)
+    db.from('profiles').update({last_active_at: new Date().toISOString()}).eq('id', currentUser.id).then(()=>{}, ()=>{});
+
     if(profile.role === 'student') {
       if(!profile.age_group) showScreen('onboarding');
       else await loadStudentApp();
