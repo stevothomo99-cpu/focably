@@ -8,15 +8,15 @@
 ## Project Overview
 
 **App:** FocablyED — gamified school task and accountability tool for parents, students, and teachers. ADHD-friendly design is a core value proposition.
-**Live App URL:** https://focably.vercel.app
-**Landing Page URL:** https://focablyed.com
-**Stack:** Single-file vanilla HTML/CSS/JS app, Supabase backend, deployed on Vercel
+**Live App URL:** https://app.focablyed.com (Vercel project `focably`, deploys from `stevothomo99-cpu/focably` main)
+**Landing Page URL:** https://focablyed.com (Vercel project `focably-landing`, separate repo `stevothomo99-cpu/focably-Landing`)
+**Admin Dashboard URL:** https://app.focablyed.com/admin.html (email-gated, see Admin Dashboard section)
+**Stack:** Modular vanilla HTML/CSS/JS — `index.html` + 7 `js/*.js` files, Supabase backend, deployed on Vercel (no build step)
 **Supabase project:** mxgnrgajspprupzxaeld.supabase.co
 **GitHub repo (app):** stevothomo99-cpu/focably
 **GitHub repo (landing page):** stevothomo99-cpu/focably-Landing
 
-> **IMPORTANT:** The live app is **`index.html`** (the FocablyED build with real Supabase auth).
-> `focably.html` is an OLD prototype — **IGNORE IT.** All work goes into `index.html`.
+> **IMPORTANT:** The live app entry point is **`index.html`** (1.5K lines of HTML) which loads **7 modular JS files in `js/`** (see Architecture Summary). `focably.html` is an OLD prototype — **IGNORE IT.** All app code lives in `js/*.js`.
 
 ---
 
@@ -50,9 +50,19 @@
 
 - **Auth:** Supabase Auth (email/password)
 - **Database:** Supabase Postgres with RLS enabled
-- **Frontend:** ONE file — `index.html` (~4,800+ lines). Vanilla JS, no framework, no build step.
-- **User roles:** Student (primary + high-school modes), Parent, Teacher
-- **Deploy:** push to GitHub `main` → Vercel auto-deploys
+- **Frontend:** `index.html` (1522 lines — HTML + 7 `<script src>` tags). All app logic split into:
+  - `js/01-config.js` (326 lines) — Supabase + Stripe keys, theme defs, all global `let`/`const`
+  - `js/02-init.js` (148 lines) — pull-to-refresh, window.load, `onAuthStateChange`, `showScreen`
+  - `js/03-auth-onboarding.js` (636 lines) — sign in/up, `loadProfile`, onboarding, photo avatar
+  - `js/04-student.js` (779 lines) — student app, task completion, proof upload, link-to-family
+  - `js/05-parent.js` (1809 lines) — parent app, rewards, families, brain dump, MS Teams, imports, school setup, assignment detail, Stripe checkout
+  - `js/06-teacher.js` (467 lines) — teacher app, step builder
+  - `js/07-shared.js` (1456 lines) — confetti, refresh, role switcher, AI breakdown, notifications/PWA, shared approval queue, archive, hamburger drawer, dbQuery helper
+  - Load order matters — globals in earlier files used by later ones. Vanilla JS, no modules, no framework, no build step.
+  - Backup of pre-refactor 7138-line single-file `index.html` at `backup/index-pre-refactor.html`.
+- **User roles:** Student (primary + high-school modes), Parent, Teacher (plus Admin via `admin.html`)
+- **Service Worker:** `sw.js` caches all 7 JS files for offline use. Bump `CACHE_NAME` when any cached file changes (current: `focably-v2-modular`).
+- **Deploy:** push to GitHub `main` → Vercel auto-deploys (Vercel project `focably` watches `stevothomo99-cpu/focably` main branch)
 
 ---
 
@@ -242,6 +252,23 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 
 ---
 
+## Admin Dashboard
+
+- **URL:** https://app.focablyed.com/admin.html (lives next to `index.html` in same Vercel project)
+- **File:** `admin.html` (single self-contained file — own auth, own styles, no shared JS)
+- **Access:** email-gated. Admin emails listed in `ADMIN_EMAILS` const at top of script (currently `steve@yourfinancedept.com.au`). Backed by RLS policy `"Admins can read all profiles"` (see `admin-migrations.sql`).
+- **Tiles:**
+  - **New Users** — slicer: week / month / year / all time (from `profiles.created_at`)
+  - **Active Users** — slicer: 7d / 14d / 30d / year / all (from `profiles.last_active_at`, stamped on each profile load in `js/03-auth-onboarding.js`)
+  - **Revenue Estimate (ARR)** — hardcoded `MONTHLY_PRICE_AUD = 49`. All-users ARR + new-ARR-this-month tiles. Change price by editing the one constant.
+  - **Inactive Users CSV export** — slicer: >30d / >60d / >90d / never. Downloads as `focablyed-inactive-30d-YYYY-MM-DD.csv` with UTF-8 BOM + CRLF (opens in Excel). Columns: Name, Email, Mobile, Role, Last Activity, Joined.
+- **DB columns the admin reads (added by `admin-migrations.sql`):**
+  - `profiles.last_active_at timestamptz` — set on every profile load
+  - `profiles.phone text` — added but never populated (no signup field yet — Mobile column stays blank in CSV until that's wired up)
+- **Adding more admins:** edit `ADMIN_EMAILS` in `admin.html` AND add to RLS policy in Supabase (`admin-migrations.sql`).
+
+---
+
 ## Current Status
 
 ### Working
@@ -268,6 +295,8 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - Direct student enrolment flag on classes (school-approved teachers only)
 - Squirrel logo live everywhere (app + landing page)
 - Landing page: real founder story, Kim credited, ADHD "out of sight out of mind" narrative
+- **Admin dashboard** at `app.focablyed.com/admin.html` — new users, active users, ARR estimate ($49/mo hardcoded), inactive users CSV export. Email-gated to admins via RLS.
+- **Modular codebase** — 7138-line `index.html` split into `index.html` (1522 lines) + 7 `js/*.js` files (see Architecture Summary).
 
 ### SQL needed before testing school features
 ```sql
@@ -394,10 +423,12 @@ Then build in this order:
 
 ## Tech Debt
 
-- index.html ~4,800+ lines — style cleanup pass once features stable
-- ~300 inline style attributes, duplicated patterns
+- ~~index.html ~4,800+ lines~~ ✅ **Done in Session 11** — split into `index.html` (1522 lines) + 7 `js/*.js` files
+- ~300 inline style attributes, duplicated patterns — extract to CSS classes when touched
 - Consider one-off human developer review (bus-factor insurance)
 - Long term: migrate domains from Crazy Domains to Cloudflare Registrar
+- `ANTHROPIC_KEY` baked into client JS in `js/01-config.js` (split across two strings to dodge GitHub secret scanning) — proxy via a Supabase Edge Function eventually so the key isn't shipped to browsers
+- `phone` column on `profiles` exists but no signup field collects it — admin CSV Mobile column stays blank until that's wired up
 
 ---
 
@@ -512,6 +543,52 @@ Then build in this order:
 ## Session Log
 
 > _Most recent at top._
+
+### 28 Jun 2026 (Session 11) — Admin Dashboard + Codebase Refactor
+
+**Admin dashboard built (`admin.html`):**
+- Single self-contained page at `app.focablyed.com/admin.html` — own auth, own styles, sits next to `index.html`
+- Email-gated via `ADMIN_EMAILS = ['steve@yourfinancedept.com.au']` + matching RLS policy
+- Three sections:
+  - **New Users** with week / month / year / all-time slicer (queries `profiles.created_at`)
+  - **Active Users** with 7d / 14d / 30d / year / all slicer (queries `profiles.last_active_at`)
+  - **Revenue Estimate (ARR)** — hardcoded `MONTHLY_PRICE_AUD = 49`, two tiles: all-users ARR + new-ARR-this-month
+  - **Inactive Users CSV export** — slicer for >30d / >60d / >90d / never. CSV with UTF-8 BOM + CRLF (Excel-friendly). Columns: Name, Email, Mobile, Role, Last Activity, Joined.
+- Currency formatting via `Intl.NumberFormat('en-AU', { style:'currency', currency:'AUD' })`
+
+**Supabase migration (`admin-migrations.sql`):**
+- Added `profiles.last_active_at timestamptz` + index
+- Added `profiles.phone text` (column exists, no signup field collects it yet — Mobile column in CSV is blank for now)
+- RLS policy `"Admins can read all profiles"` granting `SELECT` on whole `profiles` table for emails matching `ADMIN_EMAILS`
+- Backfilled `last_active_at` from `auth.users.last_sign_in_at` so dashboard had history immediately
+- `js/03-auth-onboarding.js` stamps `last_active_at = now()` on every successful profile load (fire-and-forget)
+
+**Admin user setup:**
+- No `steve@yourfinancedept.com.au` existed in `auth.users` originally — created directly via Supabase Studio → Authentication → Users → "Add user" → Auto Confirm. Admin doesn't need a `profiles` row (only reads from `profiles`, doesn't expect own profile).
+
+**Major refactor — `index.html` split:**
+- Before: `index.html` was 7138 lines with a 5621-line inline `<script>` block
+- After: `index.html` is 1522 lines (HTML + 7 `<script src>` tags); JS lives in `js/*.js` (see Architecture Summary)
+- Pure code-organisation refactor — zero behaviour changes intended
+- All 7 files pass `node --check`; brace counts balance per file; all HTML `onclick` handlers resolve to top-level functions
+- Service worker cache bumped `focably-v1` → `focably-v2-modular`; all 7 JS files added to `OFFLINE_URLS`
+- Original 7138-line file backed up at `backup/index-pre-refactor.html` in case of rollback
+- Steve smoke-tested login post-deploy: working ✅
+
+**Two key architecture clarifications:**
+- `focablyed.com` (no `app.`) is served by a *separate* `focably-landing` Vercel project from a *different* repo (`stevothomo99-cpu/focably-Landing`). The actual app at `app.focablyed.com` is THIS repo (`stevothomo99-cpu/focably`).
+- Each Claude Code (web) session clones one repo into its container — so Focably app, Focably landing, Sitemargin app each need their own session.
+
+**Branches this session:**
+- `claude/focably-data-access-npvurc` — admin dashboard + ARR + last_active_at patch (merged to main, deployed)
+- `claude/refactor-index-split` — codebase refactor (merged to main, deployed)
+
+**Next session TODO (Session 12):**
+- Wire a Mobile field into signup so admin CSV's Mobile column populates
+- Optional: ops console / support tickets table (discussed but deferred — see prior chat)
+- Optional: proxy `ANTHROPIC_KEY` via Supabase Edge Function so it's not in client JS
+
+---
 
 ### 16 Jun 2026 (Session 7) — Unlink Child, Rewards Flow, Subscription Screens, Teams OAuth
 
