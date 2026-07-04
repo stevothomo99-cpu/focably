@@ -730,15 +730,40 @@ async function linkToFamily() {
     return;
   }
 
+  const result = await finalizeFamilyLink(family);
+  if(result.error === 'paywall') {
+    showToast('⭐ This family needs Family Pro to add a second child.');
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
+  }
+  if(result.error) {
+    showToast('❌ Could not link account: ' + result.error);
+    linkToFamilyInProgress = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
+    return;
+  }
+  // Set appReady BEFORE navigating so auth state change can't interrupt
+  appReady = true;
+  linkToFamilyInProgress = false;
+  showToast(result.alreadyLinked ? '✅ Already linked — loading your app!' : '✅ Linked to family!');
+  await new Promise(resolve => setTimeout(resolve, 400));
+  if(!currentProfile.age_group) {
+    showScreen('onboarding');
+  } else {
+    await loadStudentApp(result.child);
+  }
+}
+
+// Shared core of "link this profile into a family" — used by the code-entry flow above
+// and by the email-invite auto-link flow (js/03-auth-onboarding.js loadProfile()).
+async function finalizeFamilyLink(family) {
   // ── Paywall gate: check if family already has a child (2nd child = Pro required) ──
   const {data:familyChildren} = await dbQuery(db.from('children').select('id').eq('family_id',family.id));
   if(familyChildren?.length >= 1) {
-    // Load family subscription to check
-    const {data:parentFamily} = await dbQuery(db.from('families').select('subscription_status').eq('id',family.id).maybeSingle());
-    const subStatus = parentFamily?.subscription_status || 'free';
+    const subStatus = family.subscription_status || 'free';
     if(subStatus !== 'pro' && subStatus !== 'school_attached') {
-      showToast('⭐ This family needs Family Pro to add a second child.');
-      return;
+      return {error: 'paywall'};
     }
   }
   const {data:newChild, error} = await db.from('children').insert({
@@ -747,25 +772,17 @@ async function linkToFamily() {
     name: currentProfile.full_name,
     age_group: currentProfile.age_group
   }).select().maybeSingle();
-  console.log('linkToFamily: insert result=', newChild, 'error=', error?.message);
+  console.log('finalizeFamilyLink: insert result=', newChild, 'error=', error?.message);
   if(error) {
     // Unique constraint violation = already linked (race condition or prior attempt)
     // Treat as success — find their existing row and load the app
     if(error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique')) {
-      console.log('linkToFamily: unique constraint hit — already linked, loading app');
+      console.log('finalizeFamilyLink: unique constraint hit — already linked, loading app');
       const {data:existingChild} = await dbQuery(db.from('children').select('*').eq('profile_id',currentUser.id).order('created_at',{ascending:false}).limit(1), 5000, null);
       currentChildRecord = existingChild?.[0] || null;
-      appReady = true;
-      linkToFamilyInProgress = false;
-      showToast('✅ Already linked — loading your app!');
-      await new Promise(resolve => setTimeout(resolve, 400));
-      if(!currentProfile.age_group) { showScreen('onboarding'); } else { await loadStudentApp(); }
-      return;
+      return {alreadyLinked: true, child: currentChildRecord};
     }
-    showToast('❌ Could not link account: ' + error.message);
-    linkToFamilyInProgress = false;
-    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
-    return;
+    return {error: error.message};
   }
   // ── Inherit family subscription status onto child's profile ──
   // Covers the case where parent already paid Pro before child joined
@@ -773,19 +790,10 @@ async function linkToFamily() {
   if(familySubStatus === 'pro' || familySubStatus === 'school_attached') {
     await dbQuery(db.from('profiles').update({subscription_status: familySubStatus}).eq('id', currentUser.id), 5000, null);
     currentProfile.subscription_status = familySubStatus;
-    console.log('linkToFamily: inherited subscription_status =', familySubStatus);
+    console.log('finalizeFamilyLink: inherited subscription_status =', familySubStatus);
   }
   // Set currentChildRecord directly from insert — no need to re-query, avoids propagation race
   currentChildRecord = newChild;
-  // Set appReady BEFORE navigating so auth state change can't interrupt
-  appReady = true;
-  linkToFamilyInProgress = false;
-  showToast('✅ Linked to family!');
-  await new Promise(resolve => setTimeout(resolve, 400));
-  if(!currentProfile.age_group) {
-    showScreen('onboarding');
-  } else {
-    await loadStudentApp(newChild);
-  }
+  return {child: newChild};
 }
 

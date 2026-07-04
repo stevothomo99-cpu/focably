@@ -407,6 +407,23 @@ async function loadProfile() {
     // Stamp last_active_at (fire-and-forget; ignore errors if column missing)
     db.from('profiles').update({last_active_at: new Date().toISOString()}).eq('id', currentUser.id).then(()=>{}, ()=>{});
 
+    // ── Email-invite completion: this account was created from an invite magic
+    // link (invite-child Edge Function stamps pending_family_id on signup).
+    // Auto-link to the family, then prompt only for a password — name/role/family
+    // are already known, so there's nothing else to ask.
+    const pendingFamilyId = currentUser.user_metadata?.pending_family_id;
+    if(pendingFamilyId && profile.role === 'student') {
+      const {data:existingRows} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, null);
+      if(!existingRows || existingRows.length === 0) {
+        await finalizeFamilyLink({
+          id: pendingFamilyId,
+          subscription_status: currentUser.user_metadata?.pending_family_subscription_status
+        });
+      }
+      showSetPasswordScreen();
+      return;
+    }
+
     if(profile.role === 'student') {
       if(!profile.age_group) showScreen('onboarding');
       else await loadStudentApp();
@@ -425,6 +442,34 @@ async function loadProfile() {
     showScreen('auth');
     showError('Something went wrong loading your profile. Please try again.');
   }
+}
+
+// ── INVITE: SET PASSWORD (email-invite completion) ──
+function showSetPasswordScreen() {
+  const name = currentProfile?.full_name || currentUser?.user_metadata?.full_name || '';
+  const familyName = currentUser?.user_metadata?.pending_family_name || 'your family';
+  document.getElementById('setPasswordTitle').textContent = name ? `Welcome, ${name}!` : 'Welcome!';
+  document.getElementById('setPasswordSubtitle').textContent = `You've been invited to join ${familyName} on FocablyED. Set a password to finish creating your account.`;
+  showScreen('setpassword');
+}
+
+async function submitInvitePassword() {
+  const pw = document.getElementById('spPassword').value;
+  const pw2 = document.getElementById('spPasswordConfirm').value;
+  const errEl = document.getElementById('setPasswordError');
+  errEl.style.display = 'none';
+  if(pw.length < 6) { errEl.textContent = 'Password needs 6+ characters'; errEl.style.display = 'block'; return; }
+  if(pw !== pw2) { errEl.textContent = "Passwords don't match"; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('spBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const {data, error} = await db.auth.updateUser({
+    password: pw,
+    data: { pending_family_id: null, pending_family_name: null, pending_family_subscription_status: null }
+  });
+  btn.disabled = false; btn.textContent = 'Set Password & Continue';
+  if(error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+  if(data?.user) currentUser = data.user;
+  if(!currentProfile.age_group) { showScreen('onboarding'); } else { await loadStudentApp(); }
 }
 
 // ── ONBOARDING ──
