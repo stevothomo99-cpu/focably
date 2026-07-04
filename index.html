@@ -921,7 +921,11 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       <div class="form-grp">
         <label class="form-lbl">⭐ Stars for completing</label>
         <div style="display:flex;gap:8px;">
-          ${[1,2,3,4,5].map(n => `<button type="button" class="star-val-btn" data-val="${n}" onclick="selectTaskStars(${n})" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">${n}⭐</button>`).join('')}
+          <button type="button" class="star-val-btn" data-val="1" onclick="selectTaskStars(1)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">1⭐</button>
+          <button type="button" class="star-val-btn" data-val="2" onclick="selectTaskStars(2)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">2⭐</button>
+          <button type="button" class="star-val-btn" data-val="3" onclick="selectTaskStars(3)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">3⭐</button>
+          <button type="button" class="star-val-btn" data-val="4" onclick="selectTaskStars(4)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">4⭐</button>
+          <button type="button" class="star-val-btn" data-val="5" onclick="selectTaskStars(5)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">5⭐</button>
         </div>
       </div>
       <div class="form-grp">
