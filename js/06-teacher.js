@@ -259,7 +259,10 @@ async function loadTeacherClassAssignments(classId) {
 
 function showCreateClass() {
   document.getElementById('classSetup').style.display='block';
-  document.getElementById('createClassTitle').textContent='Add a new class';
+  // createClassTitle no longer exists (the card uses a static title) — guard so
+  // the field-clearing below still runs instead of throwing on a null element
+  const titleEl = document.getElementById('createClassTitle');
+  if(titleEl) titleEl.textContent='Add a new class';
   document.getElementById('className').value='';
   document.getElementById('classYear').value='';
 }
@@ -287,6 +290,7 @@ async function createClass() {
 async function loadClassProgress(classId) {
   const {data:members} = await db.from('class_members').select('*, children(*)').eq('class_id',classId);
   const el=document.getElementById('teacherStudentProgress');
+  if(!el) return;  // element was removed in the refactor; guard against null deref
   if(!members?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students yet — share your class code!</div>';return;}
   const colors=['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
   const textColors=['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
