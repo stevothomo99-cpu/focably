@@ -20,9 +20,9 @@ async function loadStudentApp(knownChild) {
     // Set avatar as heroEmoji for primary
     const heroEl = document.getElementById('heroEmoji');
     if(heroEl) heroEl.textContent = avatar;
-    // Greet by real name too — the theme name/title below is flavour text, not the student's name
-    const greetEl = document.getElementById('questGreeting');
-    if(greetEl) greetEl.textContent = firstName ? `Hi, ${firstName}!` : 'Hi there!';
+    // Real-name greeting is the headline, matching the parent home tile's
+    // "Welcome back, {name}!" presentation — theme flavour text is the subtitle
+    document.getElementById('heroName').textContent = firstName ? `Welcome back, ${firstName}!` : 'Welcome back!';
   } else {
     document.getElementById('hsName').textContent=`Hey, ${firstName}! 👋`;
     // Set avatar in HS header — photo or emoji
@@ -695,8 +695,9 @@ function applyTheme(t) {
   const cfg=themes[t]||themes.fantasy;
   document.getElementById('questHeader').style.background=cfg.grad;
   document.getElementById('heroEmoji').textContent=cfg.emoji;
-  document.getElementById('heroName').textContent=cfg.name;
-  document.getElementById('heroTitle').textContent=cfg.title;
+  // heroName is the student's real-name greeting (set in loadStudentApp) — the
+  // theme's flavour name/title now both live in the subtitle line below it.
+  document.getElementById('heroTitle').textContent=cfg.name+' · '+cfg.title;
   document.getElementById('chestEmoji').textContent=cfg.chest;
   document.getElementById('aiCardTitle').textContent=cfg.aiTitle;
   document.getElementById('aiCardSub').textContent=cfg.aiSub;
