@@ -62,18 +62,20 @@ function setTeacherView(mode) {
 function renderClassDropdown() {
   const dropdown = document.getElementById('classDropdown');
   if(dropdown) {
-    dropdown.innerHTML = teacherClasses.map(c =>
-      `<option value="${c.id}">${c.name} — ${c.subject} ${c.year_group||''}</option>`
-    ).join('');
+    dropdown.innerHTML = teacherClasses.map(c => {
+      const subj = classSubjectIfDistinct(c);
+      return `<option value="${c.id}">${c.name}${subj?' — '+subj:''} ${c.year_group||''}</option>`;
+    }).join('');
     const sel = document.getElementById('classSelector');
     if(sel) sel.style.display='block';
   }
   // Always populate assignment class dropdown
   const assignDropdown = document.getElementById('assignmentClass');
   if(assignDropdown) {
-    assignDropdown.innerHTML = '<option value="">— Select class —</option>' + teacherClasses.map(c =>
-      `<option value="${c.id}">${c.name} — ${c.subject}</option>`
-    ).join('');
+    assignDropdown.innerHTML = '<option value="">— Select class —</option>' + teacherClasses.map(c => {
+      const subj = classSubjectIfDistinct(c);
+      return `<option value="${c.id}">${c.name}${subj?' — '+subj:''}</option>`;
+    }).join('');
   }
 }
 
@@ -84,7 +86,8 @@ async function selectClass(classId) {
   if(!cls) return;
 
   // Update header
-  document.getElementById('teacherSubline').textContent = `${cls.name} · ${cls.subject} ${cls.year_group||''}`;
+  const clsSubj = classSubjectIfDistinct(cls);
+  document.getElementById('teacherSubline').textContent = `${cls.name}${clsSubj?' · '+clsSubj:''} ${cls.year_group||''}`;
 
   // Show invite code only if a valid (non-expired) one exists
   document.getElementById('classInfo').style.display='block';
@@ -255,26 +258,21 @@ async function loadTeacherClassAssignments(classId) {
 }
 
 function showCreateClass() {
-  document.getElementById('classSetupCard').style.display='block';
-  document.getElementById('className').value='';
-  document.getElementById('classSubject').value='';
-  document.getElementById('classYear').value='';
-}
-
-function showCreateClass() {
   document.getElementById('classSetup').style.display='block';
   document.getElementById('createClassTitle').textContent='Add a new class';
   document.getElementById('className').value='';
-  document.getElementById('classSubject').value='';
   document.getElementById('classYear').value='';
 }
 
 async function createClass() {
-  const name=document.getElementById('className').value.trim(),subject=document.getElementById('classSubject').value.trim(),year=document.getElementById('classYear').value.trim();
-  if(!name||!subject){showToast('Enter class name and subject');return;}
+  const name=document.getElementById('className').value.trim(),year=document.getElementById('classYear').value.trim();
+  if(!name){showToast('Enter a class name');return;}
   const directEnrol = document.getElementById('directEnrolToggle')?.checked || false;
   const isApproved = currentProfile?.school_role === 'admin' || currentProfile?.school_role === 'member';
-  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject,year_group:year,school_id:currentProfile.school_id||null,direct_student_enrol:isApproved&&directEnrol}).select().maybeSingle();
+  // `subject` is still a required column server-side but is no longer a separate
+  // field in the UI — mirror the class name into it so nothing else that reads
+  // classes.subject breaks.
+  const {data,error}=await db.from('classes').insert({teacher_id:currentUser.id,name,subject:name,year_group:year,school_id:currentProfile.school_id||null,direct_student_enrol:isApproved&&directEnrol}).select().maybeSingle();
   if(error){showToast('❌ Error creating class: '+error.message);return;}
   teacherClasses.push(data);
   selectedClassId = data.id;

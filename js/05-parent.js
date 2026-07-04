@@ -187,7 +187,7 @@ async function loadChildStats(childId) {
           <div style="font-size:22px;">📚</div>
           <div style="flex:1;">
             <div style="font-weight:700;font-size:13px;color:var(--indigo);">${cls.name}</div>
-            <div style="font-size:11px;color:var(--gray-500);">${cls.subject||''} ${cls.year_group?'· '+cls.year_group:''} ${cls.profiles?.full_name?'· '+cls.profiles.full_name:''}</div>
+            <div style="font-size:11px;color:var(--gray-500);">${classSubjectIfDistinct(cls)} ${cls.year_group?'· '+cls.year_group:''} ${cls.profiles?.full_name?'· '+cls.profiles.full_name:''}</div>
           </div>
           <div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>
         </div>`;
@@ -301,7 +301,7 @@ async function loadSchoolAdmin() {
         <div style="font-size:22px;">📚</div>
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:700;color:var(--indigo);">${c.name}</div>
-          <div style="font-size:11px;color:var(--gray-500);">${c.subject||''} ${c.year_group||''} · ${count} student${count===1?'':'s'}</div>
+          <div style="font-size:11px;color:var(--gray-500);">${classSubjectIfDistinct(c)} ${c.year_group||''} · ${count} student${count===1?'':'s'}</div>
         </div>
         ${c.direct_student_enrol ? '<span style="font-size:10px;background:#ECFDF5;color:var(--mint);padding:2px 8px;border-radius:10px;font-weight:700;">Direct enrol</span>' : ''}
       </div>`;
@@ -1077,7 +1077,7 @@ async function populateTaskClassPicker() {
     picker.innerHTML = '<option value="">No enrolled classes yet</option>';
   } else {
     picker.innerHTML = '<option value="">— Select a class —</option>' +
-      classes.map(c => `<option value="${c.id}">${c.name}${c.subject?' — '+c.subject:''}</option>`).join('');
+      classes.map(c => { const subj = classSubjectIfDistinct(c); return `<option value="${c.id}">${c.name}${subj?' — '+subj:''}</option>`; }).join('');
   }
 }
 
@@ -1461,7 +1461,7 @@ function importTeamsAssignment(title, dueDateTime, description) {
       const picker = document.getElementById('importClassPicker');
       if(picker && teacherClasses?.length) {
         picker.innerHTML = '<option value="">— Select a class —</option>' +
-          teacherClasses.map(c => '<option value="' + c.id + '">' + c.name + ' — ' + (c.subject||'') + '</option>').join('');
+          teacherClasses.map(c => { const subj = classSubjectIfDistinct(c); return '<option value="' + c.id + '">' + c.name + (subj?' — '+subj:'') + '</option>'; }).join('');
         if(selectedClassId) picker.value = selectedClassId;
       }
     } else {
@@ -1834,7 +1834,7 @@ async function loadJoinedClasses(childId) {
     el.innerHTML = memberships.map(m => '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">' +
       '<div style="font-size:24px;">📚</div>' +
       '<div style="flex:1"><div style="font-weight:700;font-size:13px;">' + m.classes.name + '</div>' +
-      '<div style="font-size:11px;color:var(--gray-500);">' + (m.classes.subject||'') + '</div></div>' +
+      '<div style="font-size:11px;color:var(--gray-500);">' + classSubjectIfDistinct(m.classes) + '</div></div>' +
       '<div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>' +
     '</div>').join('');
   }
