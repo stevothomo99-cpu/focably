@@ -233,7 +233,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     const classCfg = stateColors[classState];
 
     // Build assignment tiles
-    const assignmentTiles = bucket.assignments.map(a => {
+    const renderAssignmentCard = (a) => {
       const tasks = a.tasks||[];
       const aDone = tasks.filter(t=>t.completed).length;
       const aTotal = tasks.length;
@@ -303,7 +303,30 @@ function renderClassTiles(assignments, child, containerId, isHS) {
             ${stepsHtml}
           </div>
         </div>`;
-    }).join('');
+    };
+
+    // Home Tasks (private, parent-created) get sub-grouped by subject so parents
+    // can organise them without those groups becoming their own class-like tiles —
+    // real teacher classes always render as flat lists, unaffected.
+    let assignmentTiles;
+    if(classId === 'noclass') {
+      // Group case-insensitively so "Chores" and "chores" don't split into two
+      // headers, but keep the first-typed casing for display
+      const subjectGroups = {}, subjectOrder = [], subjectLabels = {};
+      bucket.assignments.forEach(a => {
+        const raw = (a.subject||'').trim();
+        const key = raw ? raw.toLowerCase() : '__none__';
+        if(!subjectGroups[key]) { subjectGroups[key] = []; subjectOrder.push(key); subjectLabels[key] = raw; }
+        subjectGroups[key].push(a);
+      });
+      assignmentTiles = subjectOrder.map(key => {
+        const cards = subjectGroups[key].map(renderAssignmentCard).join('');
+        if(key === '__none__') return cards;
+        return `<div style="margin:10px 8px 4px;font-size:11px;font-weight:800;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.5px;">📁 ${subjectLabels[key]}</div>${cards}`;
+      }).join('');
+    } else {
+      assignmentTiles = bucket.assignments.map(renderAssignmentCard).join('');
+    }
 
     return `
       <div class="class-tile" id="tile-${classId}" style="background:${classCfg.tile};animation:${classCfg.anim};">

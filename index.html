@@ -907,7 +907,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       <div id="parentTaskChildSelect" style="margin-bottom:10px;"></div>
       <div class="form-grp"><label class="form-lbl">Task Title</label><input class="form-input" type="text" id="parentTaskTitle" placeholder="e.g. Read Chapter 4"></div>
       <div class="form-row">
-        <div class="form-grp"><label class="form-lbl">Subject</label><input class="form-input" type="text" id="parentTaskSubject" placeholder="e.g. English"></div>
+        <div class="form-grp"><label class="form-lbl">Category</label><input class="form-input" type="text" id="parentTaskSubject" list="parentTaskCategoryList" placeholder="e.g. Chores, Reading"><datalist id="parentTaskCategoryList"></datalist></div>
         <div class="form-grp"><label class="form-lbl">Due Date</label><input class="form-input" type="date" id="parentTaskDue"></div>
       </div>
       <div class="form-grp"><label class="form-lbl">Notes (optional)</label><textarea class="form-input" rows="2" id="parentTaskDesc" placeholder="Any extra details..."></textarea></div>

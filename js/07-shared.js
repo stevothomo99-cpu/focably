@@ -882,6 +882,7 @@ function openDrawerScreen(screen) {
   if(screen === 'add-task') {
     setTaskVisibility('private');
     populateTaskClassPicker();
+    populateTaskCategoryList();
     selectedTaskStars = 1;
     selectTaskStars(1);
   }
