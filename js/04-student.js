@@ -797,6 +797,28 @@ async function finalizeFamilyLink(family) {
   }
   // Set currentChildRecord directly from insert — no need to re-query, avoids propagation race
   currentChildRecord = newChild;
+  notifyParentChildJoined(family.id).catch(e => console.log('notifyParentChildJoined error:', e.message));
   return {child: newChild};
+}
+
+// Notify the parent (in-app + push + email) that a child just joined their family.
+// Runs after the child row is committed, so the "Members read their family" RLS
+// policy now lets this profile read the family's parent_id.
+async function notifyParentChildJoined(familyId) {
+  const {data:familyRow} = await dbQuery(db.from('families').select('parent_id,family_name').eq('id', familyId).maybeSingle(), 5000, null);
+  const parentId = familyRow?.parent_id;
+  if(!parentId) return;
+  const childName = currentProfile.full_name || 'Your child';
+  const title = '🎉 New child joined your family!';
+  const body = `${childName} just joined ${familyRow.family_name || 'your family'} on FocablyED.`;
+  await dbQuery(db.from('notifications').insert({
+    recipient_id: parentId,
+    sender_id: currentUser.id,
+    type: 'child_joined',
+    title,
+    body
+  }));
+  await sendPushToUser(parentId, title, body);
+  sendTransactionalEmail('child_joined', { parentId, studentName: childName });
 }
 
