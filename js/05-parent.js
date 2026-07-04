@@ -1309,15 +1309,31 @@ async function saveBrainDumpTasks() {
     const due = document.getElementById('bdDue' + i)?.value || null;
     if(!title) continue;
 
-    await dbQuery(db.from('assignments').insert({
+    // status must be 'active' — loadStudentAssignments() only ever fetches
+    // active assignments, so anything else is saved but never shown
+    const {data:assignment} = await dbQuery(db.from('assignments').insert({
       child_id: childId,
       created_by: currentUser.id,
       title,
-      description: subject || null,
+      subject: subject || null,
       due_date: due,
-      status: 'pending',
+      status: 'active',
       parent_created: false
-    }), 8000, null);
+    }).select().maybeSingle(), 8000, null);
+
+    // Give it one completable step — without this the task shows "No steps
+    // yet" with no way to ever check it off
+    if(assignment) {
+      await dbQuery(db.from('tasks').insert({
+        assignment_id: assignment.id,
+        child_id: childId,
+        title,
+        xp_value: 10,
+        star_value: 1,
+        sort_order: 1,
+        verification_required: false
+      }), 8000, null);
+    }
     saved++;
   }
 
