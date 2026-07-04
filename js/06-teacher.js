@@ -345,8 +345,8 @@ async function generateTeacherSteps() {
   const btn = document.getElementById('aiStepsBtn');
   btn.disabled = true; btn.textContent = '⏳ Generating...';
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
+    const res = await fetch(AI_PROXY_URL, {
+      method:'POST', headers:(await aiHeaders()),
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
         system:`You help teachers create step-by-step tasks for students with ADHD. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words) and "verification_required" (true only for the final submission step). No markdown, no backticks.`,
@@ -410,8 +410,8 @@ async function publishAssignment() {
       const title = document.getElementById('aTitle').value.trim();
       const desc = document.getElementById('aDesc').value.trim();
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
+        const res = await fetch(AI_PROXY_URL, {
+          method:'POST', headers:(await aiHeaders()),
           body: JSON.stringify({
             model:'claude-sonnet-4-20250514', max_tokens:800,
             system:`Break this school assignment into 4-5 clear steps for a student. Return ONLY a raw JSON array. Each: "title" (max 10 words) and "verification_required" (true only for final step if proof needed). No markdown.`,

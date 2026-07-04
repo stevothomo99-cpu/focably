@@ -1088,8 +1088,8 @@ async function parentAddTask() {
   if(assignment) {
     let parentSteps = [];
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
+      const res = await fetch(AI_PROXY_URL, {
+        method:'POST', headers:(await aiHeaders()),
         body: JSON.stringify({
           model:'claude-sonnet-4-20250514', max_tokens:600,
           system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each: "title" (max 8 words). No markdown.`,
@@ -1191,9 +1191,9 @@ async function processBrainDump() {
   const today = new Date().toISOString().split('T')[0];
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
+      headers: (await aiHeaders()),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -1457,9 +1457,9 @@ async function parseImportedAssignment() {
 
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD for context
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      headers: (await aiHeaders()),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 400,
@@ -1574,8 +1574,8 @@ async function saveImportedAssignment() {
       // AI-generate steps in background (same as parentAddTask)
       if(assignment) {
         try {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
+          const res = await fetch(AI_PROXY_URL, {
+            method:'POST', headers:(await aiHeaders()),
             body: JSON.stringify({
               model:'claude-sonnet-4-20250514', max_tokens:600,
               system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each item: "title" (max 8 words). No markdown.`,
@@ -1736,8 +1736,10 @@ async function joinClass() {
   const code = document.getElementById('classCodeInput').value.trim().toUpperCase();
   if(code.length !== 6) { showToast('Enter the 6-character class code'); return; }
 
-  // Find the class
-  const {data:cls} = await db.from('classes').select('*, profiles(full_name)').eq('invite_code', code).maybeSingle();
+  // Find the class via a SECURITY DEFINER RPC (returns only minimal columns for a
+  // matching code) instead of reading the classes table directly.
+  const {data:clsRows} = await db.rpc('find_class_by_code', {p_code: code});
+  const cls = Array.isArray(clsRows) ? clsRows[0] : clsRows;
   if(!cls) { showToast('❌ Class not found — check the code'); return; }
   if(cls.invite_code_expires_at && new Date(cls.invite_code_expires_at) < new Date()){
     showToast('⏰ This class code has expired — ask the teacher for a new one'); return;

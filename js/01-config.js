@@ -1,8 +1,17 @@
 const SUPA_URL = 'https://mxgnrgajspprupzxaeld.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14Z25yZ2Fqc3BwcnVwenhhZWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTg5MjUsImV4cCI6MjA5NjU3NDkyNX0.tpVmlTfPSR1RmqiS57xgbCIl0Cd3-kHGi7tiOzmJWfw';
-const ANTHROPIC_KEY = ['sk-ant-api03-H1PH-7SMJfYMcbtQYltpL_YRv4ZLGXQRScl','jNEvr8OQmwwyA1YWaERpInLZQISY6gtQSmp-n2FIe0oWYGOikfQ-oCt5sgAA'].join('');
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
+
+// ── AI proxy ──
+// Claude calls go through the `ai-generate` Edge Function, which holds the
+// Anthropic key server-side. The client never sees a provider secret.
+const AI_PROXY_URL = SUPA_URL + '/functions/v1/ai-generate';
+async function aiHeaders() {
+  const { data: { session } } = await db.auth.getSession();
+  const token = session?.access_token || SUPA_KEY;
+  return { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + token };
+}
 
 // ── Stripe config ──
 const STRIPE_PK = 'pk_live_51T3vs4BClvRtlFVH7Zh5svzkwISEUF3CBRgZjUmHtFuBlbuxqPwG95rSA8mcwDIEuB34M3rqYLKo1MHXJHnwvcen00THCh7f4c';
