@@ -709,15 +709,24 @@ async function linkToFamily() {
     if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
     return;
   }
-  // Check if this profile is already linked to ANY family
-  const {data:existingRows, error:existingErr} = await dbQuery(db.from('children').select('id').eq('profile_id',currentUser.id).limit(1), 5000, null);
+  // Check if this profile is already linked to a family (profile_id is unique on children,
+  // so a student can only ever belong to one family at a time)
+  const {data:existingRows, error:existingErr} = await dbQuery(db.from('children').select('id,family_id').eq('profile_id',currentUser.id).limit(1), 5000, null);
   console.log('linkToFamily: existingRows=', existingRows, 'err=', existingErr?.message);
   if(existingRows && existingRows.length > 0){
-    showToast('✅ Already linked — loading your app!');
-    appReady = true;
+    if(existingRows[0].family_id === family.id){
+      showToast('✅ Already linked — loading your app!');
+      appReady = true;
+      linkToFamilyInProgress = false;
+      await new Promise(resolve => setTimeout(resolve, 400));
+      await loadStudentApp();
+      return;
+    }
+    // Linked to a DIFFERENT family than the code just entered — don't silently load
+    // the old family and drop the code on the floor, tell them what to do
+    showToast("⚠️ You're already linked to a different family — unlink it first, then enter this code.");
     linkToFamilyInProgress = false;
-    await new Promise(resolve => setTimeout(resolve, 400));
-    await loadStudentApp();
+    if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
     return;
   }
 
