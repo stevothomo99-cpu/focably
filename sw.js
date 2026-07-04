@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v2-modular';
+const CACHE_NAME = 'focably-v3-secure';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
@@ -35,6 +35,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   // Skip non-http requests (chrome-extension, data: etc)
   if (!event.request.url.startsWith('http')) return;
+
+  // Only handle same-origin requests. API responses (Supabase etc) must never
+  // be cached: they contain per-user data and would also be served stale.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {
