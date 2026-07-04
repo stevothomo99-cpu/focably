@@ -339,6 +339,22 @@ async function sendTransactionalEmail(type, data) {
     console.log('Transactional email error:', e.message);
   }
 }
+// Escapes HTML and preserves line breaks so multi-line instructions render as
+// readable, ADHD-friendly text instead of a collapsed wall. Numbered/bulleted
+// points that were pasted on one line get pushed onto their own line too.
+function formatDescription(text) {
+  if(!text) return '';
+  const escaped = String(text)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+  // Put "1." / "2)" / "-" / "•" list markers on their own line if they were
+  // run together in one paragraph
+  const withBreaks = escaped
+    .replace(/\s+(?=\d+[.)]\s)/g, '\n')     // before "1." / "2)"
+    .replace(/\s+(?=[•\-–]\s)/g, '\n');      // before bullet markers
+  return withBreaks.replace(/\n/g, '<br>');
+}
+
 // Classes are created with just a name + year group now, but older classes may
 // still have a distinct `subject` — only surface it when it adds information.
 function classSubjectIfDistinct(cls) {
@@ -1112,7 +1128,7 @@ async function openAssignmentDetail(assignmentId) {
       </div>
       <div style="background:var(--gray-100);border-radius:10px;height:8px;margin-bottom:6px;"><div style="background:${pct>=100?'var(--mint)':isOverdue?'var(--rose)':'var(--violet)'};border-radius:10px;height:8px;width:${pct}%;transition:width 0.5s;"></div></div>
       <div style="font-size:12px;color:var(--gray-500);text-align:right;">${pct}% complete</div>
-      ${a.description?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Instructions</div><div style="font-size:13px;color:var(--gray-700);line-height:1.5;">${a.description}</div></div>`:''}
+      ${a.description?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Instructions</div><div style="font-size:13px;color:var(--gray-700);line-height:1.6;">${formatDescription(a.description)}</div></div>`:''}
     </div>
     <div class="card">
       <div class="card-title">📋 Steps</div>

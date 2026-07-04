@@ -880,7 +880,14 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
         <div class="form-grp"><label class="form-lbl">Subject</label><input class="form-input" type="text" id="importSubject" placeholder="e.g. Science"></div>
         <div class="form-grp"><label class="form-lbl">Due Date</label><input class="form-input" type="date" id="importDue"></div>
       </div>
-      <div class="form-grp"><label class="form-lbl">Notes</label><textarea class="form-input" rows="3" id="importDesc" placeholder="Any extra details…"></textarea></div>
+      <div class="form-grp"><label class="form-lbl">Summary</label><textarea class="form-input" rows="2" id="importDesc" placeholder="Short overview of the task…"></textarea></div>
+
+      <!-- Steps extracted by Squirrel — shown when the import produced a checklist -->
+      <div class="form-grp" id="importStepsWrap" style="display:none;">
+        <label class="form-lbl">🐿️ Steps Squirrel found</label>
+        <div id="importStepsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">These become tick-off steps for your child. Edit the text above and re-run if they look off.</div>
+      </div>
 
       <!-- Class selector — shown for teacher role only -->
       <div id="importClassWrap" style="display:none;margin-bottom:10px;">

@@ -1513,6 +1513,7 @@ function importTeamsAssignment(title, dueDateTime, description) {
 
 // ── Import Assignment functions ──────────────────────────────────────────────
 
+let importedSteps = [];  // steps extracted by the last import parse, saved as task rows on confirm
 async function parseImportedAssignment() {
   const raw = document.getElementById('importPasteInput').value.trim();
   if(!raw) { showToast('Paste some assignment text first'); return; }
@@ -1531,12 +1532,13 @@ async function parseImportedAssignment() {
       headers: (await aiHeaders()),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        system: `Extract assignment details from pasted text. Today's date is ${today}. Return ONLY a raw JSON object with these keys:
+        max_tokens: 700,
+        system: `Extract assignment details from pasted text for a student with ADHD. Today's date is ${today}. Return ONLY a raw JSON object with these keys:
 - "title": string (assignment name, max 10 words)
 - "subject": string (subject/class name, or "" if unclear)
 - "due_date": string in YYYY-MM-DD format (or "" if not found)
-- "description": string (key instructions, max 60 words, or "")
+- "description": string — a SHORT plain-language overview of the goal, max 25 words. Do NOT list the steps here.
+- "steps": array of 3-6 short strings, each one clear action the student ticks off (max 10 words each, plain and encouraging). Break the instructions into these steps.
 No markdown, no backticks, no explanation. Just the JSON object.`,
         messages: [{ role: 'user', content: raw }]
       })
@@ -1547,11 +1549,30 @@ No markdown, no backticks, no explanation. Just the JSON object.`,
     // Increment AI usage counter
     await incrementAIImportCount();
 
+    // Stash extracted steps for saveImportedAssignment; normalise to strings
+    importedSteps = Array.isArray(parsed.steps)
+      ? parsed.steps.map(s => (typeof s === 'string' ? s : (s?.title || s?.step || ''))).filter(Boolean)
+      : [];
+
     // Populate confirmation form
     document.getElementById('importTitle').value = parsed.title || '';
     document.getElementById('importSubject').value = parsed.subject || '';
     document.getElementById('importDue').value = parsed.due_date || '';
     document.getElementById('importDesc').value = parsed.description || '';
+
+    // Show the extracted steps preview
+    const stepsWrap = document.getElementById('importStepsWrap');
+    const stepsList = document.getElementById('importStepsList');
+    if(stepsWrap && stepsList) {
+      if(importedSteps.length) {
+        stepsList.innerHTML = importedSteps.map((s,i) =>
+          `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700);"><span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span><span>${s.replace(/</g,'&lt;')}</span></div>`
+        ).join('');
+        stepsWrap.style.display = 'block';
+      } else {
+        stepsWrap.style.display = 'none';
+      }
+    }
 
     // Show role-specific extras
     const role = currentProfile?.role;
@@ -1640,32 +1661,23 @@ async function saveImportedAssignment() {
       );
       if(error?.message && error.message !== 'timeout') throw new Error(error.message);
 
-      // AI-generate steps in background (same as parentAddTask)
+      // Create task rows from the steps the parse step already extracted. Fall
+      // back to a single step so the assignment is never left uncompletable.
       if(assignment) {
-        try {
-          const res = await fetch(AI_PROXY_URL, {
-            method:'POST', headers:(await aiHeaders()),
-            body: JSON.stringify({
-              model:'claude-sonnet-4-20250514', max_tokens:600,
-              system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each item: "title" (max 8 words). No markdown.`,
-              messages:[{role:'user',content:`Task: "${title}". ${desc}`}]
-            })
-          });
-          const d = await res.json();
-          const steps = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
-          const stepRows = steps.map((s,i)=>({
-            assignment_id: assignment.id,
-            child_id: childId,
-            title: s.title || s.step || `Step ${i+1}`,
-            completed: false,
-            verification_required: i === steps.length-1,
-            verification_status: 'none',
-            star_value: 2,
-            xp_value: 15,
-            sort_order: i
-          }));
-          await dbQuery(db.from('tasks').insert(stepRows), 8000, null);
-        } catch(e) { console.log('Step gen skipped:', e.message); }
+        let steps = importedSteps.slice();
+        if(!steps.length) steps = [title];
+        const stepRows = steps.map((s,i)=>({
+          assignment_id: assignment.id,
+          child_id: childId,
+          title: s,
+          completed: false,
+          verification_required: i === steps.length-1,
+          verification_status: 'none',
+          star_value: 2,
+          xp_value: 15,
+          sort_order: i
+        }));
+        await dbQuery(db.from('tasks').insert(stepRows), 8000, null);
       }
 
       showToast('✅ Assignment imported!');
@@ -1677,6 +1689,9 @@ async function saveImportedAssignment() {
     // Reset form
     document.getElementById('importPasteInput').value = '';
     document.getElementById('importConfirmCard').style.display = 'none';
+    const stepsWrap = document.getElementById('importStepsWrap');
+    if(stepsWrap) stepsWrap.style.display = 'none';
+    importedSteps = [];
     closeDrawerScreen();
 
   } catch(e) {
