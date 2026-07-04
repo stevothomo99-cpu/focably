@@ -4,7 +4,8 @@ async function loadParentApp() {
   showScreen('app');
   appReady = true;
   switchRole('parent');
-  document.getElementById('parentName').textContent=(currentProfile.full_name||'Parent')+' 👋';
+  const parentFirstName = currentProfile.full_name?.split(' ')[0] || 'there';
+  document.getElementById('parentName').textContent=`Welcome back, ${parentFirstName}!`;
   // Show Pro badge if subscribed
   const proEl = document.getElementById('parentProBadge');
   if(proEl) proEl.style.display = isPro() ? 'inline-block' : 'none';
