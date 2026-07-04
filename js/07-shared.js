@@ -171,7 +171,7 @@ async function breakdownTask() {
   btn.disabled=true;document.getElementById('aiBtnText').textContent='✨ Summoning...';
   document.getElementById('aiSteps').innerHTML='';document.getElementById('aiResult').classList.remove('visible');
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
+    const res=await fetch(AI_PROXY_URL,{method:'POST',headers:(await aiHeaders()),body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help primary school kids with ADHD break assignments into fun steps styled as ${t.aiStyle}. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (fun, max 8 words) and "stars" (1 or 2). No markdown, no backticks.`,messages:[{role:'user',content:`Break into steps: ${input}`}]})});
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     await incrementAIImportCount();
@@ -193,7 +193,7 @@ async function breakdownHS() {
   btn.disabled=true;document.getElementById('hsAiBtnText').textContent='⏳ Breaking it down...';
   document.getElementById('hsAiSteps').innerHTML='';document.getElementById('hsAiResult').classList.remove('visible');
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]})});
+    const res=await fetch(AI_PROXY_URL,{method:'POST',headers:(await aiHeaders()),body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You help high school students with ADHD break assignments into clear steps. Return ONLY a raw JSON array of 4-6 steps. Each: "step" (clear action, max 9 words) and "xp" (10, 15, or 20). No markdown, no backticks.`,messages:[{role:'user',content:`Break this assignment into steps: ${input}`}]})});
     const data=await res.json();
     const steps=JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
     document.getElementById('hsAiSteps').innerHTML=steps.map((s,i)=>`<div class="ai-step"><div class="ai-num">${i+1}</div><div style="flex:1">${s.step}</div><div style="font-size:11px;font-weight:700;color:var(--amber)">+${s.xp} XP</div></div>`).join('');

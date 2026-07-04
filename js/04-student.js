@@ -693,7 +693,10 @@ async function linkToFamily() {
     if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
     return;
   }
-  const {data:family} = await dbQuery(db.from('families').select('*').eq('invite_code',code).maybeSingle(), 8000, null);
+  // Look up the family via a SECURITY DEFINER RPC (returns only minimal, non-sensitive
+  // columns for a matching code) instead of reading the families table directly.
+  const {data:familyRows} = await dbQuery(db.rpc('find_family_by_code', {p_code: code}), 8000, null);
+  const family = Array.isArray(familyRows) ? familyRows[0] : familyRows;
   if(!family){
     showToast('❌ Code not found — check with your parent');
     linkToFamilyInProgress = false;
