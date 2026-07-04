@@ -1081,6 +1081,27 @@ async function populateTaskClassPicker() {
   }
 }
 
+// Suggests previously-used Home Task categories so parents reuse "Chores"
+// instead of accidentally creating "Chore", "chores", etc.
+async function populateTaskCategoryList() {
+  const list = document.getElementById('parentTaskCategoryList');
+  if(!list) return;
+  const childSelectEl = document.getElementById('parentTaskChildSelect')?.querySelector('select');
+  const childId = childSelectEl?.value || currentChildren?.[0]?.id;
+  if(!childId) { list.innerHTML = ''; return; }
+  const {data:rows} = await dbQuery(
+    db.from('assignments').select('subject').eq('child_id', childId).is('class_id', null).not('subject','is',null),
+    6000, []
+  );
+  const seen = new Set(), options = [];
+  (rows||[]).forEach(r => {
+    const subj = (r.subject||'').trim();
+    const key = subj.toLowerCase();
+    if(subj && !seen.has(key)) { seen.add(key); options.push(subj); }
+  });
+  list.innerHTML = options.map(s => `<option value="${s.replace(/"/g,'')}">`).join('');
+}
+
 async function parentAddTask() {
   const title = document.getElementById('parentTaskTitle').value.trim();
   const subject = document.getElementById('parentTaskSubject').value.trim();
