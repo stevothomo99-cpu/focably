@@ -20,6 +20,9 @@ async function loadStudentApp(knownChild) {
     // Set avatar as heroEmoji for primary
     const heroEl = document.getElementById('heroEmoji');
     if(heroEl) heroEl.textContent = avatar;
+    // Greet by real name too — the theme name/title below is flavour text, not the student's name
+    const greetEl = document.getElementById('questGreeting');
+    if(greetEl) greetEl.textContent = firstName ? `Hi, ${firstName}!` : 'Hi there!';
   } else {
     document.getElementById('hsName').textContent=`Hey, ${firstName}! 👋`;
     // Set avatar in HS header — photo or emoji
