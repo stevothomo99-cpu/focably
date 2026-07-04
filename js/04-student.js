@@ -242,7 +242,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       const aCfg = stateColors[aState];
       const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
       const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.2);color:white;font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
-      const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:3px;line-height:1.4;">${a.description}</div>` : '';
+      const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:3px;line-height:1.5;">${formatDescription(a.description)}</div>` : '';
 
       // Steps inside assignment
       const stepsHtml = aTotal ? tasks.map(task => {
