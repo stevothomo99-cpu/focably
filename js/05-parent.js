@@ -908,6 +908,37 @@ async function approveReward(rewardId,btn) {
 }
 function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('familyInviteCode').textContent).then(()=>showToast('📋 Invite code copied!')); }
 
+// ── EMAIL INVITE (magic-link enrolment via invite-child Edge Function) ──
+async function sendChildInvite() {
+  const firstName = document.getElementById('inviteFirstName').value.trim();
+  const lastName = document.getElementById('inviteLastName').value.trim();
+  const email = document.getElementById('inviteEmail').value.trim();
+  if(!firstName || !email) { showToast('Enter a first name and email'); return; }
+  if(!currentFamily) { showToast('No family found'); return; }
+  const btn = document.getElementById('sendInviteBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const {data:{session}} = await db.auth.getSession();
+    const res = await fetch(SUPA_URL + '/functions/v1/invite-child', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+(session?.access_token||SUPA_KEY)},
+      body: JSON.stringify({familyId: currentFamily.id, firstName, lastName, email})
+    });
+    const result = await res.json().catch(()=>({}));
+    if(!res.ok || result.error) {
+      showToast('❌ ' + (result.error || 'Could not send invite'));
+    } else {
+      showToast('✉️ Invite sent to ' + email);
+      document.getElementById('inviteFirstName').value = '';
+      document.getElementById('inviteLastName').value = '';
+      document.getElementById('inviteEmail').value = '';
+    }
+  } catch(e) {
+    showToast('❌ Could not send invite: ' + e.message);
+  }
+  if(btn){ btn.disabled = false; btn.textContent = '✉️ Send Invite'; }
+}
+
 // ── DYNAMIC INVITE CODES (48h expiry) ──
 function randomInviteCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I

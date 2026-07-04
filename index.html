@@ -491,6 +491,19 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
   </div>
 </div>
 
+<!-- INVITE: SET PASSWORD SCREEN -->
+<div class="screen" id="screen-setpassword" style="display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;">
+  <div class="auth-box" style="margin:auto;">
+    <div class="auth-logo"><img src="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png" alt="🐿️"><span><span style="white-space:nowrap;color:white;">Focably<span style="color:#A78BFA;">ED</span></span></div>
+    <div class="auth-title" id="setPasswordTitle">Welcome!</div>
+    <div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px;" id="setPasswordSubtitle">You've been invited to join a family on FocablyED. Set a password to finish creating your account.</div>
+    <div id="setPasswordError" class="auth-error"></div>
+    <input class="auth-input" type="password" id="spPassword" placeholder="Choose a password (min 6 chars)">
+    <input class="auth-input" type="password" id="spPasswordConfirm" placeholder="Confirm password">
+    <button class="auth-btn" id="spBtn" onclick="submitInvitePassword()">Set Password &amp; Continue</button>
+  </div>
+</div>
+
 <!-- FocablyED v0.3 - 20260613 -->
 <!-- ONBOARDING -->
 <div class="screen" id="screen-onboarding" style="display:none;flex-direction:column;">
@@ -934,8 +947,16 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Family Invite Code</div>
     </div>
     <div class="card">
+      <div class="card-title">✉️ Invite by Email</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">Enter your child's details and we'll email them a link to set up their account — no code to share.</p>
+      <input class="form-input" type="text" id="inviteFirstName" placeholder="First name" style="margin-bottom:8px;">
+      <input class="form-input" type="text" id="inviteLastName" placeholder="Last name (optional)" style="margin-bottom:8px;">
+      <input class="form-input" type="email" id="inviteEmail" placeholder="Child's email address" style="margin-bottom:12px;">
+      <button id="sendInviteBtn" class="publish-btn" onclick="sendChildInvite()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">✉️ Send Invite</button>
+    </div>
+    <div class="card">
       <div class="card-title">📬 Family Invite Code</div>
-      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">Generate a one-time code to link your child's account. Each code is valid for <strong>48 hours</strong>.</p>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">Or share a one-time code instead — your child enters it themselves. Each code is valid for <strong>48 hours</strong>.</p>
       <div id="familyCodeDisplay" style="display:none;">
         <div class="invite-box">
           <div style="font-size:13px;color:var(--gray-500);margin-bottom:4px;">Family Invite Code</div>

@@ -134,12 +134,12 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 function showScreen(name) {
-  ['loading','auth','confirm','onboarding','app'].forEach(s => {
+  ['loading','auth','confirm','onboarding','setpassword','app'].forEach(s => {
     const el = document.getElementById('screen-' + s);
     if(el) el.style.display = 'none';
   });
   const t = document.getElementById('screen-' + name);
-  if(t) t.style.display = ['auth','onboarding','confirm'].includes(name) ? 'flex' : 'block';
+  if(t) t.style.display = ['auth','onboarding','confirm','setpassword'].includes(name) ? 'flex' : 'block';
 }
 
 function showConfirmScreen(email) {
