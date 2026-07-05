@@ -282,8 +282,8 @@ async function openManageChildren() {
         '<div onclick="toggleManageChildClass(this)" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:' + classBg + ';">' +
           '<div style="font-size:20px;">📚</div>' +
           '<div style="flex:1;">' +
-            '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + cls.name + '</div>' +
-            '<div style="font-size:11px;color:var(--gray-500);">' + classSubjectIfDistinct(cls) + (cls.year_group?' · '+cls.year_group:'') + (teacher?' · '+teacher:'') + ' · ' + clsAssignments.length + ' active · ' + pct + '% done</div>' +
+            '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + classDisplayName(cls) + '</div>' +
+            '<div style="font-size:11px;color:var(--gray-500);">' + classSubjectIfDistinct(cls) + (teacher?' · '+teacher:'') + ' · ' + clsAssignments.length + ' active · ' + pct + '% done</div>' +
           '</div>' +
           '<div class="mc-chev" style="font-size:11px;color:var(--gray-400);transition:transform 0.2s;">▼</div>' +
         '</div>' +
