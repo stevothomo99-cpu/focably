@@ -183,7 +183,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
 
   container.innerHTML = '<div class="class-tiles">' + Object.entries(classBuckets).map(([classId, bucket], i) => {
     const cls = bucket.cls;
-    const className = cls?.name || cls?.subject || '📚 Home Tasks';
+    const className = classDisplayName(cls) || '📚 Home Tasks';
     const teacherName = cls?.profiles?.full_name ? 'with ' + cls.profiles.full_name : classId === 'noclass' ? 'Added by parent' : '';
     const openAssignments = bucket.assignments.filter(a => {
       const tasks = a.tasks||[];

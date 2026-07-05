@@ -118,7 +118,7 @@ async function loadChildStats(childId) {
 
   subjectEl.innerHTML = Object.entries(classBuckets).map(([classId, bucket], ci) => {
     const cls = bucket.cls;
-    const className = cls?.name || cls?.subject || '📚 Home Tasks';
+    const className = classDisplayName(cls) || '📚 Home Tasks';
     const teacherName = cls?.profiles?.full_name ? cls.profiles.full_name : (classId === 'noclass' ? 'Added by you' : '');
 
     // Class-level progress
@@ -184,8 +184,8 @@ async function loadChildStats(childId) {
         return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">
           <div style="font-size:22px;">📚</div>
           <div style="flex:1;">
-            <div style="font-weight:700;font-size:13px;color:var(--indigo);">${cls.name}</div>
-            <div style="font-size:11px;color:var(--gray-500);">${classSubjectIfDistinct(cls)} ${cls.year_group?'· '+cls.year_group:''} ${cls.profiles?.full_name?'· '+cls.profiles.full_name:''}</div>
+            <div style="font-weight:700;font-size:13px;color:var(--indigo);">${classDisplayName(cls)}</div>
+            <div style="font-size:11px;color:var(--gray-500);">${classSubjectIfDistinct(cls)} ${cls.profiles?.full_name?'· '+cls.profiles.full_name:''}</div>
           </div>
           <div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>
         </div>`;
@@ -1903,7 +1903,7 @@ async function loadJoinedClasses(childId) {
     if(!memberships?.length) { el.innerHTML=''; return; }
     el.innerHTML = memberships.map(m => '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray-50);border-radius:10px;margin-bottom:8px;">' +
       '<div style="font-size:24px;">📚</div>' +
-      '<div style="flex:1"><div style="font-weight:700;font-size:13px;">' + m.classes.name + '</div>' +
+      '<div style="flex:1"><div style="font-weight:700;font-size:13px;">' + classDisplayName(m.classes) + '</div>' +
       '<div style="font-size:11px;color:var(--gray-500);">' + classSubjectIfDistinct(m.classes) + '</div></div>' +
       '<div style="font-size:11px;color:var(--mint);font-weight:600;">✓ Enrolled</div>' +
     '</div>').join('');
