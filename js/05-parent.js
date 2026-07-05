@@ -101,9 +101,12 @@ async function loadChildStats(childId) {
   const subjectEl=document.getElementById('parentSubjectProgress');
   if(!assignments?.length){subjectEl.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet</div>';return;}
 
-  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule used
-  // by Student and Teacher tiles (getDueUrgency in 07-shared.js)
-  const statusColor = (a) => DUE_URGENCY_VAR[getAssignmentUrgency(a)];
+  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — the WHOLE
+  // card/row is tinted (not just a thin accent bar), same rule as the
+  // gradient-tile Student views (getAssignmentUrgency in 07-shared.js)
+  const statusUrgency = (a) => getAssignmentUrgency(a);
+  const statusColor = (a) => DUE_URGENCY_VAR[statusUrgency(a)];
+  const statusBg = (a) => DUE_URGENCY_BG[statusUrgency(a)];
 
   // Group by class
   const classBuckets = {};
@@ -126,9 +129,10 @@ async function loadChildStats(childId) {
       const t = a.tasks||[]; const d = t.filter(x=>x.completed).length;
       return t.length===0 || d<t.length;
     }).length;
-    // Most urgent assignment colour drives the class bar
-    const urgencyOrder = ['var(--rose)','var(--amber)','var(--mint)','var(--gray-400)'];
-    const classColor = urgencyOrder.find(c => bucket.assignments.some(a => statusColor(a)===c)) || 'var(--mint)';
+    // Worst (most urgent) assignment in the bucket drives the whole class card
+    const classUrgency = ['red','orange','green','done'].find(u => bucket.assignments.some(a => statusUrgency(a)===u)) || 'green';
+    const classColor = DUE_URGENCY_VAR[classUrgency];
+    const classBg = DUE_URGENCY_BG[classUrgency];
 
     // Assignment rows inside
     const rows = bucket.assignments.map(a => {
@@ -136,27 +140,28 @@ async function loadChildStats(childId) {
       const done = tasks.filter(t=>t.completed).length;
       const pct = tasks.length?Math.round((done/tasks.length)*100):0;
       const col = statusColor(a);
+      const bg = statusBg(a);
       const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
       const pendingCount = tasks.filter(t=>t.verification_status==='pending').length;
       const pendingBadge = pendingCount ? `<span style="font-size:10px;font-weight:700;color:var(--amber);background:#FFFBEB;padding:1px 6px;border-radius:20px;margin-left:6px;">⏳ ${pendingCount} awaiting</span>` : '';
       const strike = pct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
-      return `<div onclick="openAssignmentDetail('${a.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:white;border-radius:10px;margin-bottom:6px;border:1px solid var(--gray-100);cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet-light)'" onmouseout="this.style.borderColor='var(--gray-100)'">
+      return `<div onclick="openAssignmentDetail('${a.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:${bg};border-radius:10px;margin-bottom:6px;border-left:4px solid ${col};cursor:pointer;">
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:600;color:var(--indigo);${strike}">${a.title}${pendingBadge}</div>
           <div style="font-size:11px;color:var(--gray-500);margin:3px 0 5px;">Due ${dueStr} · ${done}/${tasks.length} steps</div>
-          <div style="background:var(--gray-100);border-radius:10px;height:5px;"><div style="background:${col};border-radius:10px;height:5px;width:${pct}%;transition:width 0.5s;"></div></div>
+          <div style="background:rgba(255,255,255,0.6);border-radius:10px;height:5px;"><div style="background:${col};border-radius:10px;height:5px;width:${pct}%;transition:width 0.5s;"></div></div>
         </div>
         <div style="font-size:12px;font-weight:800;color:${col};min-width:34px;text-align:right;">${pct}%</div>
         <div style="font-size:14px;color:var(--gray-300);">›</div>
       </div>`;
     }).join('');
 
-    return `<div style="background:var(--gray-50);border-radius:14px;margin-bottom:10px;overflow:hidden;">
+    return `<div style="background:${classBg};border-radius:14px;margin-bottom:10px;overflow:hidden;border-left:4px solid ${classColor};">
       <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.pcls-chev').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)'" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;">
           <div style="font-weight:700;font-size:14px;color:var(--indigo);">${className}</div>
           <div style="font-size:11px;color:var(--gray-500);margin:3px 0 5px;">${teacherName?teacherName+' · ':''}${openCount} active · ${classPct}% overall</div>
-          <div style="background:var(--gray-200);border-radius:10px;height:5px;"><div style="background:${classColor};border-radius:10px;height:5px;width:${classPct}%;transition:width 0.5s;"></div></div>
+          <div style="background:rgba(255,255,255,0.6);border-radius:10px;height:5px;"><div style="background:${classColor};border-radius:10px;height:5px;width:${classPct}%;transition:width 0.5s;"></div></div>
         </div>
         <div class="pcls-chev" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
       </div>
