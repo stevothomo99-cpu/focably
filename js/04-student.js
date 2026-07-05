@@ -221,10 +221,12 @@ function renderClassTiles(assignments, child, containerId, isHS) {
           </div>` : '';
 
         // A step can carry its own due date, separate from the assignment's —
-        // show it so it's clear why the assignment/class tile might be red.
-        const stepDueBadge = (task.due_date && !task.completed) ? (() => {
-          const u = getDueUrgency(task.due_date, false);
-          const badgeBg = u==='red' ? 'rgba(220,38,38,0.4)' : u==='orange' ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.35)';
+        // tint the WHOLE step (not just a badge) so it's clear why the
+        // assignment/class tile might be red, same rule as every other level.
+        const stepUrgency = (task.due_date && !task.completed) ? getDueUrgency(task.due_date, false) : null;
+        const stepBg = stepUrgency ? DUE_URGENCY_TILE[stepUrgency].bg : '';
+        const stepDueBadge = stepUrgency ? (() => {
+          const badgeBg = stepUrgency==='red' ? 'rgba(220,38,38,0.4)' : stepUrgency==='orange' ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.35)';
           const dueLabel = new Date(task.due_date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
           return `<span style="background:${badgeBg};padding:1px 7px;border-radius:20px;font-size:10px;color:white;font-weight:700;margin-left:6px;white-space:nowrap;">📅 ${dueLabel}</span>`;
         })() : '';
@@ -235,7 +237,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
             <button onclick="event.stopPropagation();withdrawProof('${task.id}')" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:11px;font-weight:600;cursor:pointer;">↩️ Replace File</button>
           </div>` : '';
 
-        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}">
+        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}${stepBg?'background:'+stepBg+';':''}">
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
             <div class="step-circle">${gem}</div>
             <div style="flex:1;"><div class="step-title">${task.title}${stepDueBadge}</div>${rejectionMsg}${pendingMsg}</div>

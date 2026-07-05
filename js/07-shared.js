@@ -1170,9 +1170,15 @@ async function openAssignmentDetail(assignmentId) {
   const stepsHtml = tasks.length ? tasks.map((t,i) => {
     const s = stepStatus(t);
     const proofLink = t.proof_url ? `<a href="${t.proof_url}" target="_blank" style="font-size:11px;font-weight:600;color:var(--violet);text-decoration:none;">${t.proof_url.match(/\.(jpg|jpeg|png|gif|webp)/i)?'🖼️ View photo':'📄 View file'} ↗</a>` : '';
-    // Steps can carry their own due date, separate from the assignment's
+    // Steps can carry their own due date, separate from the assignment's —
+    // when they do, the WHOLE step card is tinted by the same red/orange/
+    // green/done rule, not just the little date badge. A step with no due
+    // date of its own has nothing urgency-related to show, so it stays plain.
+    const stepUrgency = t.completed ? 'done' : (t.due_date ? getDueUrgency(t.due_date, false) : null);
+    const stepBg = stepUrgency ? DUE_URGENCY_BG[stepUrgency] : 'white';
+    const stepBorder = stepUrgency ? `border:1px solid var(--gray-100);border-left:4px solid ${DUE_URGENCY_VAR[stepUrgency]};` : 'border:1px solid var(--gray-100);';
     const stepDue = (t.due_date && !t.completed) ? ` · <span style="color:${DUE_URGENCY_VAR[getDueUrgency(t.due_date,false)]};">📅 ${new Date(t.due_date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>` : '';
-    return `<div style="display:flex;gap:10px;padding:11px 12px;background:white;border-radius:10px;margin-bottom:8px;border:1px solid var(--gray-100);">
+    return `<div style="display:flex;gap:10px;padding:11px 12px;background:${stepBg};border-radius:10px;margin-bottom:8px;${stepBorder}">
       <div style="font-size:16px;">${s.icon}</div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:var(--indigo);${t.completed?'text-decoration:line-through;opacity:0.6;':''}">${i+1}. ${t.title}</div>
