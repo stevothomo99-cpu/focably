@@ -691,6 +691,29 @@ async function linkToFamily() {
   }
 }
 
+// ── LOOK UP A FAMILY CODE (read-only — students can't unlink/relink themselves) ──
+// A student who's already linked can check whose family a code belongs to
+// without it ever changing their own family connection.
+async function lookupFamilyByCode() {
+  const codeInput = document.getElementById('familyLookupCodeInput');
+  const code = codeInput.value.trim().toUpperCase();
+  const resultEl = document.getElementById('familyLookupResult');
+  if(code.length !== 6) { showToast('Enter the 6-character code'); return; }
+  const btn = document.getElementById('familyLookupBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Looking up…'; }
+  const {data:familyRows} = await dbQuery(db.rpc('find_family_by_code', {p_code: code}), 8000, null);
+  const family = Array.isArray(familyRows) ? familyRows[0] : familyRows;
+  if(btn){ btn.disabled = false; btn.textContent = '🔍 Look Up Code'; }
+  if(!family) {
+    showToast('❌ Code not found');
+    resultEl.style.display = 'none';
+    return;
+  }
+  document.getElementById('familyLookupName').textContent = family.family_name || 'Unnamed family';
+  document.getElementById('familyLookupParent').textContent = family.parent_name || 'Not available';
+  resultEl.style.display = 'block';
+}
+
 // Shared core of "link this profile into a family" — used by the code-entry flow above
 // and by the email-invite auto-link flow (js/03-auth-onboarding.js loadProfile()).
 async function finalizeFamilyLink(family) {

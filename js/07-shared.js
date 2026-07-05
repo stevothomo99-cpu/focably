@@ -877,9 +877,11 @@ function renderDrawerItems() {
     if(currentProfile?.age_group === 'highschool') {
       items.splice(items.length - 1, 0, { icon:'🎨', label:'My Theme', action:`openDrawerScreen('themes')`, disabled: false });
     }
-    // Family link — show Unlink if linked, otherwise nothing in menu (tile is shown on home screen)
+    // Students can't unlink themselves from their family (a parent does that
+    // from Manage Children if needed) — this is a safe, read-only lookup so
+    // a kid can check whose family a code belongs to before anything else.
     if(hasFamily) {
-      items.push({ icon:'🔗', label:'Unlink Family', action:`confirmUnlinkFamily()`, note:'Remove connection to your family account', disabled: false });
+      items.push({ icon:'🔗', label:'Link to Family', action:`openDrawerScreen('family-lookup')`, note:'Look up who a family code belongs to', disabled: false });
     }
   }
 
@@ -895,7 +897,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription','brain-dump'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','family-lookup','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription','brain-dump'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -961,6 +963,13 @@ function openDrawerScreen(screen) {
     populateTaskCategoryList();
     selectedTaskStars = 1;
     selectTaskStars(1);
+  }
+
+  if(screen === 'family-lookup') {
+    const input = document.getElementById('familyLookupCodeInput');
+    const result = document.getElementById('familyLookupResult');
+    if(input) input.value = '';
+    if(result) result.style.display = 'none';
   }
 
   // Family invite: show existing code only if still valid, else just the generate button
