@@ -460,8 +460,15 @@ async function publishAssignment() {
 
 async function sendNudge(childId,childName) {
   const {data:child}=await db.from('children').select('*, families(parent_id)').eq('id',childId).maybeSingle();
-  if(child?.families?.parent_id) {
-    await db.from('notifications').insert({recipient_id:child.families.parent_id,sender_id:currentUser.id,child_id:childId,type:'nudge',title:'Nudge from teacher',body:`${currentProfile.full_name} sent a nudge about ${childName}'s progress.`});
+  const parentId = child?.families?.parent_id;
+  if(parentId) {
+    const title = 'Nudge from teacher';
+    const body = `${currentProfile.full_name} sent a nudge about ${childName}'s progress.`;
+    await db.from('notifications').insert({recipient_id:parentId,sender_id:currentUser.id,child_id:childId,type:'nudge',title,body});
+    // A nudge is meant to reach the parent even if they're not in the app —
+    // in-app-only was too easy to miss, so also push and email.
+    await sendPushToUser(parentId, title, body);
+    sendTransactionalEmail('nudge', { parentId, studentName: childName, teacherName: currentProfile.full_name });
   }
   showToast(`👋 Nudge sent to ${childName}'s parent!`);
 }
