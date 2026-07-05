@@ -310,13 +310,17 @@ async function loadSchoolAdmin() {
 async function approveTeacher(teacherId, teacherName) {
   await dbQuery(db.from('profiles').update({school_role:'member'}).eq('id', teacherId));
   // Notify the teacher
+  const approvedTitle = '✅ School Access Approved';
+  const approvedBody = 'You have been approved to join ' + (currentSchool?.name||'the school') + '. You can now create classes and use direct student enrolment.';
   await dbQuery(db.from('notifications').insert({
     recipient_id: teacherId,
     sender_id: currentUser.id,
     type: 'school_approved',
-    title: '✅ School Access Approved',
-    body: 'You have been approved to join ' + (currentSchool?.name||'the school') + '. You can now create classes and use direct student enrolment.'
+    title: approvedTitle,
+    body: approvedBody
   }));
+  await sendPushToUser(teacherId, approvedTitle, approvedBody);
+  sendTransactionalEmail('school_approved', { teacherId, schoolName: currentSchool?.name || 'the school' });
   showToast('✅ ' + teacherName + ' approved');
   loadSchoolAdmin();
 }
@@ -552,6 +556,7 @@ async function respondToRedemption(redemptionId, action, btn) {
         title: '😔 Not Yet',
         body: `${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'Your reward request'} wasn't approved this time. Keep earning!`
       }));
+      await sendPushToUser(studentId, '😔 Not Yet', `${redemption.rewards?.emoji||'🎁'} ${redemption.rewards?.title||'Your reward request'} wasn't approved this time. Keep earning!`);
       // Email student
       sendTransactionalEmail('reward_rejected', {
         studentId,
@@ -1170,7 +1175,17 @@ async function parentAddTask() {
     await dbQuery(db.from('tasks').insert(tasks));
   }
 
-  const childName = currentChildren.find(c=>c.id===childId)?.name || 'child';
+  const childRecord = currentChildren.find(c=>c.id===childId);
+  const childName = childRecord?.name || 'child';
+  if(childRecord?.profile_id) {
+    const sTitle = '📚 New task added!';
+    const sBody = `"${title}" was added for you${due?' — due '+new Date(due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''}`;
+    dbQuery(db.from('notifications').insert({
+      recipient_id: childRecord.profile_id, sender_id: currentUser.id, child_id: childId,
+      type: 'task_assigned', title: sTitle, body: sBody
+    })).then(() => sendPushToUser(childRecord.profile_id, sTitle, sBody)).catch(()=>{});
+    sendTransactionalEmail('task_assigned', { studentId: childRecord.profile_id, assignmentTitle: title, className: taggedClassId ? undefined : 'Home Tasks', dueDate: due||null });
+  }
   showToast(taggedClassId ? `✅ Task added & shared with class!` : `✅ Private task added for ${childName}!`);
   document.getElementById('parentTaskTitle').value = '';
   document.getElementById('parentTaskSubject').value = '';
@@ -1855,6 +1870,7 @@ async function joinClass() {
     // fan out automatically at publish time via class_members, but past ones
     // need an explicit copy. Best-effort: a failure here shouldn't block the join.
     await db.rpc('copy_class_assignments_to_member', { p_class_id: cls.id, p_child_id: childRecord.id }).catch(()=>{});
+    notifyTeacherStudentJoined(cls.id, cls.name, currentProfile.full_name || 'A student').catch(()=>{});
     showToast(`✅ Joined \${cls.name}!`);
     document.getElementById('classCodeInput').value = '';
     await loadStudentApp();
@@ -1887,9 +1903,31 @@ async function joinClass() {
   // need an explicit copy. Best-effort: a failure here shouldn't block the join.
   await db.rpc('copy_class_assignments_to_member', { p_class_id: cls.id, p_child_id: childId }).catch(()=>{});
 
+  const joinedChildName = currentChildren?.find(c => c.id === childId)?.name || 'A student';
+  notifyTeacherStudentJoined(cls.id, cls.name, joinedChildName).catch(()=>{});
+
   showToast(`✅ Joined ${cls.name}!`);
   document.getElementById('classCodeInput').value = '';
   await loadJoinedClasses(childId);
+}
+
+// Notify the class's teacher (in-app + push + email) that a student just
+// joined. find_class_by_code() only returns minimal columns for lookup, so
+// re-fetch the full class row here — by now the caller is a class_members
+// row, so the "Members read their class" RLS policy allows it.
+async function notifyTeacherStudentJoined(classId, fallbackClassName, studentName) {
+  const {data:cls} = await dbQuery(db.from('classes').select('teacher_id, name').eq('id', classId).maybeSingle(), 5000, null);
+  const teacherId = cls?.teacher_id;
+  if(!teacherId) return;
+  const className = cls?.name || fallbackClassName || 'your class';
+  const title = '🎉 New student joined!';
+  const body = `${studentName} joined ${className}.`;
+  await dbQuery(db.from('notifications').insert({
+    recipient_id: teacherId, sender_id: currentUser.id,
+    type: 'student_joined_class', title, body
+  }));
+  await sendPushToUser(teacherId, title, body);
+  sendTransactionalEmail('student_joined_class', { teacherId, studentName, className });
 }
 
 async function loadJoinedClasses(childId) {
