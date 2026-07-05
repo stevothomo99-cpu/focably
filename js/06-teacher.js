@@ -205,7 +205,7 @@ async function loadTeacherClassAssignments(classId) {
   const studentMap = {};
   assignments.forEach(a => {
     const name = a.children?.name || 'Unknown';
-    if(!studentMap[name]) studentMap[name] = {name, assignments:[]};
+    if(!studentMap[name]) studentMap[name] = {name, childId: a.child_id, assignments:[]};
     studentMap[name].assignments.push(a);
   });
 
@@ -251,7 +251,7 @@ async function loadTeacherClassAssignments(classId) {
       </div>
       <div style="display:none;padding:0 0 12px 46px;">
         ${assignRows || '<div style="font-size:12px;color:var(--gray-400);font-style:italic;padding:4px 0;">No assignments</div>'}
-        <button class="nudge-btn" onclick="event.stopPropagation();sendNudge('','${student.name}')" style="margin-top:4px;">Nudge 👋</button>
+        <button class="nudge-btn" onclick="event.stopPropagation();sendNudge('${student.childId}','${student.name}')" style="margin-top:4px;">Nudge 👋</button>
       </div>
     </div>`;
   }).join('');
@@ -469,8 +469,10 @@ async function sendNudge(childId,childName) {
     // in-app-only was too easy to miss, so also push and email.
     await sendPushToUser(parentId, title, body);
     sendTransactionalEmail('nudge', { parentId, studentName: childName, teacherName: currentProfile.full_name });
+    showToast(`👋 Nudge sent to ${childName}'s parent!`);
+  } else {
+    showToast(`❌ Could not find ${childName}'s parent — nudge not sent`);
   }
-  showToast(`👋 Nudge sent to ${childName}'s parent!`);
 }
 function copyClassCode() { navigator.clipboard.writeText(document.getElementById('classInviteCode').textContent).then(()=>showToast('📋 Class code copied!')); }
 
