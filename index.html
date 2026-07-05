@@ -983,6 +983,28 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
     </div>
   </div>
 
+  <!-- STUDENT: LINK TO FAMILY (read-only lookup — students can't unlink/relink themselves) -->
+  <div id="screen-family-lookup" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Link to Family</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔗 Look Up a Family Code</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">Enter a family code to see whose family it belongs to. This just checks the code — it won't change your own family connection.</p>
+      <div class="form-grp">
+        <input class="form-input" type="text" id="familyLookupCodeInput" placeholder="ABC123" maxlength="6" style="text-transform:uppercase;letter-spacing:2px;">
+      </div>
+      <button id="familyLookupBtn" class="publish-btn" onclick="lookupFamilyByCode()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">🔍 Look Up Code</button>
+      <div id="familyLookupResult" style="display:none;margin-top:14px;padding:14px;border-radius:12px;background:var(--gray-50);">
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Family</div>
+        <div id="familyLookupName" style="font-size:16px;font-weight:800;color:var(--indigo);margin-bottom:8px;"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Parent</div>
+        <div id="familyLookupParent" style="font-size:14px;font-weight:600;color:var(--indigo);"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- FAMILY PRO SUBSCRIPTION SCREEN -->
   <div id="screen-subscription" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">

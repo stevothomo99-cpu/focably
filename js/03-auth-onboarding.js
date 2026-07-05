@@ -324,21 +324,6 @@ async function confirmUnlinkChild(childId, childName) {
   }
 }
 
-async function confirmUnlinkFamily() {
-  const confirmed = confirm('Unlink from your family?\n\nYou will lose access to parent-assigned tasks and proof verification. You can re-link anytime with a new family invite code.');
-  if(!confirmed) return;
-  try {
-    if(!currentChildRecord) { showToast('No family link found'); return; }
-    await dbQuery(db.from('children').delete().eq('id', currentChildRecord.id), 5000, null);
-    currentChildRecord = null;
-    showToast('✅ Unlinked from family');
-    closeDrawer();
-    await loadStudentAssignments(currentProfile.age_group);
-  } catch(e) {
-    showToast('❌ Could not unlink: ' + e.message);
-  }
-}
-
 async function signOut() { await db.auth.signOut(); const n=document.getElementById('navUserName'); if(n) n.textContent=''; showToast('👋 Signed out'); }
 
 function setLoadingStatus(msg) {
