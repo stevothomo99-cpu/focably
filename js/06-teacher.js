@@ -475,6 +475,8 @@ async function publishAssignment() {
     await dbQuery(db.from('tasks').insert(allTasks));
   }
 
+  notifyAssignmentPublished(cls?.name || 'your class', title, due, members.map(m=>m.child_id)).catch(()=>{});
+
   showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!`);
   // Reset form and steps
   document.getElementById('aTitle').value='';
@@ -485,6 +487,42 @@ async function publishAssignment() {
   // Return to main teacher view and refresh assignments
   closeDrawerScreen();
   await loadTeacherClassAssignments(selectedClassId);
+}
+
+// Notify each student AND their parent (in-app + push + email) that a new
+// assignment landed in their class. Best-effort — publishing has already
+// succeeded by the time this runs, so a failure here shouldn't roll it back.
+async function notifyAssignmentPublished(className, title, dueDate, childIds) {
+  try {
+    const {data:children} = await dbQuery(
+      db.from('children').select('id, name, profile_id, families(parent_id)').in('id', childIds), 8000, []
+    );
+    const dueText = dueDate ? ' — due ' + new Date(dueDate+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
+    for(const child of (children||[])) {
+      const studentId = child.profile_id;
+      if(studentId) {
+        const sTitle = '📚 New assignment!';
+        const sBody = `"${title}" was added to ${className}${dueText}`;
+        await dbQuery(db.from('notifications').insert({
+          recipient_id: studentId, sender_id: currentUser.id, child_id: child.id,
+          type: 'task_assigned', title: sTitle, body: sBody
+        }));
+        await sendPushToUser(studentId, sTitle, sBody);
+        sendTransactionalEmail('task_assigned', { studentId, assignmentTitle: title, className, dueDate: dueDate||null });
+      }
+      const parentId = child.families?.parent_id;
+      if(parentId) {
+        const pTitle = `📚 New assignment for ${child.name||'your child'}`;
+        const pBody = `"${title}" was added to ${className}${dueText}`;
+        await dbQuery(db.from('notifications').insert({
+          recipient_id: parentId, sender_id: currentUser.id, child_id: child.id,
+          type: 'task_assigned', title: pTitle, body: pBody
+        }));
+        await sendPushToUser(parentId, pTitle, pBody);
+        sendTransactionalEmail('task_assigned', { parentId, studentName: child.name, assignmentTitle: title, className, dueDate: dueDate||null });
+      }
+    }
+  } catch(e) { console.log('notifyAssignmentPublished error:', e.message); }
 }
 
 async function sendNudge(childId,childName) {

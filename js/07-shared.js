@@ -1410,6 +1410,10 @@ async function notifyProofSubmitted(taskId, childId) {
         title: notifTitle, body: notifBody
       }));
       await sendPushToUser(teacherId, notifTitle, notifBody);
+      // Email the teacher — only for real class assignments, not private parent tasks
+      if(cls) {
+        sendTransactionalEmail('proof_submitted', { teacherId, studentName: childName, taskTitle: task.title, assignmentTitle: aTitle, className: cls });
+      }
     }
     // Notify parent
     const {data:children} = await dbQuery(db.from('children').select('*, families(parent_id)').eq('id', childId).limit(1));
