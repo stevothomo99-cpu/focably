@@ -142,10 +142,7 @@ function updateTrustDisplay(child, prefix='') {
 }
 
 function getTileState(assignment) {
-  const tasks = assignment.tasks||[];
-  const done = tasks.filter(t=>t.completed).length;
-  const total = tasks.length;
-  return getDueUrgency(assignment.due_date, total > 0 && done === total);
+  return getAssignmentUrgency(assignment);
 }
 
 function renderClassTiles(assignments, child, containerId, isHS) {
@@ -223,6 +220,14 @@ function renderClassTiles(assignments, child, containerId, isHS) {
             </div>
           </div>` : '';
 
+        // A step can carry its own due date, separate from the assignment's —
+        // show it so it's clear why the assignment/class tile might be red.
+        const stepDueBadge = (task.due_date && !task.completed) ? (() => {
+          const u = getDueUrgency(task.due_date, false);
+          const badgeBg = u==='red' ? 'rgba(220,38,38,0.4)' : u==='orange' ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.35)';
+          const dueLabel = new Date(task.due_date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+          return `<span style="background:${badgeBg};padding:1px 7px;border-radius:20px;font-size:10px;color:white;font-weight:700;margin-left:6px;white-space:nowrap;">📅 ${dueLabel}</span>`;
+        })() : '';
         const rejectionMsg = isRejected ? `<div style="font-size:11px;color:#FCA5A5;margin-top:4px;">❌ ${task.rejection_reason||'Proof rejected — try again'}</div>` : '';
         const pendingMsg = isPending ? `
           <div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;">
@@ -233,7 +238,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
         return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}">
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
             <div class="step-circle">${gem}</div>
-            <div style="flex:1;"><div class="step-title">${task.title}</div>${rejectionMsg}${pendingMsg}</div>
+            <div style="flex:1;"><div class="step-title">${task.title}${stepDueBadge}</div>${rejectionMsg}${pendingMsg}</div>
             ${task.verification_required?'<span class="step-badge">📸</span>':''}
           </div>
           ${proofSection}

@@ -362,6 +362,28 @@ function getDueUrgency(dueDate, isComplete) {
   return 'green';
 }
 
+// An assignment's colour is the WORST (most urgent) of: its own due date, and
+// any of its incomplete steps' own due date (steps can optionally carry a due
+// date separate from the assignment's, set by the teacher or AI-extracted on
+// import). A step that's already done doesn't drag the colour down regardless
+// of what its due date was — only completing every step does that, via the
+// isComplete param below. This is what makes one overdue step turn the whole
+// assignment (and therefore the whole class tile) red, even if the assignment
+// itself isn't due for weeks.
+const URGENCY_RANK = { red: 0, orange: 1, green: 2, done: 3 };
+function getAssignmentUrgency(assignment) {
+  const tasks = assignment.tasks || [];
+  const allDone = tasks.length > 0 && tasks.every(t => t.completed);
+  let worst = getDueUrgency(assignment.due_date, false);
+  tasks.forEach(t => {
+    if(t.due_date && !t.completed) {
+      const stepUrgency = getDueUrgency(t.due_date, false);
+      if(URGENCY_RANK[stepUrgency] < URGENCY_RANK[worst]) worst = stepUrgency;
+    }
+  });
+  return allDone ? 'done' : worst;
+}
+
 // Colour/label lookup for the gradient-tile views (student Primary/HS)
 const DUE_URGENCY_TILE = {
   red:    { tile: 'linear-gradient(135deg,#9B1C1C,#DC2626)', bg: 'rgba(153,27,27,0.6)',  anim: 'glowRed 2s infinite',  label: '⚠️ Due Soon' },
@@ -1130,7 +1152,7 @@ async function openAssignmentDetail(assignmentId) {
   const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : 'No due date';
   // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule
   // used by Student and Teacher tiles
-  const dueColor = DUE_URGENCY_VAR[getDueUrgency(a.due_date, pct === 100)];
+  const dueColor = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
 
   const stepStatus = (t) => {
     if(t.completed) return {icon:'✅', label:'Done', color:'var(--mint)'};
@@ -1142,11 +1164,13 @@ async function openAssignmentDetail(assignmentId) {
   const stepsHtml = tasks.length ? tasks.map((t,i) => {
     const s = stepStatus(t);
     const proofLink = t.proof_url ? `<a href="${t.proof_url}" target="_blank" style="font-size:11px;font-weight:600;color:var(--violet);text-decoration:none;">${t.proof_url.match(/\.(jpg|jpeg|png|gif|webp)/i)?'🖼️ View photo':'📄 View file'} ↗</a>` : '';
+    // Steps can carry their own due date, separate from the assignment's
+    const stepDue = (t.due_date && !t.completed) ? ` · <span style="color:${DUE_URGENCY_VAR[getDueUrgency(t.due_date,false)]};">📅 ${new Date(t.due_date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>` : '';
     return `<div style="display:flex;gap:10px;padding:11px 12px;background:white;border-radius:10px;margin-bottom:8px;border:1px solid var(--gray-100);">
       <div style="font-size:16px;">${s.icon}</div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:var(--indigo);${t.completed?'text-decoration:line-through;opacity:0.6;':''}">${i+1}. ${t.title}</div>
-        <div style="font-size:11px;font-weight:600;color:${s.color};margin-top:2px;">${s.label}</div>
+        <div style="font-size:11px;font-weight:600;color:${s.color};margin-top:2px;">${s.label}${stepDue}</div>
         ${proofLink ? `<div style="margin-top:4px;">${proofLink}</div>` : ''}
       </div>
       ${t.star_value?`<div style="font-size:11px;font-weight:700;color:var(--amber);">⭐ ${t.star_value}</div>`:''}

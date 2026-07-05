@@ -103,12 +103,7 @@ async function loadChildStats(childId) {
 
   // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule used
   // by Student and Teacher tiles (getDueUrgency in 07-shared.js)
-  const statusColor = (a) => {
-    const tasks = a.tasks||[];
-    const done = tasks.filter(t=>t.completed).length;
-    const pct = tasks.length?Math.round((done/tasks.length)*100):0;
-    return DUE_URGENCY_VAR[getDueUrgency(a.due_date, pct === 100)];
-  };
+  const statusColor = (a) => DUE_URGENCY_VAR[getAssignmentUrgency(a)];
 
   // Group by class
   const classBuckets = {};

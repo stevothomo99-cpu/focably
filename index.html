@@ -372,7 +372,11 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
 .step-row-input { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
 .step-row-input input { flex:1; padding:9px 12px; border-radius:10px; border:1.5px solid var(--gray-200); font-size:13px; font-family:'Inter',sans-serif; outline:none; }
 .step-row-input input:focus { border-color:var(--violet); }
-.step-remove-btn { width:28px; height:28px; border-radius:50%; border:none; background:var(--rose); color:white; font-size:14px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.step-remove-btn { width:22px; height:22px; border-radius:50%; border:none; background:var(--rose); color:white; font-size:12px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.step-date-btn { width:26px; height:26px; border-radius:8px; border:1.5px solid var(--gray-200); background:white; color:var(--gray-400); font-size:13px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.step-date-btn.active { border-color:var(--violet); color:var(--violet); background:var(--gray-100); }
+.step-date-row { display:flex; align-items:center; gap:6px; margin:-4px 0 8px 28px; }
+.step-date-row input[type=date] { padding:6px 8px; border-radius:8px; border:1.5px solid var(--violet-light); font-size:12px; font-family:'Inter',sans-serif; outline:none; }
 .step-add-row { display:flex; gap:8px; margin-top:4px; }
 .step-add-btn { flex:1; padding:9px; border-radius:10px; border:1.5px dashed var(--gray-200); background:transparent; color:var(--gray-500); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
 .step-add-btn:hover { border-color:var(--violet); color:var(--violet); background:var(--gray-100); }
