@@ -327,17 +327,29 @@ function renderTeacherSteps() {
     container.innerHTML = '<div style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:8px;">No steps added yet — AI will generate them on publish if left empty</div>';
     return;
   }
+  // Per-step "needs proof" checkbox only appears once the "Require Proof"
+  // toggle above is on — that toggle is the master switch; the checkbox here
+  // picks WHICH steps (not necessarily all of them) actually need it.
+  const proofEnabled = document.getElementById('requireProofToggle')?.checked;
   container.innerHTML = teacherSteps.map((s,i) => `
     <div class="step-row-input">
       <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
-      <input type="text" value="${s.title}" placeholder="Step ${i+1} description..." 
+      <input type="text" value="${s.title}" placeholder="Step ${i+1} description..."
         oninput="teacherSteps[${i}].title=this.value"
         style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-500);white-space:nowrap;cursor:pointer;">
-        <input type="checkbox" ${s.verification_required?'checked':''} onchange="teacherSteps[${i}].verification_required=this.checked"> 📸
-      </label>
+      ${proofEnabled ? `<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-500);white-space:nowrap;cursor:pointer;" title="Require a photo/file for this step before it can be marked complete">
+        <input type="checkbox" ${s.verification_required?'checked':''} onchange="teacherSteps[${i}].verification_required=this.checked"> 📸 Proof
+      </label>` : ''}
       <button class="step-remove-btn" onclick="removeTeacherStep('${s.id}')">×</button>
     </div>`).join('');
+}
+
+// Master "Require Proof" toggle: OFF hides the per-step checkboxes and clears
+// any that were set (so nothing stays silently required once hidden); ON
+// reveals them so the teacher can pick which specific steps need it.
+function onRequireProofToggleChange(enabled) {
+  if(!enabled) teacherSteps.forEach(s => s.verification_required = false);
+  renderTeacherSteps();
 }
 
 async function generateTeacherSteps() {
@@ -372,10 +384,11 @@ async function generateTeacherSteps() {
 }
 
 function acceptAISteps() {
+  const proofEnabled = document.getElementById('requireProofToggle')?.checked;
   teacherSteps = aiGeneratedSteps.map(s => ({
     id: 'step_'+Date.now()+Math.random().toString(36).substr(2,5),
     title: s.title,
-    verification_required: s.verification_required||false
+    verification_required: proofEnabled && (s.verification_required||false)
   }));
   document.getElementById('aiStepsPreview').style.display = 'none';
   renderTeacherSteps();
