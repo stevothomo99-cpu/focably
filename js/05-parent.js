@@ -1840,6 +1840,10 @@ async function joinClass() {
     if(existing) { showToast('Already in this class!'); return; }
     const {error} = await db.from('class_members').insert({ class_id: cls.id, child_id: childRecord.id });
     if(error) { showToast('❌ Could not join class: ' + error.message); return; }
+    // Backfill existing (not-yet-due) assignments from this class — future ones
+    // fan out automatically at publish time via class_members, but past ones
+    // need an explicit copy. Best-effort: a failure here shouldn't block the join.
+    await db.rpc('copy_class_assignments_to_member', { p_class_id: cls.id, p_child_id: childRecord.id }).catch(()=>{});
     showToast(`✅ Joined \${cls.name}!`);
     document.getElementById('classCodeInput').value = '';
     await loadStudentApp();
@@ -1866,6 +1870,11 @@ async function joinClass() {
   // Add to class
   const {error} = await db.from('class_members').insert({ class_id: cls.id, child_id: childId });
   if(error) { showToast('❌ Could not join class: ' + error.message); return; }
+
+  // Backfill existing (not-yet-due) assignments from this class — future ones
+  // fan out automatically at publish time via class_members, but past ones
+  // need an explicit copy. Best-effort: a failure here shouldn't block the join.
+  await db.rpc('copy_class_assignments_to_member', { p_class_id: cls.id, p_child_id: childId }).catch(()=>{});
 
   showToast(`✅ Joined ${cls.name}!`);
   document.getElementById('classCodeInput').value = '';
