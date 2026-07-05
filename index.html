@@ -1325,8 +1325,8 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       </div>
       <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
         <div class="toggle-row">
-          <div><div class="toggle-lbl">📸 Require Proof</div><div class="toggle-sub">Students must upload proof before marking complete</div></div>
-          <label class="toggle"><input type="checkbox" id="requireProofToggle"><span class="toggle-slider"></span></label>
+          <div><div class="toggle-lbl">📸 Require Proof</div><div class="toggle-sub">Turn on to choose which steps need a photo/file before they can be marked complete</div></div>
+          <label class="toggle"><input type="checkbox" id="requireProofToggle" onchange="onRequireProofToggleChange(this.checked)"><span class="toggle-slider"></span></label>
         </div>
       </div>
       <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
