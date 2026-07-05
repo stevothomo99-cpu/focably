@@ -17,9 +17,20 @@ async function loadStudentApp(knownChild) {
   document.getElementById('linkAccountCard').style.display='none';
   if(age==='primary'){
     applyTheme(theme);
-    // Set avatar as heroEmoji for primary
+    // Set avatar as heroEmoji for primary — photo takes priority over emoji, same as HS header
     const heroEl = document.getElementById('heroEmoji');
-    if(heroEl) heroEl.textContent = avatar;
+    if(heroEl) {
+      if(currentProfile.avatar_photo) {
+        heroEl.innerHTML='';
+        const img = document.createElement('img');
+        img.src = currentProfile.avatar_photo;
+        img.style.cssText='width:56px;height:56px;border-radius:50%;object-fit:cover;';
+        heroEl.appendChild(img);
+      } else {
+        heroEl.innerHTML='';
+        heroEl.textContent = avatar;
+      }
+    }
     // Real-name greeting is the headline, matching the parent home tile's
     // "Welcome back, {name}!" presentation — theme flavour text is the subtitle
     document.getElementById('heroName').textContent = firstName ? `Welcome back, ${firstName}!` : 'Welcome back!';
