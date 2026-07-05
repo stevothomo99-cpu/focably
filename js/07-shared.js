@@ -415,6 +415,14 @@ function formatDescription(text) {
   return withBreaks.replace(/\n/g, '<br>');
 }
 
+// Recovers a numbered step list already present in source text (many pasted
+// worksheets already have one) so a failed/empty AI step-breakdown doesn't
+// collapse an assignment down to a single step that just repeats its title.
+function extractNumberedSteps(text, max = 8) {
+  const lines = String(text||'').match(/^\s*\d+[.)]\s+.+$/gm) || [];
+  return lines.map(l => l.replace(/^\s*\d+[.)]\s+/, '').trim()).filter(Boolean).slice(0, max);
+}
+
 // Classes are created with just a name + year group now, but older classes may
 // still have a distinct `subject` — only surface it when it adds information.
 function classSubjectIfDistinct(cls) {

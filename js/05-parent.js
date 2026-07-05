@@ -1147,9 +1147,17 @@ async function parentAddTask() {
         })
       });
       const d = await res.json();
-      parentSteps = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
+      const parsed = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
+      parentSteps = Array.isArray(parsed) ? parsed : [];
     } catch(e) {
-      parentSteps = [{title: title}];
+      parentSteps = [];
+    }
+    // AI call failed or returned nothing usable — try recovering a numbered
+    // list the parent's own pasted text already has before giving up and
+    // reducing the whole task to one step named after its own title.
+    if(!parentSteps.length) {
+      const recovered = extractNumberedSteps(desc);
+      parentSteps = recovered.length ? recovered.map(t => ({title: t})) : [{title: title}];
     }
     const tasks = parentSteps.map((s,i) => ({
       assignment_id: assignment.id,
@@ -1550,6 +1558,9 @@ No markdown, no backticks, no explanation. Just the JSON object.`,
     importedSteps = Array.isArray(parsed.steps)
       ? parsed.steps.map(s => (typeof s === 'string' ? s : (s?.title || s?.step || ''))).filter(Boolean)
       : [];
+    // AI ignored the schema and returned no steps — try recovering a numbered
+    // list from the pasted text itself before falling back to one step.
+    if(!importedSteps.length) importedSteps = extractNumberedSteps(raw);
 
     // Populate confirmation form
     document.getElementById('importTitle').value = parsed.title || '';
@@ -1651,7 +1662,7 @@ async function saveImportedAssignment() {
           child_id: childId,
           class_id: null,           // private — not visible to teachers
           parent_created: true,
-          title, description: desc,
+          title, subject: subject || 'General', description: desc,
           due_date: due || null,
           status: 'active'
         }).select().maybeSingle()
