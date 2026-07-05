@@ -264,11 +264,13 @@ async function loadTeacherClassAssignments(classId) {
 }
 
 function showCreateClass() {
+  // classSetup (the form) sits inside classSetupCard, which is display:none
+  // by default — this only ever unhid the inner div, so the whole card (and
+  // therefore the "+ Add Another Class" button that calls this) never
+  // actually showed anything.
+  document.getElementById('classSetupCard').style.display='block';
   document.getElementById('classSetup').style.display='block';
-  // createClassTitle no longer exists (the card uses a static title) — guard so
-  // the field-clearing below still runs instead of throwing on a null element
-  const titleEl = document.getElementById('createClassTitle');
-  if(titleEl) titleEl.textContent='Add a new class';
+  document.getElementById('classSetupCard').scrollIntoView({behavior:'smooth'});
   document.getElementById('className').value='';
   document.getElementById('classYear').value='';
 }
