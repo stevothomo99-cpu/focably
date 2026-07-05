@@ -256,22 +256,30 @@ async function openManageChildren() {
         const apct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
         const due = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
         // Unified red(overdue/48h)/orange(7 days)/green/done scheme, including
-        // any of this assignment's steps that carry their own due date
-        // (getAssignmentUrgency in 07-shared.js)
-        const col = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
+        // any of this assignment's steps that carry their own due date —
+        // the WHOLE row is tinted, not just the accents (getAssignmentUrgency
+        // in 07-shared.js)
+        const urgency = getAssignmentUrgency(a);
+        const col = DUE_URGENCY_VAR[urgency];
+        const bg = DUE_URGENCY_BG[urgency];
         const strike = apct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">' +
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:' + bg + ';border-radius:9px;margin-bottom:6px;border-left:4px solid ' + col + ';">' +
           '<div style="flex:1;">' +
             '<div style="font-size:12px;font-weight:600;color:var(--indigo);' + strike + '">' + a.title + '</div>' +
             '<div style="font-size:10px;color:' + col + ';margin:2px 0 4px;">Due ' + due + ' &nbsp;·&nbsp; ' + done + '/' + tasks.length + ' steps</div>' +
-            '<div style="background:var(--gray-100);border-radius:10px;height:4px;"><div style="background:' + col + ';border-radius:10px;height:4px;width:' + apct + '%;"></div></div>' +
+            '<div style="background:rgba(255,255,255,0.6);border-radius:10px;height:4px;"><div style="background:' + col + ';border-radius:10px;height:4px;width:' + apct + '%;"></div></div>' +
           '</div>' +
           '<div style="font-size:11px;font-weight:800;color:' + col + ';">' + apct + '%</div>' +
         '</div>';
       }).join('') : '<div style="font-size:12px;color:var(--gray-400);font-style:italic;padding:4px 0;">No assignments yet</div>';
 
-      return '<div style="border:1px solid var(--gray-100);border-radius:12px;overflow:hidden;margin-bottom:8px;">' +
-        '<div onclick="toggleManageChildClass(this)" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:var(--gray-50);">' +
+      // Worst (most urgent) assignment in this class drives the class header colour
+      const classUrgency = ['red','orange','green','done'].find(function(u) { return clsAssignments.some(function(a) { return getAssignmentUrgency(a) === u; }); }) || 'green';
+      const classCol = DUE_URGENCY_VAR[classUrgency];
+      const classBg = clsAssignments.length ? DUE_URGENCY_BG[classUrgency] : 'var(--gray-50)';
+
+      return '<div style="border-left:4px solid ' + classCol + ';border-radius:12px;overflow:hidden;margin-bottom:8px;">' +
+        '<div onclick="toggleManageChildClass(this)" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:' + classBg + ';">' +
           '<div style="font-size:20px;">📚</div>' +
           '<div style="flex:1;">' +
             '<div style="font-size:13px;font-weight:700;color:var(--indigo);">' + cls.name + '</div>' +

@@ -394,6 +394,10 @@ const DUE_URGENCY_TILE = {
 
 // Colour lookup for the flat-colour views (Teacher, Parent) that use CSS vars
 const DUE_URGENCY_VAR = { red: 'var(--rose)', orange: 'var(--amber)', green: 'var(--mint)', done: 'var(--gray-400)' };
+// Light tinted backgrounds for the same buckets, for Parent's white-card UI —
+// the whole card/row is tinted (not just a thin accent bar), same rule as
+// the gradient-tile Student views.
+const DUE_URGENCY_BG = { red: 'var(--rose-bg)', orange: 'var(--amber-bg)', green: 'var(--mint-bg)', done: 'var(--gray-100)' };
 
 // Escapes HTML and preserves line breaks so multi-line instructions render as
 // readable, ADHD-friendly text instead of a collapsed wall. Numbered/bulleted
@@ -1150,9 +1154,11 @@ async function openAssignmentDetail(assignmentId) {
   const className = a.classes?.name || a.classes?.subject || '📚 Home Task';
   const teacherName = a.classes?.profiles?.full_name || '';
   const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : 'No due date';
-  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule
-  // used by Student and Teacher tiles
-  const dueColor = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
+  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — the whole
+  // card is tinted, same rule used by Student tiles
+  const assignmentUrgency = getAssignmentUrgency(a);
+  const dueColor = DUE_URGENCY_VAR[assignmentUrgency];
+  const dueBg = DUE_URGENCY_BG[assignmentUrgency];
 
   const stepStatus = (t) => {
     if(t.completed) return {icon:'✅', label:'Done', color:'var(--mint)'};
@@ -1178,7 +1184,7 @@ async function openAssignmentDetail(assignmentId) {
   }).join('') : '<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:14px 0;">No steps on this assignment.</div>';
 
   body.innerHTML = `
-    <div class="card">
+    <div class="card" style="background:${dueBg};border-left:4px solid ${dueColor};">
       <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);margin-bottom:6px;${pct===100?'text-decoration:line-through;opacity:0.6;':''}">${a.title}</div>
       <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:2px;">📚 ${className}</div>
       ${teacherName?`<div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;">Set by ${teacherName}</div>`:`<div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;">Added by you</div>`}
