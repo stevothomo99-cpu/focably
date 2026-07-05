@@ -154,23 +154,24 @@ async function loadTeacherClassAssignments(classId) {
       return tasks.length > 0 && tasks.every(t=>t.completed);
     }).length;
     const dueStr = group.due ? new Date(group.due).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) : 'No due date';
-    const today = new Date();
-    const due = group.due ? new Date(group.due) : null;
-    const isOverdue = due && due < today;
     const pct = totalStudents ? Math.round((completedStudents/totalStudents)*100) : 0;
-    const statusColor = isOverdue ? 'var(--rose)' : pct===100 ? 'var(--mint)' : 'var(--amber)';
+    // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule
+    // used by Student and Parent tiles (getDueUrgency in 07-shared.js)
+    const statusColor = DUE_URGENCY_VAR[getDueUrgency(group.due, pct === 100)];
 
     const studentRows = instances.map(a => {
       const tasks = a.tasks||[];
       const done = tasks.filter(t=>t.completed).length;
       const studentPct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
+      const rowColor = DUE_URGENCY_VAR[getDueUrgency(a.due_date, studentPct === 100)];
+      const strike = studentPct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
       return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray-100);">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;flex-shrink:0;">${a.children?.name?.charAt(0)||'?'}</div>
         <div style="flex:1;">
-          <div style="font-size:12px;font-weight:600;">${a.children?.name||'Student'}</div>
-          <div style="background:var(--gray-100);border-radius:10px;height:4px;margin-top:3px;"><div style="background:${studentPct===100?'var(--mint)':'var(--violet)'};border-radius:10px;height:4px;width:${studentPct}%;"></div></div>
+          <div style="font-size:12px;font-weight:600;${strike}">${a.children?.name||'Student'}</div>
+          <div style="background:var(--gray-100);border-radius:10px;height:4px;margin-top:3px;"><div style="background:${rowColor};border-radius:10px;height:4px;width:${studentPct}%;"></div></div>
         </div>
-        <div style="font-size:11px;font-weight:700;color:${studentPct===100?'var(--mint)':'var(--gray-500)'};">${done}/${tasks.length}</div>
+        <div style="font-size:11px;font-weight:700;color:${rowColor};">${done}/${tasks.length}</div>
       </div>`;
     }).join('');
 
@@ -185,10 +186,10 @@ async function loadTeacherClassAssignments(classId) {
       <div style="padding:12px;cursor:pointer;background:var(--gray-50);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="flex:1;">
-            <div style="font-weight:700;font-size:14px;color:var(--indigo);">${group.title}${parentBadge}</div>
+            <div style="font-weight:700;font-size:14px;color:var(--indigo);${pct===100?'text-decoration:line-through;opacity:0.6;':''}">${group.title}${parentBadge}</div>
             ${group.cls ? `<div style="font-size:11px;font-weight:700;color:var(--violet);margin-top:2px;">📚 ${group.cls.name||group.cls.subject||''}</div>` : ''}
             <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-              <span style="font-size:11px;color:${isOverdue?'var(--rose)':'var(--gray-500)'};">📅 ${dueStr}</span>
+              <span style="font-size:11px;color:${statusColor};">📅 ${dueStr}</span>
               <span style="font-size:11px;font-weight:700;color:${statusColor};">${completedStudents}/${totalStudents} students done</span>
             </div>
           </div>
@@ -219,20 +220,19 @@ async function loadTeacherClassAssignments(classId) {
     const ci = si % 4;
 
     // Per-assignment rows for this student
-    const today = new Date().toISOString().split('T')[0];
     const assignRows = student.assignments.map(a => {
       const t = a.tasks||[];
       const d = t.filter(x=>x.completed).length;
       const apct = t.length ? Math.round((d/t.length)*100) : 0;
-      const overdue = a.due_date && a.due_date < today && apct < 100;
-      const col = apct>=100 ? 'var(--mint)' : overdue ? 'var(--rose)' : 'var(--violet)';
+      const col = DUE_URGENCY_VAR[getDueUrgency(a.due_date, apct === 100)];
+      const strike = apct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
       const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
       const pend = t.filter(x=>x.verification_status==='pending').length;
       const pendBadge = pend ? `<span style="font-size:10px;font-weight:700;color:var(--amber);background:#FFFBEB;padding:1px 6px;border-radius:20px;margin-left:6px;">⏳ ${pend}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">
         <div style="flex:1;">
-          <div style="font-size:12px;font-weight:600;color:var(--indigo);">${a.title}${pendBadge}</div>
-          <div style="font-size:10px;color:${overdue?'var(--rose)':'var(--gray-500)'};margin:2px 0 4px;">📅 ${dueStr} · ${d}/${t.length} steps</div>
+          <div style="font-size:12px;font-weight:600;color:var(--indigo);${strike}">${a.title}${pendBadge}</div>
+          <div style="font-size:10px;color:${col};margin:2px 0 4px;">📅 ${dueStr} · ${d}/${t.length} steps</div>
           <div style="background:var(--gray-100);border-radius:10px;height:4px;"><div style="background:${col};border-radius:10px;height:4px;width:${apct}%;"></div></div>
         </div>
         <div style="font-size:11px;font-weight:800;color:${col};min-width:32px;text-align:right;">${apct}%</div>

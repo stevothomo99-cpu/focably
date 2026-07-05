@@ -145,35 +145,7 @@ function getTileState(assignment) {
   const tasks = assignment.tasks||[];
   const done = tasks.filter(t=>t.completed).length;
   const total = tasks.length;
-  if(total && done===total) return 'done';
-  if(assignment.due_date) {
-    // Compare as local date strings to avoid UTC timezone issues
-    const today = new Date();
-    const todayStr = today.getFullYear() + '-' +
-      String(today.getMonth()+1).padStart(2,'0') + '-' +
-      String(today.getDate()).padStart(2,'0');
-    const dueStr = assignment.due_date.split('T')[0];
-    console.log('Date check:', assignment.title, 'due:', dueStr, 'today:', todayStr, 'overdue:', dueStr <= todayStr);
-    if(dueStr <= todayStr) return 'overdue';
-    // Days difference
-    const due = new Date(dueStr + 'T12:00:00');
-    const diffDays = Math.ceil((due - today)/(1000*60*60*24));
-    if(diffDays <= 1) return 'overdue';
-    if(diffDays <= 7) return 'urgent';
-  }
-  return done > 0 ? 'good' : 'active';
-}
-
-function getTileClass(state) {
-  // Returns inline gradient - no CSS classes used
-  const gradients = {
-    overdue: 'linear-gradient(135deg,#9B1C1C,#DC2626)',
-    urgent:  'linear-gradient(135deg,#F59E0B,#F97316)',
-    active:  'linear-gradient(135deg,#1E1B4B,#7C3AED)',
-    good:    'linear-gradient(135deg,#064E3B,#10B981)',
-    done:    'linear-gradient(135deg,#374151,#6B7280)',
-  };
-  return gradients[state] || gradients.active;
+  return getDueUrgency(assignment.due_date, total > 0 && done === total);
 }
 
 function renderClassTiles(assignments, child, containerId, isHS) {
@@ -187,25 +159,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
 
   const icons = ['📐','📖','🔬','🌏','🎨','🏃','🎯','🧪'];
 
-  // State config
-  const stateColors = {
-    overdue: { tile: 'linear-gradient(135deg,#9B1C1C,#DC2626)', anim: 'glowRed 2s infinite',  label: '⚠️ Overdue' },
-    urgent:  { tile: 'linear-gradient(135deg,#F59E0B,#F97316)', anim: 'glowAmber 2s infinite', label: '⏰ Due Soon' },
-    active:  { tile: 'linear-gradient(135deg,#1E1B4B,#7C3AED)', anim: 'none',                 label: '📝 In Progress' },
-    good:    { tile: 'linear-gradient(135deg,#064E3B,#10B981)', anim: 'none',                 label: '✅ On Track' },
-    done:    { tile: 'linear-gradient(135deg,#374151,#6B7280)', anim: 'none',                 label: '✓ Complete' },
-  };
-
-  // Assignment row backgrounds — distinct solid-ish colours
-  const aRowBg = {
-    overdue: 'rgba(153,27,27,0.6)',
-    urgent:  'rgba(180,52,3,0.55)',
-    active:  'rgba(91,33,182,0.55)',
-    good:    'rgba(6,95,70,0.55)',
-    done:    'rgba(0,0,0,0.45)',
-  };
+  // State config — sourced from the shared getDueUrgency() scheme (07-shared.js)
+  const stateColors = DUE_URGENCY_TILE;
+  const aRowBg = { red: DUE_URGENCY_TILE.red.bg, orange: DUE_URGENCY_TILE.orange.bg, green: DUE_URGENCY_TILE.green.bg, done: DUE_URGENCY_TILE.done.bg };
   // Assignment row text opacity for done state
-  const aRowOpacity = { overdue:'1', urgent:'1', active:'1', good:'1', done:'0.6' };
+  const aRowOpacity = { red:'1', orange:'1', green:'1', done:'0.6' };
 
   // Group by class
   const classBuckets = {};
@@ -227,8 +185,8 @@ function renderClassTiles(assignments, child, containerId, isHS) {
 
     // Class tile state
     const aStates = bucket.assignments.map(a => getTileState(a));
-    const stateOrder = ['overdue','urgent','active','good','done'];
-    const classState = stateOrder.find(s => aStates.includes(s)) || 'active';
+    const stateOrder = ['red','orange','green','done'];
+    const classState = stateOrder.find(s => aStates.includes(s)) || 'green';
     console.log('Class:', className, 'state:', classState, 'aStates:', aStates);
     const classCfg = stateColors[classState];
 
@@ -370,71 +328,15 @@ async function tileToggleTask(taskId, el) {
     showToast('❌ Could not save — try again');
     return;
   }
-  // Update tile progress
-  updateTileProgress(step);
+  // Refresh so tile colours reflect the authoritative due-date + completion
+  // state — a DOM-only recolor here couldn't know each assignment's due date
+  // (needed for the red/orange/green scheme) and had gone silently broken
+  // (a ReferenceError aborted it before it ever repainted anything).
+  await loadStudentAssignments(currentProfile.age_group);
   // Send notification to parent
   sendCompletionNotification(taskId);
 }
 
-function updateTileProgress(stepEl) {
-  // Find the parent assignment container
-  const assignmentContainer = stepEl.closest('[id^="tilesteps-"]');
-  if(!assignmentContainer) return;
-  const assignmentId = assignmentContainer.id.replace('tilesteps-','');
-
-  // Count steps in this assignment
-  const allSteps = assignmentContainer.querySelectorAll('.class-tile-step');
-  const doneSteps = assignmentContainer.querySelectorAll('.class-tile-step.done');
-  const total = allSteps.length;
-  const done = doneSteps.length;
-
-  // Update assignment row label
-  const chevronEl = document.getElementById('chevron-'+assignmentId);
-  if(chevronEl) {
-    const labelEl = chevronEl.closest('[onclick]')?.querySelector('div:last-of-type span:last-of-type');
-  }
-
-  // Find the parent class tile
-  const classTile = stepEl.closest('.class-tile');
-  if(!classTile) return;
-  const classId = classTile.id.replace('tile-','');
-
-  // Recount ALL steps across all assignments in this class tile
-  const allClassSteps = classTile.querySelectorAll('.class-tile-step');
-  const doneClassSteps = classTile.querySelectorAll('.class-tile-step.done');
-  const totalClass = allClassSteps.length;
-  const doneClass = doneClassSteps.length;
-  const pct = totalClass ? Math.round((doneClass/totalClass)*100) : 0;
-
-  // Update progress bar
-  const fillEl = classTile.querySelector('.class-tile-fill');
-  if(fillEl) fillEl.style.width = pct + '%';
-
-  // Update label
-  const labelEls = classTile.querySelectorAll('.class-tile-label span');
-  if(labelEls[0]) labelEls[0].textContent = doneClass + ' of ' + totalClass + ' steps done';
-  if(labelEls[1]) labelEls[1].textContent = pct + '%';
-
-  // Update tile header count
-  const dueEl = classTile.querySelector('.class-tile-due');
-  if(dueEl) dueEl.textContent = doneClass + '/' + totalClass + ' steps complete';
-
-  // Update tile colour based on completion
-  // Remove all state classes first then add the right one
-  // Colours handled via inline styles
-  stateClasses.forEach(c => classTile.classList.remove(c));
-  classTile.style.animation = 'none';
-  classTile.style.boxShadow = 'none';
-
-  if(doneClass === totalClass && totalClass > 0) {
-    classTile.style.background = 'linear-gradient(135deg,#374151,#6B7280)';
-    showToast('🏆 Quest complete! Amazing work!');
-  } else if(doneClass > 0) {
-    classTile.style.background = 'linear-gradient(135deg,#064E3B,#10B981)';
-  } else {
-    classTile.style.background = 'linear-gradient(135deg,#1E1B4B,#7C3AED)';
-  }
-}
 
 function updateStepToPending(taskId, proofUrl) {
   const stepEl = document.getElementById('tilestep-'+taskId);
