@@ -461,17 +461,28 @@ async function publishAssignment() {
 async function sendNudge(childId,childName) {
   const {data:child}=await db.from('children').select('*, families(parent_id)').eq('id',childId).maybeSingle();
   const parentId = child?.families?.parent_id;
+  const studentId = child?.profile_id;
+  const teacherName = currentProfile.full_name;
+
   if(parentId) {
     const title = 'Nudge from teacher';
-    const body = `${currentProfile.full_name} sent a nudge about ${childName}'s progress.`;
+    const body = `${teacherName} sent a nudge about ${childName}'s progress.`;
     await db.from('notifications').insert({recipient_id:parentId,sender_id:currentUser.id,child_id:childId,type:'nudge',title,body});
-    // A nudge is meant to reach the parent even if they're not in the app —
-    // in-app-only was too easy to miss, so also push and email.
     await sendPushToUser(parentId, title, body);
-    sendTransactionalEmail('nudge', { parentId, studentName: childName, teacherName: currentProfile.full_name });
-    showToast(`👋 Nudge sent to ${childName}'s parent!`);
+    sendTransactionalEmail('nudge', { parentId, studentName: childName, teacherName });
+  }
+  if(studentId) {
+    const sTitle = 'Nudge from your teacher';
+    const sBody = `${teacherName} sent you a nudge — check in on your tasks!`;
+    await db.from('notifications').insert({recipient_id:studentId,sender_id:currentUser.id,child_id:childId,type:'nudge',title:sTitle,body:sBody});
+    await sendPushToUser(studentId, sTitle, sBody);
+    sendTransactionalEmail('nudge', { studentId, teacherName });
+  }
+
+  if(parentId || studentId) {
+    showToast(`👋 Nudge sent to ${childName}${parentId && studentId ? ' and their parent' : parentId ? "'s parent" : ''}!`);
   } else {
-    showToast(`❌ Could not find ${childName}'s parent — nudge not sent`);
+    showToast(`❌ Could not find ${childName}'s account — nudge not sent`);
   }
 }
 function copyClassCode() { navigator.clipboard.writeText(document.getElementById('classInviteCode').textContent).then(()=>showToast('📋 Class code copied!')); }
