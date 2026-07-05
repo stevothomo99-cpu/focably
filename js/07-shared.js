@@ -265,9 +265,6 @@ async function enableNotifications() {
 async function updateNotifStatus() {
   const status = document.getElementById('notifStatus');
   const btn = document.getElementById('enableNotifsBtn');
-  const card = document.getElementById('notifCard');
-  // Always keep card visible
-  if(card) card.style.display = 'block';
   if(!status) return;
   if(!('Notification' in window)) {
     status.textContent = '❌ Not supported in this browser';
