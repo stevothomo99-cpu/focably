@@ -66,8 +66,6 @@ function renderClassDropdown() {
       const subj = classSubjectIfDistinct(c);
       return `<option value="${c.id}">${c.name}${subj?' — '+subj:''} ${c.year_group||''}</option>`;
     }).join('');
-    const sel = document.getElementById('classSelector');
-    if(sel) sel.style.display='block';
   }
   // Always populate assignment class dropdown
   const assignDropdown = document.getElementById('assignmentClass');
@@ -293,24 +291,6 @@ async function createClass() {
   document.getElementById('addAnotherClass').style.display='block';
   selectClass(data.id);
   showToast('✅ Class created!');
-}
-
-async function loadClassProgress(classId) {
-  const {data:members} = await db.from('class_members').select('*, children(*)').eq('class_id',classId);
-  const el=document.getElementById('teacherStudentProgress');
-  if(!el) return;  // element was removed in the refactor; guard against null deref
-  if(!members?.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No students yet — share your class code!</div>';return;}
-  const colors=['#EDE9FE','#ECFDF5','#FFF1F2','#FEF3C7'];
-  const textColors=['var(--violet)','var(--mint)','var(--rose)','var(--amber)'];
-  el.innerHTML=members.map((m,i)=>{
-    const c=m.children; if(!c) return '';
-    const trustCfg=trustConfig[c.trust_level||'verify'];
-    return `<div class="student-prog-row">
-      <div class="s-avatar" style="background:${colors[i%colors.length]};color:${textColors[i%textColors.length]}">${c.name?.charAt(0).toUpperCase()||'?'}</div>
-      <div class="s-prog-info"><div class="s-prog-name">${c.name} <span style="font-size:10px;">${trustCfg.label}</span></div><div class="s-prog-track"><div class="s-prog-fill" style="background:${textColors[i%textColors.length]};width:${c.trust_score||0}%"></div></div></div>
-      <button class="nudge-btn" onclick="sendNudge('${c.id}','${c.name}')">Nudge 👋</button>
-    </div>`;
-  }).join('');
 }
 
 // ── TEACHER STEP BUILDER ──
