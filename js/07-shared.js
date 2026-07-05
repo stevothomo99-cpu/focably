@@ -207,11 +207,42 @@ async function breakdownHS() {
 }
 
 // ── NOTIFICATIONS + PWA ──
+// Once a browser denies the notification permission, requestPermission()
+// can NEVER re-prompt for that origin — it just silently resolves to
+// 'denied' again with no visible UI. So clicking "Enable Notifications" a
+// second time looked like the button was doing nothing. There is no JS API
+// to reset this; the only fix is changing it in the browser's own site
+// settings, so show the exact steps instead of re-confirming "Blocked".
+function notificationUnblockSteps() {
+  const ua = navigator.userAgent;
+  if(/iPad|iPhone|iPod/.test(ua)) {
+    return "On iPhone/iPad, notifications only work once FocablyED is added to your Home Screen (Share → Add to Home Screen) — Safari tabs can't show them directly. Open it from the Home Screen icon, then try again.";
+  }
+  if(/Android/.test(ua)) {
+    return "Tap the 🔒 or ⓘ icon next to the address bar → Permissions → Notifications → Allow, then reload the page.";
+  }
+  if(/^((?!chrome|android).)*safari/i.test(ua)) {
+    return "Safari menu → Settings for This Website (or Settings → Websites → Notifications) → set focablyed.com to Allow, then reload the page.";
+  }
+  return "Click the 🔒 or ⓘ icon next to the address bar → Site settings → Notifications → Allow, then reload the page.";
+}
+
+function showNotificationBlockedHelp() {
+  alert('🔔 Notifications are blocked for FocablyED\n\n' + notificationUnblockSteps());
+}
+
 async function enableNotifications() {
   const btn = document.getElementById('enableNotifsBtn');
   const status = document.getElementById('notifStatus');
   if(!('Notification' in window)) {
     if(status) status.textContent = '❌ Notifications not supported in this browser';
+    return;
+  }
+  // Browser already blocked this origin — requesting again is a silent no-op
+  // (no native prompt appears), so show the fix instead of pretending to retry.
+  if(Notification.permission === 'denied') {
+    if(status) { status.textContent = '❌ Blocked — tap for how to fix'; status.style.background='#FFF1F2'; }
+    showNotificationBlockedHelp();
     return;
   }
   if(btn) { btn.disabled=true; btn.textContent='Requesting...'; }
@@ -222,8 +253,9 @@ async function enableNotifications() {
     await subscribeToPush();
     showToast('🔔 Notifications enabled!');
   } else if(permission === 'denied') {
-    if(status) { status.textContent = '❌ Blocked — enable in browser settings'; status.style.background='#FFF1F2'; }
+    if(status) { status.textContent = '❌ Blocked — tap for how to fix'; status.style.background='#FFF1F2'; }
     if(btn) { btn.disabled=false; btn.textContent='🔔 Enable Notifications'; }
+    showNotificationBlockedHelp();
   } else {
     if(status) { status.textContent = '⚠️ Permission dismissed — try again'; }
     if(btn) { btn.disabled=false; btn.textContent='🔔 Enable Notifications'; }
@@ -247,7 +279,7 @@ async function updateNotifStatus() {
     if(btn) { btn.textContent = '🔔 Enabled'; btn.style.opacity='0.6'; btn.style.display='block'; }
     await subscribeToPush();
   } else if(Notification.permission === 'denied') {
-    status.textContent = '❌ Blocked';
+    status.textContent = '❌ Blocked — tap for how to fix';
     if(btn) { btn.textContent = '🔔 Enable'; btn.style.display='block'; btn.style.opacity='1'; }
   } else {
     status.textContent = '';
