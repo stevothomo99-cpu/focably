@@ -950,7 +950,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
         <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">This task will also appear on the teacher's class list, marked as added by you.</div>
       </div>
 
-      <button class="publish-btn" onclick="parentAddTask()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Add Task</button>
+      <button class="publish-btn" id="parentAddTaskBtn" onclick="parentAddTask()" style="background:linear-gradient(135deg,var(--violet),#5B21B6);">+ Add Task</button>
     </div>
   </div>
 
@@ -1358,7 +1358,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
           <label class="toggle"><input type="checkbox" id="requireProofToggle" onchange="onRequireProofToggleChange(this.checked)"><span class="toggle-slider"></span></label>
         </div>
       </div>
-      <button class="publish-btn" onclick="publishAssignment()">📤 Publish Assignment</button>
+      <button class="publish-btn" id="publishAssignmentBtn" onclick="publishAssignment()">📤 Publish Assignment</button>
     </div>
   </div>
 

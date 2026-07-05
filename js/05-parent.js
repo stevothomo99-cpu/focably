@@ -1106,6 +1106,9 @@ async function populateTaskCategoryList() {
 }
 
 async function parentAddTask() {
+  const btn = document.getElementById('parentAddTaskBtn');
+  if(btn?.disabled) return; // already submitting — ignore a rapid second click
+
   const title = document.getElementById('parentTaskTitle').value.trim();
   const subject = document.getElementById('parentTaskSubject').value.trim();
   const due = document.getElementById('parentTaskDue').value;
@@ -1124,6 +1127,8 @@ async function parentAddTask() {
     if(!taggedClassId){ showToast('🏫 Pick a class, or switch to Private'); return; }
   }
 
+  if(btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+
   // Create assignment
   const {data:assignment, error:aErr} = await dbQuery(
     db.from('assignments').insert({
@@ -1137,7 +1142,11 @@ async function parentAddTask() {
       status: 'active'
     }).select().maybeSingle()
   );
-  if(aErr?.message && aErr.message !== 'timeout'){ showToast('❌ Error adding task: '+aErr.message); return; }
+  if(aErr?.message && aErr.message !== 'timeout'){
+    showToast('❌ Error adding task: '+aErr.message);
+    if(btn) { btn.disabled = false; btn.textContent = '+ Add Task'; }
+    return;
+  }
 
   // AI auto-generate steps for parent tasks too
   if(assignment) {
@@ -1194,6 +1203,7 @@ async function parentAddTask() {
   setTaskVisibility('private');
   const picker = document.getElementById('taskClassPicker');
   if(picker) picker.value = '';
+  if(btn) { btn.disabled = false; btn.textContent = '+ Add Task'; }
   // Refresh stats and return to main parent view
   await loadChildStats(childId);
   closeDrawerScreen();

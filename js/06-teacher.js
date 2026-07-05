@@ -413,13 +413,27 @@ function acceptAISteps() {
 }
 
 async function publishAssignment() {
+  const btn = document.getElementById('publishAssignmentBtn');
+  if(btn?.disabled) return; // already publishing — ignore a rapid second click
+
   const title=document.getElementById('aTitle').value.trim(),due=document.getElementById('aDue').value,desc=document.getElementById('aDesc').value.trim(),hours=document.getElementById('aHours').value;
   if(!title){showToast('✏️ Add a title first');return;}
   const classId = document.getElementById('assignmentClass')?.value || selectedClassId;
   if(!classId||classId===''){showToast('⚠️ Please select a class first!');return;}
   const cls = teacherClasses.find(c=>c.id===classId);
+
+  // Disable before the first await — a second click landing while this is
+  // still mid-flight (but before any await has suspended it) must see the
+  // guard at the top of the function, not slip through the gap.
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Publishing…'; }
+
   const {data:members}=await db.from('class_members').select('child_id').eq('class_id',classId);
-  if(!members?.length){showToast('No students in class yet');return;}
+  if(!members?.length){
+    showToast('No students in class yet');
+    if(btn) { btn.disabled = false; btn.textContent = '📤 Publish Assignment'; }
+    return;
+  }
+
   const assignments=members.map(m=>({created_by:currentUser.id,class_id:classId,child_id:m.child_id,title,description:desc,due_date:due||null,estimated_hours:hours||null,subject:cls?.subject||'',status:'active'}));
   // Upload file first if one is attached
   let fileUrl = null;
@@ -430,7 +444,11 @@ async function publishAssignment() {
   // Add file_url to all assignments
   if(fileUrl) assignments.forEach(a => a.file_url = fileUrl);
   const {data:newAssignments,error}=await dbQuery(db.from('assignments').insert(assignments).select());
-  if(error?.message&&error.message!=='timeout'){showToast('❌ Error publishing');return;}
+  if(error?.message&&error.message!=='timeout'){
+    showToast('❌ Error publishing');
+    if(btn) { btn.disabled = false; btn.textContent = '📤 Publish Assignment'; }
+    return;
+  }
 
   // Create tasks from teacherSteps — only what the teacher actually added or
   // accepted from "✨ AI Generate". Publishing with none just publishes with
@@ -464,6 +482,7 @@ async function publishAssignment() {
   document.getElementById('requireProofToggle').checked=false;
   teacherSteps = [];
   renderTeacherSteps();
+  if(btn) { btn.disabled = false; btn.textContent = '📤 Publish Assignment'; }
   // Return to main teacher view and refresh assignments
   closeDrawerScreen();
   await loadTeacherClassAssignments(selectedClassId);
