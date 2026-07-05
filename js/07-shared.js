@@ -339,6 +339,40 @@ async function sendTransactionalEmail(type, data) {
     console.log('Transactional email error:', e.message);
   }
 }
+// ── Unified due-date urgency scheme — the single source of truth for every
+// assignment/task tile colour across Teacher, Student (Primary + HS), and
+// Parent views. Rule: overdue or due within 48h -> red; due within 7 days ->
+// orange; due beyond 7 days (or no due date) -> green; completed -> grey with
+// strikethrough (overrides everything else).
+function getDueUrgency(dueDate, isComplete) {
+  if(isComplete) return 'done';
+  if(!dueDate) return 'green';
+  // due_date is a calendar date with no time component, so compare whole
+  // local days (not raw hours) to avoid timezone/DST off-by-ones — same
+  // approach the original student-tile code used.
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const dueStr = dueDate.split('T')[0];
+  if(dueStr <= todayStr) return 'red'; // due today or already overdue
+  const due = new Date(dueStr + 'T12:00:00');
+  const todayNoon = new Date(todayStr + 'T12:00:00');
+  const diffDays = Math.round((due - todayNoon) / (1000*60*60*24));
+  if(diffDays <= 2) return 'red';      // due tomorrow or the day after — within ~48h
+  if(diffDays <= 7) return 'orange';
+  return 'green';
+}
+
+// Colour/label lookup for the gradient-tile views (student Primary/HS)
+const DUE_URGENCY_TILE = {
+  red:    { tile: 'linear-gradient(135deg,#9B1C1C,#DC2626)', bg: 'rgba(153,27,27,0.6)',  anim: 'glowRed 2s infinite',  label: '⚠️ Due Soon' },
+  orange: { tile: 'linear-gradient(135deg,#F59E0B,#F97316)', bg: 'rgba(180,52,3,0.55)',  anim: 'glowAmber 2s infinite', label: '⏰ Due This Week' },
+  green:  { tile: 'linear-gradient(135deg,#064E3B,#10B981)', bg: 'rgba(6,95,70,0.55)',   anim: 'none', label: '✅ On Track' },
+  done:   { tile: 'linear-gradient(135deg,#374151,#6B7280)', bg: 'rgba(0,0,0,0.45)',     anim: 'none', label: '✓ Complete' },
+};
+
+// Colour lookup for the flat-colour views (Teacher, Parent) that use CSS vars
+const DUE_URGENCY_VAR = { red: 'var(--rose)', orange: 'var(--amber)', green: 'var(--mint)', done: 'var(--gray-400)' };
+
 // Escapes HTML and preserves line breaks so multi-line instructions render as
 // readable, ADHD-friendly text instead of a collapsed wall. Numbered/bulleted
 // points that were pasted on one line get pushed onto their own line too.
@@ -1094,7 +1128,9 @@ async function openAssignmentDetail(assignmentId) {
   const className = a.classes?.name || a.classes?.subject || '📚 Home Task';
   const teacherName = a.classes?.profiles?.full_name || '';
   const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) : 'No due date';
-  const isOverdue = a.due_date && a.due_date < new Date().toISOString().split('T')[0] && pct < 100;
+  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule
+  // used by Student and Teacher tiles
+  const dueColor = DUE_URGENCY_VAR[getDueUrgency(a.due_date, pct === 100)];
 
   const stepStatus = (t) => {
     if(t.completed) return {icon:'✅', label:'Done', color:'var(--mint)'};
@@ -1119,14 +1155,14 @@ async function openAssignmentDetail(assignmentId) {
 
   body.innerHTML = `
     <div class="card">
-      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);margin-bottom:6px;">${a.title}</div>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);margin-bottom:6px;${pct===100?'text-decoration:line-through;opacity:0.6;':''}">${a.title}</div>
       <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:2px;">📚 ${className}</div>
       ${teacherName?`<div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;">Set by ${teacherName}</div>`:`<div style="font-size:12px;color:var(--gray-500);margin-bottom:8px;">Added by you</div>`}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <span style="font-size:12px;font-weight:600;color:${isOverdue?'var(--rose)':'var(--gray-700)'};background:var(--gray-50);padding:4px 10px;border-radius:20px;">📅 Due ${dueStr}</span>
+        <span style="font-size:12px;font-weight:600;color:${dueColor};background:var(--gray-50);padding:4px 10px;border-radius:20px;">📅 Due ${dueStr}</span>
         <span style="font-size:12px;font-weight:600;color:var(--gray-700);background:var(--gray-50);padding:4px 10px;border-radius:20px;">${done}/${tasks.length} steps done</span>
       </div>
-      <div style="background:var(--gray-100);border-radius:10px;height:8px;margin-bottom:6px;"><div style="background:${pct>=100?'var(--mint)':isOverdue?'var(--rose)':'var(--violet)'};border-radius:10px;height:8px;width:${pct}%;transition:width 0.5s;"></div></div>
+      <div style="background:var(--gray-100);border-radius:10px;height:8px;margin-bottom:6px;"><div style="background:${dueColor};border-radius:10px;height:8px;width:${pct}%;transition:width 0.5s;"></div></div>
       <div style="font-size:12px;color:var(--gray-500);text-align:right;">${pct}% complete</div>
       ${a.description?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Instructions</div><div style="font-size:13px;color:var(--gray-700);line-height:1.6;">${formatDescription(a.description)}</div></div>`:''}
     </div>

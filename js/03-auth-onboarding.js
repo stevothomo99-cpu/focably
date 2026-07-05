@@ -255,13 +255,14 @@ async function openManageChildren() {
         const done = tasks.filter(function(t) { return t.completed; }).length;
         const apct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
         const due = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
-        const today = new Date().toISOString().split('T')[0];
-        const isOverdue = a.due_date && a.due_date < today && apct < 100;
-        const col = apct>=100 ? 'var(--mint)' : isOverdue ? 'var(--rose)' : 'var(--violet)';
+        // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same
+        // rule used by Student and Teacher tiles (getDueUrgency in 07-shared.js)
+        const col = DUE_URGENCY_VAR[getDueUrgency(a.due_date, apct === 100)];
+        const strike = apct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">' +
           '<div style="flex:1;">' +
-            '<div style="font-size:12px;font-weight:600;color:var(--indigo);">' + a.title + '</div>' +
-            '<div style="font-size:10px;color:' + (isOverdue?'var(--rose)':'var(--gray-500)') + ';margin:2px 0 4px;">Due ' + due + ' &nbsp;·&nbsp; ' + done + '/' + tasks.length + ' steps</div>' +
+            '<div style="font-size:12px;font-weight:600;color:var(--indigo);' + strike + '">' + a.title + '</div>' +
+            '<div style="font-size:10px;color:' + col + ';margin:2px 0 4px;">Due ' + due + ' &nbsp;·&nbsp; ' + done + '/' + tasks.length + ' steps</div>' +
             '<div style="background:var(--gray-100);border-radius:10px;height:4px;"><div style="background:' + col + ';border-radius:10px;height:4px;width:' + apct + '%;"></div></div>' +
           '</div>' +
           '<div style="font-size:11px;font-weight:800;color:' + col + ';">' + apct + '%</div>' +

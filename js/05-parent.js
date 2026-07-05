@@ -101,17 +101,13 @@ async function loadChildStats(childId) {
   const subjectEl=document.getElementById('parentSubjectProgress');
   if(!assignments?.length){subjectEl.innerHTML='<div style="font-size:13px;color:var(--gray-500);text-align:center;padding:12px 0;">No assignments yet</div>';return;}
 
+  // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule used
+  // by Student and Teacher tiles (getDueUrgency in 07-shared.js)
   const statusColor = (a) => {
     const tasks = a.tasks||[];
     const done = tasks.filter(t=>t.completed).length;
     const pct = tasks.length?Math.round((done/tasks.length)*100):0;
-    if(pct >= 100) return 'var(--gray-400)';
-    if(a.due_date) {
-      const days = Math.round((new Date(a.due_date) - new Date())/(1000*60*60*24));
-      if(days < 7) return 'var(--rose)';
-      if(days < 14) return 'var(--amber)';
-    }
-    return 'var(--mint)';
+    return DUE_URGENCY_VAR[getDueUrgency(a.due_date, pct === 100)];
   };
 
   // Group by class
@@ -148,9 +144,10 @@ async function loadChildStats(childId) {
       const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
       const pendingCount = tasks.filter(t=>t.verification_status==='pending').length;
       const pendingBadge = pendingCount ? `<span style="font-size:10px;font-weight:700;color:var(--amber);background:#FFFBEB;padding:1px 6px;border-radius:20px;margin-left:6px;">⏳ ${pendingCount} awaiting</span>` : '';
+      const strike = pct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
       return `<div onclick="openAssignmentDetail('${a.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:white;border-radius:10px;margin-bottom:6px;border:1px solid var(--gray-100);cursor:pointer;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet-light)'" onmouseout="this.style.borderColor='var(--gray-100)'">
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;color:var(--indigo);">${a.title}${pendingBadge}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--indigo);${strike}">${a.title}${pendingBadge}</div>
           <div style="font-size:11px;color:var(--gray-500);margin:3px 0 5px;">Due ${dueStr} · ${done}/${tasks.length} steps</div>
           <div style="background:var(--gray-100);border-radius:10px;height:5px;"><div style="background:${col};border-radius:10px;height:5px;width:${pct}%;transition:width 0.5s;"></div></div>
         </div>
