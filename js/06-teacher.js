@@ -340,7 +340,7 @@ function renderTeacherSteps() {
   const container = document.getElementById('teacherStepsList');
   if(!container) return;
   if(!teacherSteps.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:8px;">No steps added yet — AI will generate them on publish if left empty</div>';
+    container.innerHTML = '<div style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:8px;">No steps added yet — add your own or tap "✨ AI Generate" below. Publishing without any steps is fine, but students won\'t have anything to check off.</div>';
     return;
   }
   // Per-step "needs proof" checkbox only appears once the "Require Proof"
@@ -432,7 +432,6 @@ function acceptAISteps() {
 
 async function publishAssignment() {
   const title=document.getElementById('aTitle').value.trim(),due=document.getElementById('aDue').value,desc=document.getElementById('aDesc').value.trim(),hours=document.getElementById('aHours').value;
-  const requireProof=document.getElementById('requireProofToggle').checked;
   if(!title){showToast('✏️ Add a title first');return;}
   const classId = document.getElementById('assignmentClass')?.value || selectedClassId;
   if(!classId||classId===''){showToast('⚠️ Please select a class first!');return;}
@@ -451,32 +450,11 @@ async function publishAssignment() {
   const {data:newAssignments,error}=await dbQuery(db.from('assignments').insert(assignments).select());
   if(error?.message&&error.message!=='timeout'){showToast('❌ Error publishing');return;}
 
-  // Create tasks from teacherSteps, AI-generate if none defined
-  if(newAssignments?.length) {
-    let stepsToCreate = [...teacherSteps];
-
-    // AI auto-generate if no steps defined
-    if(!stepsToCreate.length) {
-      const title = document.getElementById('aTitle').value.trim();
-      const desc = document.getElementById('aDesc').value.trim();
-      try {
-        const res = await fetch(AI_PROXY_URL, {
-          method:'POST', headers:(await aiHeaders()),
-          body: JSON.stringify({
-            model:'claude-sonnet-4-20250514', max_tokens:800,
-            system:`Break this school assignment into 4-5 clear steps for a student. Return ONLY a raw JSON array. Each: "title" (max 10 words) and "verification_required" (true only for final step if proof needed). No markdown.`,
-            messages:[{role:'user',content:`Assignment: "${title}". ${desc}`}]
-          })
-        });
-        const d = await res.json();
-        stepsToCreate = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim()).map(s=>({
-          id:'auto',title:s.title,verification_required:requireProof&&s.verification_required
-        }));
-      } catch(e) {
-        // Fallback to single step
-        stepsToCreate = [{id:'auto',title:'Complete the assignment',verification_required:requireProof}];
-      }
-    }
+  // Create tasks from teacherSteps — only what the teacher actually added or
+  // accepted from "✨ AI Generate". Publishing with none just publishes with
+  // none; we don't silently invent steps behind the teacher's back.
+  if(newAssignments?.length && teacherSteps.length) {
+    const stepsToCreate = teacherSteps;
 
     // Create tasks for each student
     const allTasks = newAssignments.flatMap(a =>
