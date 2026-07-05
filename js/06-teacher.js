@@ -157,13 +157,19 @@ async function loadTeacherClassAssignments(classId) {
     const pct = totalStudents ? Math.round((completedStudents/totalStudents)*100) : 0;
     // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same rule
     // used by Student and Parent tiles (getDueUrgency in 07-shared.js)
-    const statusColor = DUE_URGENCY_VAR[getDueUrgency(group.due, pct === 100)];
+    // Worst urgency across every student's own instance of this assignment —
+    // an instance with an overdue step turns the whole group tile red too.
+    const groupUrgency = instances.reduce((worst, a) => {
+      const u = getAssignmentUrgency(a);
+      return URGENCY_RANK[u] < URGENCY_RANK[worst] ? u : worst;
+    }, 'done');
+    const statusColor = DUE_URGENCY_VAR[groupUrgency];
 
     const studentRows = instances.map(a => {
       const tasks = a.tasks||[];
       const done = tasks.filter(t=>t.completed).length;
       const studentPct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
-      const rowColor = DUE_URGENCY_VAR[getDueUrgency(a.due_date, studentPct === 100)];
+      const rowColor = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
       const strike = studentPct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
       return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray-100);">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;flex-shrink:0;">${a.children?.name?.charAt(0)||'?'}</div>
@@ -224,7 +230,7 @@ async function loadTeacherClassAssignments(classId) {
       const t = a.tasks||[];
       const d = t.filter(x=>x.completed).length;
       const apct = t.length ? Math.round((d/t.length)*100) : 0;
-      const col = DUE_URGENCY_VAR[getDueUrgency(a.due_date, apct === 100)];
+      const col = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
       const strike = apct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
       const dueStr = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
       const pend = t.filter(x=>x.verification_status==='pending').length;
@@ -311,12 +317,22 @@ let aiGeneratedSteps = [];
 
 function addTeacherStep(title='') {
   const id = 'step_' + Date.now() + Math.random().toString(36).substr(2,5);
-  teacherSteps.push({id, title, verification_required: false});
+  teacherSteps.push({id, title, verification_required: false, due_date: null});
   renderTeacherSteps();
 }
 
 function removeTeacherStep(id) {
   teacherSteps = teacherSteps.filter(s => s.id !== id);
+  renderTeacherSteps();
+}
+
+// Calendar icon pops a compact date field open on its own line under the step
+// (off by default) rather than cramming a date input into every row —
+// clicking it again while a date is set clears it and collapses the row back.
+function toggleStepDueDate(i) {
+  const s = teacherSteps[i];
+  if(!s) return;
+  s.due_date = s.due_date ? null : new Date().toISOString().split('T')[0];
   renderTeacherSteps();
 }
 
@@ -330,18 +346,33 @@ function renderTeacherSteps() {
   // Per-step "needs proof" checkbox only appears once the "Require Proof"
   // toggle above is on — that toggle is the master switch; the checkbox here
   // picks WHICH steps (not necessarily all of them) actually need it.
+  // Column headers (Proof/Due) sit once above the list instead of repeating
+  // a text label on every row, using the same column widths as the rows below.
   const proofEnabled = document.getElementById('requireProofToggle')?.checked;
-  container.innerHTML = teacherSteps.map((s,i) => `
+  const header = `
+    <div style="display:flex;gap:8px;align-items:center;padding:0 0 4px;">
+      <div style="width:20px;flex-shrink:0;"></div>
+      <div style="flex:1;"></div>
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Proof</div>` : ''}
+      <div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Due</div>
+      <div style="width:22px;flex-shrink:0;"></div>
+    </div>`;
+  container.innerHTML = header + teacherSteps.map((s,i) => `
     <div class="step-row-input">
       <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
       <input type="text" value="${s.title}" placeholder="Step ${i+1} description..."
         oninput="teacherSteps[${i}].title=this.value"
         style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
-      ${proofEnabled ? `<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-500);white-space:nowrap;cursor:pointer;" title="Require a photo/file for this step before it can be marked complete">
-        <input type="checkbox" ${s.verification_required?'checked':''} onchange="teacherSteps[${i}].verification_required=this.checked"> 📸 Proof
-      </label>` : ''}
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;display:flex;justify-content:center;" title="Require a photo/file for this step before it can be marked complete">
+        <input type="checkbox" ${s.verification_required?'checked':''} onchange="teacherSteps[${i}].verification_required=this.checked">
+      </div>` : ''}
+      <button type="button" class="step-date-btn${s.due_date?' active':''}" onclick="toggleStepDueDate(${i})" title="${s.due_date?'Remove the due date on this step':'Give this step its own due date (optional)'}">📅</button>
       <button class="step-remove-btn" onclick="removeTeacherStep('${s.id}')">×</button>
-    </div>`).join('');
+    </div>
+    ${s.due_date ? `<div class="step-date-row">
+      📅 <input type="date" value="${s.due_date}" onchange="teacherSteps[${i}].due_date=this.value">
+      <span style="font-size:11px;color:var(--gray-500);">step due date (separate from the assignment due date)</span>
+    </div>` : ''}`).join('');
 }
 
 // Master "Require Proof" toggle: OFF hides the per-step checkboxes and clears
@@ -355,16 +386,18 @@ function onRequireProofToggleChange(enabled) {
 async function generateTeacherSteps() {
   const title = document.getElementById('aTitle').value.trim();
   const desc = document.getElementById('aDesc').value.trim();
+  const assignmentDue = document.getElementById('aDue')?.value || '';
   if(!title) { showToast('Add an assignment title first'); return; }
   const btn = document.getElementById('aiStepsBtn');
   btn.disabled = true; btn.textContent = '⏳ Generating...';
   try {
+    const today = new Date().toISOString().split('T')[0];
     const res = await fetch(AI_PROXY_URL, {
       method:'POST', headers:(await aiHeaders()),
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
-        system:`You help teachers create step-by-step tasks for students with ADHD. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words) and "verification_required" (true only for the final submission step). No markdown, no backticks.`,
-        messages:[{role:'user',content:`Assignment: "${title}". ${desc?'Instructions: '+desc:''}`}]
+        system:`You help teachers create step-by-step tasks for students with ADHD. Today's date is ${today}. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
+        messages:[{role:'user',content:`Assignment: "${title}"${assignmentDue?' (overall due '+assignmentDue+')':''}. ${desc?'Instructions: '+desc:''}`}]
       })
     });
     const data = await res.json();
@@ -375,6 +408,7 @@ async function generateTeacherSteps() {
         <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
         <div style="flex:1;">${s.title}</div>
         ${s.verification_required?'<span style="font-size:10px;background:var(--amber-light);padding:2px 6px;border-radius:10px;">📸 Proof</span>':''}
+        ${s.due_date?`<span style="font-size:10px;background:var(--gray-100);color:var(--violet);padding:2px 6px;border-radius:10px;">📅 ${s.due_date}</span>`:''}
       </div>`).join('');
     document.getElementById('aiStepsPreview').style.display = 'block';
   } catch(e) {
@@ -388,11 +422,12 @@ function acceptAISteps() {
   teacherSteps = aiGeneratedSteps.map(s => ({
     id: 'step_'+Date.now()+Math.random().toString(36).substr(2,5),
     title: s.title,
-    verification_required: proofEnabled && (s.verification_required||false)
+    verification_required: proofEnabled && (s.verification_required||false),
+    due_date: s.due_date || null
   }));
   document.getElementById('aiStepsPreview').style.display = 'none';
   renderTeacherSteps();
-  showToast('✅ AI steps added!');
+  showToast('✅ AI steps added!' + (teacherSteps.some(s=>s.due_date) ? ' Some steps got their own due date — check them before publishing.' : ''));
 }
 
 async function publishAssignment() {
@@ -453,7 +488,8 @@ async function publishAssignment() {
         star_value: 1,
         sort_order: i+1,
         verification_required: s.verification_required||false,
-        verification_type: 'either'
+        verification_type: 'either',
+        due_date: s.due_date || null
       }))
     );
     await dbQuery(db.from('tasks').insert(allTasks));

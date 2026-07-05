@@ -255,9 +255,10 @@ async function openManageChildren() {
         const done = tasks.filter(function(t) { return t.completed; }).length;
         const apct = tasks.length ? Math.round((done/tasks.length)*100) : 0;
         const due = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : 'No due date';
-        // Unified red(overdue/48h)/orange(7 days)/green/done scheme — same
-        // rule used by Student and Teacher tiles (getDueUrgency in 07-shared.js)
-        const col = DUE_URGENCY_VAR[getDueUrgency(a.due_date, apct === 100)];
+        // Unified red(overdue/48h)/orange(7 days)/green/done scheme, including
+        // any of this assignment's steps that carry their own due date
+        // (getAssignmentUrgency in 07-shared.js)
+        const col = DUE_URGENCY_VAR[getAssignmentUrgency(a)];
         const strike = apct === 100 ? 'text-decoration:line-through;opacity:0.6;' : '';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:white;border-radius:9px;margin-bottom:6px;border:1px solid var(--gray-100);">' +
           '<div style="flex:1;">' +
