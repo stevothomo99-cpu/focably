@@ -881,7 +881,7 @@ function renderDrawerItems() {
     // from Manage Children if needed) — this is a safe, read-only lookup so
     // a kid can check whose family a code belongs to before anything else.
     if(hasFamily) {
-      items.push({ icon:'🔗', label:'Link to Family', action:`openDrawerScreen('family-lookup')`, note:'Look up who a family code belongs to', disabled: false });
+      items.push({ icon:'🔗', label:'Link to Family', action:`openDrawerScreen('family-lookup')`, note:'View your family and add a code', disabled: false });
     }
   }
 
@@ -967,9 +967,8 @@ function openDrawerScreen(screen) {
 
   if(screen === 'family-lookup') {
     const input = document.getElementById('familyLookupCodeInput');
-    const result = document.getElementById('familyLookupResult');
     if(input) input.value = '';
-    if(result) result.style.display = 'none';
+    loadMyFamilyInfo();
   }
 
   // Family invite: show existing code only if still valid, else just the generate button

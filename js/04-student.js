@@ -615,14 +615,16 @@ function applyTheme(t) {
 
 // ── LINK TO FAMILY ──
 let linkToFamilyInProgress = false;
-async function linkToFamily() {
+async function linkToFamily(inputId, btnId) {
+  inputId = inputId || 'inviteCodeInput';
+  btnId = btnId || 'linkFamilyBtn';
   // Prevent double-tap duplicates
   if(linkToFamilyInProgress) return;
   linkToFamilyInProgress = true;
-  const btn = document.getElementById('linkFamilyBtn');
+  const btn = document.getElementById(btnId);
   if(btn){ btn.disabled = true; btn.textContent = 'Linking…'; }
 
-  const code = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
+  const code = document.getElementById(inputId).value.trim().toUpperCase();
   if(code.length!==6){
     showToast('Enter the 6-character code');
     linkToFamilyInProgress = false;
@@ -659,8 +661,9 @@ async function linkToFamily() {
       return;
     }
     // Linked to a DIFFERENT family than the code just entered — don't silently load
-    // the old family and drop the code on the floor, tell them what to do
-    showToast("⚠️ You're already linked to a different family — unlink it first, then enter this code.");
+    // the old family and drop the code on the floor, tell them what to do.
+    // Students can't unlink themselves (only a parent can, from Manage Children).
+    showToast("⚠️ You're already linked to a different family — ask a parent to help if you need to switch.");
     linkToFamilyInProgress = false;
     if(btn){ btn.disabled = false; btn.textContent = 'Link ✓'; }
     return;
@@ -694,23 +697,18 @@ async function linkToFamily() {
 // ── LOOK UP A FAMILY CODE (read-only — students can't unlink/relink themselves) ──
 // A student who's already linked can check whose family a code belongs to
 // without it ever changing their own family connection.
-async function lookupFamilyByCode() {
-  const codeInput = document.getElementById('familyLookupCodeInput');
-  const code = codeInput.value.trim().toUpperCase();
+// Shows the student's OWN family/parent — scoped server-side to the caller's
+// account (get_my_family_info), never an arbitrary code someone else typed
+// in. Looking up any code a student wanted would leak other families'
+// parent names, which is exactly what this screen must not do.
+async function loadMyFamilyInfo() {
   const resultEl = document.getElementById('familyLookupResult');
-  if(code.length !== 6) { showToast('Enter the 6-character code'); return; }
-  const btn = document.getElementById('familyLookupBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Looking up…'; }
-  const {data:familyRows} = await dbQuery(db.rpc('find_family_by_code', {p_code: code}), 8000, null);
-  const family = Array.isArray(familyRows) ? familyRows[0] : familyRows;
-  if(btn){ btn.disabled = false; btn.textContent = '🔍 Look Up Code'; }
-  if(!family) {
-    showToast('❌ Code not found');
-    resultEl.style.display = 'none';
-    return;
-  }
-  document.getElementById('familyLookupName').textContent = family.family_name || 'Unnamed family';
-  document.getElementById('familyLookupParent').textContent = family.parent_name || 'Not available';
+  if(!resultEl) return;
+  const {data:rows} = await dbQuery(db.rpc('get_my_family_info'), 8000, null);
+  const info = Array.isArray(rows) ? rows[0] : rows;
+  if(!info) { resultEl.style.display = 'none'; return; }
+  document.getElementById('familyLookupName').textContent = info.family_name || 'Your family';
+  document.getElementById('familyLookupParent').textContent = info.parent_name || 'Not available';
   resultEl.style.display = 'block';
 }
 
