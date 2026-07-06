@@ -56,6 +56,17 @@ async function loadParentApp() {
         taskSel.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--indigo);margin-bottom:8px;">For: ${currentChildren[0].name}</div>`;
       }
     }
+    // Populate child selector in parent Create Assignment card
+    const assignSel = document.getElementById('parentAssignmentChildSelect');
+    if(assignSel) {
+      if(currentChildren.length > 1) {
+        assignSel.innerHTML = '<select class="form-input" id="parentAssignmentChildId" style="margin-bottom:8px;">' +
+          currentChildren.map(c => `<option value="${c.id}">${c.name}</option>`).join('') +
+          '</select>';
+      } else if(currentChildren.length === 1) {
+        assignSel.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--indigo);margin-bottom:8px;">For: ${currentChildren[0].name}</div>`;
+      }
+    }
   }
   loadApprovalQueues().catch(()=>{});
   showScreen('app');
@@ -1085,11 +1096,13 @@ async function populateTaskClassPicker() {
 }
 
 // Suggests previously-used Home Task categories so parents reuse "Chores"
-// instead of accidentally creating "Chore", "chores", etc.
-async function populateTaskCategoryList() {
+// instead of accidentally creating "Chore", "chores", etc. Shared between
+// "Add Task for Child" and "Create Assignment" — both write into the same
+// datalist so a category picked in one shows up as a suggestion in the other.
+async function populateTaskCategoryList(childSelectContainerId = 'parentTaskChildSelect') {
   const list = document.getElementById('parentTaskCategoryList');
   if(!list) return;
-  const childSelectEl = document.getElementById('parentTaskChildSelect')?.querySelector('select');
+  const childSelectEl = document.getElementById(childSelectContainerId)?.querySelector('select');
   const childId = childSelectEl?.value || currentChildren?.[0]?.id;
   if(!childId) { list.innerHTML = ''; return; }
   const {data:rows} = await dbQuery(
@@ -1148,40 +1161,19 @@ async function parentAddTask() {
     return;
   }
 
-  // AI auto-generate steps for parent tasks too
+  // A generic Home Task is one action, one reward — no AI step breakdown
+  // here (that inflated the reward: a 3-star task was getting split into
+  // 3-4 AI steps that were EACH worth 3 stars). Use "Create Assignment"
+  // for a multi-step breakdown instead.
   if(assignment) {
-    let parentSteps = [];
-    try {
-      const res = await fetch(AI_PROXY_URL, {
-        method:'POST', headers:(await aiHeaders()),
-        body: JSON.stringify({
-          model:'claude-sonnet-4-20250514', max_tokens:600,
-          system:`Break this homework task into 3-4 simple steps for a student. Return ONLY a raw JSON array. Each: "title" (max 8 words). No markdown.`,
-          messages:[{role:'user',content:`Task: "${title}". ${desc}`}]
-        })
-      });
-      const d = await res.json();
-      const parsed = JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
-      parentSteps = Array.isArray(parsed) ? parsed : [];
-    } catch(e) {
-      parentSteps = [];
-    }
-    // AI call failed or returned nothing usable — try recovering a numbered
-    // list the parent's own pasted text already has before giving up and
-    // reducing the whole task to one step named after its own title.
-    if(!parentSteps.length) {
-      const recovered = extractNumberedSteps(desc);
-      parentSteps = recovered.length ? recovered.map(t => ({title: t})) : [{title: title}];
-    }
-    const tasks = parentSteps.map((s,i) => ({
+    await dbQuery(db.from('tasks').insert({
       assignment_id: assignment.id,
       child_id: childId,
-      title: s.title||title,
+      title,
       xp_value: 15, star_value: selectedTaskStars,
-      sort_order: i+1,
+      sort_order: 1,
       verification_required: false
     }));
-    await dbQuery(db.from('tasks').insert(tasks));
   }
 
   const childRecord = currentChildren.find(c=>c.id===childId);
@@ -1208,6 +1200,234 @@ async function parentAddTask() {
   await loadChildStats(childId);
   closeDrawerScreen();
 }
+
+// ── PARENT CREATE ASSIGNMENT ─────────────────────────────────────────────────
+// Same multi-step builder as the teacher's "New Assignment", but a parent has
+// no real class to publish to — there's no "Class" field, just the same
+// Category grouping used by "Add Task for Child". It always lands as a
+// private Home Task for one child (class_id stays null), never a real class.
+
+let parentAssignmentSteps = [];
+let aiGeneratedParentSteps = [];
+let pendingParentAssignmentFile = null;
+
+function addParentAssignmentStep(title='') {
+  const id = 'pastep_' + Date.now() + Math.random().toString(36).substr(2,5);
+  parentAssignmentSteps.push({id, title, verification_required: false, due_date: null});
+  renderParentAssignmentSteps();
+}
+
+function removeParentAssignmentStep(id) {
+  parentAssignmentSteps = parentAssignmentSteps.filter(s => s.id !== id);
+  renderParentAssignmentSteps();
+}
+
+function toggleParentAssignmentStepDueDate(i) {
+  const s = parentAssignmentSteps[i];
+  if(!s) return;
+  s.due_date = s.due_date ? null : new Date().toISOString().split('T')[0];
+  renderParentAssignmentSteps();
+}
+
+function renderParentAssignmentSteps() {
+  const container = document.getElementById('paStepsList');
+  if(!container) return;
+  if(!parentAssignmentSteps.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--gray-500);font-style:italic;margin-bottom:8px;">No steps added yet — add your own or tap "✨ AI Generate" below. Publishing without any steps is fine, but your child won\'t have anything to check off.</div>';
+    return;
+  }
+  const proofEnabled = document.getElementById('paRequireProofToggle')?.checked;
+  const header = `
+    <div style="display:flex;gap:8px;align-items:center;padding:0 0 4px;">
+      <div style="width:20px;flex-shrink:0;"></div>
+      <div style="flex:1;"></div>
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Proof</div>` : ''}
+      <div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Due</div>
+      <div style="width:22px;flex-shrink:0;"></div>
+    </div>`;
+  container.innerHTML = header + parentAssignmentSteps.map((s,i) => `
+    <div class="step-row-input">
+      <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+      <input type="text" value="${s.title}" placeholder="Step ${i+1} description..."
+        oninput="parentAssignmentSteps[${i}].title=this.value"
+        style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;display:flex;justify-content:center;" title="Require a photo/file for this step before it can be marked complete">
+        <input type="checkbox" ${s.verification_required?'checked':''} onchange="parentAssignmentSteps[${i}].verification_required=this.checked">
+      </div>` : ''}
+      <button type="button" class="step-date-btn${s.due_date?' active':''}" onclick="toggleParentAssignmentStepDueDate(${i})" title="${s.due_date?'Remove the due date on this step':'Give this step its own due date (optional)'}">📅</button>
+      <button class="step-remove-btn" onclick="removeParentAssignmentStep('${s.id}')">×</button>
+    </div>
+    ${s.due_date ? `<div class="step-date-row">
+      📅 <input type="date" value="${s.due_date}" onchange="parentAssignmentSteps[${i}].due_date=this.value">
+      <span style="font-size:11px;color:var(--gray-500);">step due date (separate from the assignment due date)</span>
+    </div>` : ''}`).join('');
+}
+
+function onParentAssignmentProofToggleChange(enabled) {
+  if(!enabled) parentAssignmentSteps.forEach(s => s.verification_required = false);
+  renderParentAssignmentSteps();
+}
+
+async function generateParentAssignmentSteps() {
+  const title = document.getElementById('paTitle').value.trim();
+  const desc = document.getElementById('paDesc').value.trim();
+  const assignmentDue = document.getElementById('paDue')?.value || '';
+  if(!title) { showToast('Add a title first'); return; }
+  const btn = document.getElementById('paAiStepsBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating...';
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await fetch(AI_PROXY_URL, {
+      method:'POST', headers:(await aiHeaders()),
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:`You help parents create step-by-step tasks for a child with ADHD. Today's date is ${today}. Break the assignment into 3-5 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
+        messages:[{role:'user',content:`Task: "${title}"${assignmentDue?' (overall due '+assignmentDue+')':''}. ${desc?'Instructions: '+desc:''}`}]
+      })
+    });
+    const data = await res.json();
+    aiGeneratedParentSteps = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const preview = document.getElementById('paAiStepsPreviewList');
+    preview.innerHTML = aiGeneratedParentSteps.map((s,i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:13px;">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;">${s.title}</div>
+        ${s.verification_required?'<span style="font-size:10px;background:var(--amber-light);padding:2px 6px;border-radius:10px;">📸 Proof</span>':''}
+        ${s.due_date?`<span style="font-size:10px;background:var(--gray-100);color:var(--violet);padding:2px 6px;border-radius:10px;">📅 ${s.due_date}</span>`:''}
+      </div>`).join('');
+    document.getElementById('paAiStepsPreview').style.display = 'block';
+  } catch(e) {
+    showToast('❌ AI error — add steps manually');
+  }
+  btn.disabled = false; btn.textContent = '✨ AI Generate';
+}
+
+function acceptParentAISteps() {
+  const proofEnabled = document.getElementById('paRequireProofToggle')?.checked;
+  parentAssignmentSteps = aiGeneratedParentSteps.map(s => ({
+    id: 'pastep_'+Date.now()+Math.random().toString(36).substr(2,5),
+    title: s.title,
+    verification_required: proofEnabled && (s.verification_required||false),
+    due_date: s.due_date || null
+  }));
+  document.getElementById('paAiStepsPreview').style.display = 'none';
+  renderParentAssignmentSteps();
+  showToast('✅ AI steps added!' + (parentAssignmentSteps.some(s=>s.due_date) ? ' Some steps got their own due date — check them before publishing.' : ''));
+}
+
+function handleParentAssignmentFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  pendingParentAssignmentFile = file;
+  const label = document.getElementById('paUploadLabel');
+  const zone = document.getElementById('paUploadZone');
+  if(label) label.textContent = '📎 ' + file.name;
+  if(zone) zone.style.borderColor = 'var(--mint)';
+  showToast(`📎 ${file.name} ready`);
+  input.value = '';
+}
+
+async function uploadParentAssignmentFile(assignmentId) {
+  if(!pendingParentAssignmentFile) return null;
+  const ext = pendingParentAssignmentFile.name.split('.').pop();
+  const path = `${currentUser.id}/${assignmentId}.${ext}`;
+  const { error } = await db.storage.from('assignment-files').upload(path, pendingParentAssignmentFile, { upsert: true });
+  if(error) { console.log('Parent assignment upload error:', error.message); return null; }
+  const { data: signedData } = await db.storage.from('assignment-files').createSignedUrl(path, 31536000);
+  const fileUrl = signedData?.signedUrl || null;
+  pendingParentAssignmentFile = null;
+  const label = document.getElementById('paUploadLabel');
+  const zone = document.getElementById('paUploadZone');
+  if(label) label.textContent = 'Tap to attach file';
+  if(zone) zone.style.borderColor = '';
+  return fileUrl;
+}
+
+async function publishParentAssignment() {
+  const btn = document.getElementById('publishParentAssignmentBtn');
+  if(btn?.disabled) return; // already publishing — ignore a rapid second click
+
+  const title = document.getElementById('paTitle').value.trim();
+  const category = document.getElementById('paCategory').value.trim();
+  const due = document.getElementById('paDue').value;
+  const hours = document.getElementById('paHours').value;
+  const desc = document.getElementById('paDesc').value.trim();
+  if(!title){ showToast('✏️ Add a title first'); return; }
+
+  const childSelectEl = document.getElementById('parentAssignmentChildSelect')?.querySelector('select');
+  const childId = childSelectEl?.value || currentChildren?.[0]?.id;
+  if(!childId){ showToast('No child linked yet'); return; }
+
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Publishing…'; }
+
+  let fileUrl = null;
+  if(pendingParentAssignmentFile) {
+    const tempId = Date.now().toString();
+    fileUrl = await uploadParentAssignmentFile(tempId);
+  }
+
+  const {data:assignment, error} = await dbQuery(
+    db.from('assignments').insert({
+      created_by: currentUser.id,
+      child_id: childId,
+      class_id: null,              // parents can't create a real class — stays a Home Task
+      parent_created: true,
+      title, subject: category || 'General', description: desc,
+      due_date: due || null,
+      estimated_hours: hours || null,
+      file_url: fileUrl,
+      status: 'active'
+    }).select().maybeSingle()
+  );
+  if(error?.message && error.message !== 'timeout'){
+    showToast('❌ Error publishing: '+error.message);
+    if(btn) { btn.disabled = false; btn.textContent = '📤 Publish Assignment'; }
+    return;
+  }
+
+  if(assignment && parentAssignmentSteps.length) {
+    const tasks = parentAssignmentSteps.map((s,i) => ({
+      assignment_id: assignment.id,
+      child_id: childId,
+      title: s.title,
+      xp_value: 15, star_value: 1,
+      sort_order: i+1,
+      verification_required: s.verification_required||false,
+      verification_type: 'either',
+      due_date: s.due_date || null
+    }));
+    await dbQuery(db.from('tasks').insert(tasks));
+  }
+
+  const childRecord = currentChildren.find(c=>c.id===childId);
+  const childName = childRecord?.name || 'child';
+  if(childRecord?.profile_id) {
+    const sTitle = '📚 New assignment!';
+    const sBody = `"${title}" was added for you${due?' — due '+new Date(due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''}`;
+    dbQuery(db.from('notifications').insert({
+      recipient_id: childRecord.profile_id, sender_id: currentUser.id, child_id: childId,
+      type: 'task_assigned', title: sTitle, body: sBody
+    })).then(() => sendPushToUser(childRecord.profile_id, sTitle, sBody)).catch(()=>{});
+    sendTransactionalEmail('task_assigned', { studentId: childRecord.profile_id, assignmentTitle: title, className: 'Home Tasks', dueDate: due||null });
+  }
+
+  showToast(`✅ Assignment published for ${childName}!`);
+  // Reset form
+  document.getElementById('paTitle').value = '';
+  document.getElementById('paCategory').value = '';
+  document.getElementById('paDue').value = '';
+  document.getElementById('paHours').value = '';
+  document.getElementById('paDesc').value = '';
+  const proofToggle = document.getElementById('paRequireProofToggle');
+  if(proofToggle) proofToggle.checked = false;
+  parentAssignmentSteps = [];
+  renderParentAssignmentSteps();
+  if(btn) { btn.disabled = false; btn.textContent = '📤 Publish Assignment'; }
+  await loadChildStats(childId);
+  closeDrawerScreen();
+}
+
+// ── End parent create assignment ─────────────────────────────────────────────
 
 // ── Brain Dump ──────────────────────────────────────────────────────────────────
 
@@ -1651,21 +1871,54 @@ async function saveImportedAssignment() {
 
   try {
     if(role === 'teacher') {
-      // Save as a class assignment
+      // Save as a class assignment — fan out one row per student, same as
+      // publishAssignment, so it actually reaches the class instead of
+      // creating a single orphan row with no child_id.
       const classId = document.getElementById('importClassPicker')?.value || '';
       if(!classId) { showToast('Select a class first'); btn.textContent='💾 Save Assignment'; btn.disabled=false; return; }
-      const {error} = await dbQuery(
-        db.from('assignments').insert({
-          created_by: currentUser.id,
-          class_id: classId,
-          school_id: currentProfile.school_id || null,
-          title, description: desc,
-          due_date: due || null,
-          status: 'active'
-        }).select().maybeSingle()
-      );
+      const cls = teacherClasses.find(c=>c.id===classId);
+
+      const {data:members} = await dbQuery(db.from('class_members').select('child_id').eq('class_id',classId), 5000, []);
+      if(!members?.length) {
+        showToast('No students in class yet');
+        btn.textContent='💾 Save Assignment'; btn.disabled=false;
+        return;
+      }
+
+      const rows = members.map(m=>({
+        created_by: currentUser.id,
+        class_id: classId,
+        child_id: m.child_id,
+        school_id: currentProfile.school_id || null,
+        title, subject: cls?.subject||'', description: desc,
+        due_date: due || null,
+        status: 'active'
+      }));
+      const {data:newAssignments, error} = await dbQuery(db.from('assignments').insert(rows).select());
       if(error?.message && error.message !== 'timeout') throw new Error(error.message);
-      showToast('✅ Assignment imported!');
+
+      // Create task rows from the imported steps for every student's copy.
+      if(newAssignments?.length) {
+        let steps = importedSteps.slice();
+        if(!steps.length) steps = [title];
+        const allTasks = newAssignments.flatMap(a =>
+          steps.map((s,i)=>({
+            assignment_id: a.id,
+            child_id: a.child_id,
+            title: s,
+            completed: false,
+            verification_required: i === steps.length-1,
+            verification_status: 'none',
+            star_value: 2,
+            xp_value: 15,
+            sort_order: i
+          }))
+        );
+        await dbQuery(db.from('tasks').insert(allTasks), 8000, null);
+      }
+
+      notifyAssignmentPublished(cls?.name || 'your class', title, due, members.map(m=>m.child_id)).catch(()=>{});
+      showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!`);
       // Refresh teacher view
       if(selectedClassId) selectClass(selectedClassId).catch(()=>{});
 
