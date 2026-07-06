@@ -901,6 +901,7 @@ function renderDrawerItems() {
     items = [
       { icon:'👶', label:'Manage Children', action:`openManageChildren()`, disabled: false },
       { icon:'➕', label:'Add Task for Child', action:`openDrawerScreen('add-task')`, disabled: false },
+      { icon:'📤', label:'Create Assignment', action:`openDrawerScreen('parent-assignment')`, disabled: false },
       { icon:'🎁', label:'Manage Rewards', action:`openDrawerScreen('manage-rewards')`, disabled: false },
       { icon:'📜', label:'Reward History', action:`openDrawerScreen('redemption-history')`, disabled: false },
       { icon:'📥', label:'Import Assignment', action:`openDrawerScreen('import-assignment')`, disabled: false },
@@ -942,7 +943,7 @@ function renderDrawerItems() {
 }
 
 let parentAssignmentCache = {};
-const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','family-invite','family-lookup','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription','brain-dump'];
+const ALL_DRAWER_SCREENS = ['new-assignment','archive','add-task','parent-assignment','family-invite','family-lookup','join-class','ai-breakdown','assignment-detail','create-school','join-school','change-avatar','import-assignment','settings','manage-rewards','school-admin','themes','manage-children','redemption-history','subscription','school-subscription','brain-dump'];
 
 function openDrawerScreen(screen) {
   closeDrawer();
@@ -1008,6 +1009,27 @@ function openDrawerScreen(screen) {
     populateTaskCategoryList();
     selectedTaskStars = 1;
     selectTaskStars(1);
+  }
+
+  // Create Assignment: reset the multi-step builder to a clean form each time
+  if(screen === 'parent-assignment') {
+    document.getElementById('paTitle').value = '';
+    document.getElementById('paCategory').value = '';
+    document.getElementById('paDue').value = '';
+    document.getElementById('paHours').value = '';
+    document.getElementById('paDesc').value = '';
+    const proofToggle = document.getElementById('paRequireProofToggle');
+    if(proofToggle) proofToggle.checked = false;
+    const aiPreview = document.getElementById('paAiStepsPreview');
+    if(aiPreview) aiPreview.style.display = 'none';
+    const uploadLabel = document.getElementById('paUploadLabel');
+    const uploadZone = document.getElementById('paUploadZone');
+    if(uploadLabel) uploadLabel.textContent = 'Tap to attach file (optional)';
+    if(uploadZone) uploadZone.style.borderColor = '';
+    pendingParentAssignmentFile = null;
+    parentAssignmentSteps = [];
+    renderParentAssignmentSteps();
+    populateTaskCategoryList('parentAssignmentChildSelect');
   }
 
   if(screen === 'family-lookup') {

@@ -954,6 +954,55 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
     </div>
   </div>
 
+  <!-- PARENT CREATE ASSIGNMENT SCREEN (multi-step builder, mirrors teacher's New Assignment) -->
+  <div id="screen-parent-assignment" class="scroll-content" style="display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="closeDrawerScreen()" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gray-200);background:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+      <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:18px;color:var(--indigo);">Create Assignment</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📤 Create Assignment</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Build a multi-step task for your child, just like a teacher would — this stays a Home Task, only your child sees it.</p>
+      <div id="parentAssignmentChildSelect" style="margin-bottom:10px;"></div>
+      <input type="file" id="paAssignmentFileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="display:none;" onchange="handleParentAssignmentFile(this)">
+      <div class="upload-zone" onclick="document.getElementById('paAssignmentFileInput').click()" id="paUploadZone">
+        <div style="font-size:28px;margin-bottom:6px;">📎</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:3px;" id="paUploadLabel">Tap to attach file (optional)</div>
+        <div style="font-size:12px;color:var(--gray-500);">PDF, Word, PowerPoint, images</div>
+      </div>
+      <div class="form-grp"><label class="form-lbl">Assignment Title</label><input class="form-input" type="text" id="paTitle" placeholder="e.g. Book Report"></div>
+      <div class="form-row">
+        <div class="form-grp"><label class="form-lbl">Category</label><input class="form-input" type="text" id="paCategory" list="parentTaskCategoryList" placeholder="e.g. Chores, Reading"></div>
+        <div class="form-grp"><label class="form-lbl">Due Date</label><input class="form-input" type="date" id="paDue"></div>
+      </div>
+      <div class="form-grp"><label class="form-lbl">Est. Hours</label><input class="form-input" type="number" placeholder="2" min="0.5" step="0.5" id="paHours"></div>
+      <div class="form-grp"><label class="form-lbl">Instructions</label><textarea class="form-input" rows="3" id="paDesc" placeholder="What does your child need to do?"></textarea></div>
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 Steps</div>
+        <div id="paStepsList"></div>
+        <div class="step-add-row">
+          <button class="step-add-btn" onclick="addParentAssignmentStep()">+ Add Step</button>
+          <button class="ai-steps-btn" id="paAiStepsBtn" onclick="generateParentAssignmentSteps()">✨ AI Generate</button>
+        </div>
+        <div id="paAiStepsPreview" style="display:none;margin-top:10px;background:white;border-radius:10px;padding:10px;border:1.5px solid var(--violet-light);">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:8px;">✨ AI Suggested Steps</div>
+          <div id="paAiStepsPreviewList"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button onclick="acceptParentAISteps()" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;">✓ Use These</button>
+            <button onclick="document.getElementById('paAiStepsPreview').style.display='none'" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;font-weight:700;font-size:13px;cursor:pointer;">✗ Dismiss</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div class="toggle-row">
+          <div><div class="toggle-lbl">📸 Require Proof</div><div class="toggle-sub">Turn on to choose which steps need a photo/file before they can be marked complete</div></div>
+          <label class="toggle"><input type="checkbox" id="paRequireProofToggle" onchange="onParentAssignmentProofToggleChange(this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <button class="publish-btn" id="publishParentAssignmentBtn" onclick="publishParentAssignment()">📤 Publish Assignment</button>
+    </div>
+  </div>
+
   <!-- FAMILY INVITE SCREEN -->
   <div id="screen-family-invite" class="scroll-content" style="display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
