@@ -1651,21 +1651,54 @@ async function saveImportedAssignment() {
 
   try {
     if(role === 'teacher') {
-      // Save as a class assignment
+      // Save as a class assignment — fan out one row per student, same as
+      // publishAssignment, so it actually reaches the class instead of
+      // creating a single orphan row with no child_id.
       const classId = document.getElementById('importClassPicker')?.value || '';
       if(!classId) { showToast('Select a class first'); btn.textContent='💾 Save Assignment'; btn.disabled=false; return; }
-      const {error} = await dbQuery(
-        db.from('assignments').insert({
-          created_by: currentUser.id,
-          class_id: classId,
-          school_id: currentProfile.school_id || null,
-          title, description: desc,
-          due_date: due || null,
-          status: 'active'
-        }).select().maybeSingle()
-      );
+      const cls = teacherClasses.find(c=>c.id===classId);
+
+      const {data:members} = await dbQuery(db.from('class_members').select('child_id').eq('class_id',classId), 5000, []);
+      if(!members?.length) {
+        showToast('No students in class yet');
+        btn.textContent='💾 Save Assignment'; btn.disabled=false;
+        return;
+      }
+
+      const rows = members.map(m=>({
+        created_by: currentUser.id,
+        class_id: classId,
+        child_id: m.child_id,
+        school_id: currentProfile.school_id || null,
+        title, subject: cls?.subject||'', description: desc,
+        due_date: due || null,
+        status: 'active'
+      }));
+      const {data:newAssignments, error} = await dbQuery(db.from('assignments').insert(rows).select());
       if(error?.message && error.message !== 'timeout') throw new Error(error.message);
-      showToast('✅ Assignment imported!');
+
+      // Create task rows from the imported steps for every student's copy.
+      if(newAssignments?.length) {
+        let steps = importedSteps.slice();
+        if(!steps.length) steps = [title];
+        const allTasks = newAssignments.flatMap(a =>
+          steps.map((s,i)=>({
+            assignment_id: a.id,
+            child_id: a.child_id,
+            title: s,
+            completed: false,
+            verification_required: i === steps.length-1,
+            verification_status: 'none',
+            star_value: 2,
+            xp_value: 15,
+            sort_order: i
+          }))
+        );
+        await dbQuery(db.from('tasks').insert(allTasks), 8000, null);
+      }
+
+      notifyAssignmentPublished(cls?.name || 'your class', title, due, members.map(m=>m.child_id)).catch(()=>{});
+      showToast(`✅ Published to ${members.length} student${members.length>1?'s':''}!`);
       // Refresh teacher view
       if(selectedClassId) selectClass(selectedClassId).catch(()=>{});
 
