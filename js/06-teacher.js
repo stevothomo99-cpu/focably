@@ -450,11 +450,14 @@ async function publishAssignment() {
     return;
   }
 
-  // Create tasks from teacherSteps — only what the teacher actually added or
-  // accepted from "✨ AI Generate". Publishing with none just publishes with
-  // none; we don't silently invent steps behind the teacher's back.
-  if(newAssignments?.length && teacherSteps.length) {
-    const stepsToCreate = teacherSteps;
+  // Create tasks from teacherSteps — what the teacher actually added or
+  // accepted from "✨ AI Generate", or a single fallback step named after
+  // the assignment title if they added none. Every assignment needs at
+  // least one completable action; publishing with zero tasks left students
+  // with nothing to tap or submit proof against.
+  if(newAssignments?.length) {
+    const proofOn = document.getElementById('requireProofToggle')?.checked || false;
+    const stepsToCreate = teacherSteps.length ? teacherSteps : [{title, verification_required: proofOn, due_date: null}];
 
     // Create tasks for each student
     const allTasks = newAssignments.flatMap(a =>

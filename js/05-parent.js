@@ -1385,8 +1385,15 @@ async function publishParentAssignment() {
     return;
   }
 
-  if(assignment && parentAssignmentSteps.length) {
-    const tasks = parentAssignmentSteps.map((s,i) => ({
+  if(assignment) {
+    // Every assignment needs at least one completable action — publishing
+    // with zero steps left the child with nothing to tap or submit proof
+    // against. Fall back to a single step named after the assignment title,
+    // carrying over the master proof toggle since there's no per-step
+    // checkbox to have set it on an empty list.
+    const proofOn = document.getElementById('paRequireProofToggle')?.checked || false;
+    const steps = parentAssignmentSteps.length ? parentAssignmentSteps : [{title, verification_required: proofOn, due_date: null}];
+    const tasks = steps.map((s,i) => ({
       assignment_id: assignment.id,
       child_id: childId,
       title: s.title,
