@@ -66,6 +66,24 @@
 
 ---
 
+## Edge Functions (Supabase)
+
+All deployed at `mxgnrgajspprupzxaeld.supabase.co/functions/v1/<slug>`. **Verify JWT is sticky and can revert to ON after a redeploy — always re-check after deploying any function.**
+
+| Function | Purpose | Verify JWT |
+|---|---|---|
+| `send-transactional` | Instant per-event emails — proof submitted/approved/rejected, reward requested/approved/rejected, assignment published (parent+student, home task vs class), nudge, child joined family, school approved, student joined class. Routes on `{type, data}`; age-gates student templates (primary vs secondary copy). | OFF |
+| `send-digest` | Weekly Sunday 6pm AEST parent summary (tasks done, stars, XP, streaks) | OFF |
+| `send-warnings` | Daily 7am AEST due-date alert — overdue / due today / due soon (+1-2d) / due this week (+3-7d) buckets, queries `assignments` directly | OFF |
+| `send-push` | Web push notifications (VAPID) | OFF |
+| `stripe-webhook` | Verifies Stripe signature, handles `checkout.session.completed` / `customer.subscription.deleted` → updates `families.subscription_status` + all linked children's `profiles.subscription_status` | OFF |
+| `create-checkout-session` | Creates a Stripe Checkout session server-side, returns hosted URL (client-only `redirectToCheckout` is deprecated by Stripe) | ON (called by logged-in parent) |
+| `hubspot-sync` | Landing page waitlist form → HubSpot Contact + Deal. **Fixed 07 Jul 2026** — was stuck at Verify JWT ON since it was first built, silently 401'ing every call from the anonymous landing page before it ever reached the function (zero log entries ever, unlike every other function). Now OFF. | OFF |
+| `ai-generate` | Server-side Claude API proxy — holds `ANTHROPIC_API_KEY` secret, never exposed to the browser. Maps any request model to `claude-sonnet-5` (original `claude-sonnet-4-20250514` was retired 2026-06-15). `thinking` disabled to preserve the short JSON-output behaviour the app expects. Capped at 2000 max_tokens. | ON (called by logged-in user) |
+| `invite-child` | Parent invites a child directly by email (no invite code) — verifies caller owns the family, generates a Supabase invite link, emails it via Resend | ON (called by logged-in parent) |
+
+---
+
 ## Landing Page
 
 - **Repo:** stevothomo99-cpu/focably-Landing
@@ -297,6 +315,19 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - Landing page: real founder story, Kim credited, ADHD "out of sight out of mind" narrative
 - **Admin dashboard** at `app.focablyed.com/admin.html` — new users, active users, ARR estimate ($49/mo hardcoded), inactive users CSV export. Email-gated to admins via RLS.
 - **Modular codebase** — 7138-line `index.html` split into `index.html` (1522 lines) + 7 `js/*.js` files (see Architecture Summary).
+- **Unified due-date urgency system** — one shared red/orange/green/grey rule across every tile (Student/Parent/Teacher), cascading from step → assignment → class; whole card/background tinted, not just an accent (see Conventions & Patterns)
+- **Optional per-step due dates** — teacher step builder, cascades into assignment/class colour; AI extraction picks one up from assignment text when mentioned
+- **Parent "Create Assignment"** — full multi-step builder (mirrors teacher's New Assignment: manual/AI steps, require-proof toggle, attachment) for private Home Tasks that need a real breakdown, separate from the simpler single-task "Add a Task"
+- **Student self-service family lookup** — read-only "Your Family" (own family only) + "Add a Code" (real linking); self-unlink removed (was already silently failing at the RLS level and showing a fake success toast)
+- **New-joiner backfill** — a student joining a class after assignments exist gets those existing active assignments copied to them automatically
+- **Class year group** shown on Parent + Student class tiles (previously Teacher-only)
+- **Notification coverage completed** — push + email now fire for: new class assignment, new home task, reward decline (push was missing), teacher approved to join school, student joined class (direct + parent-initiated), teacher proof-submission email
+- **AI calls proxied server-side** via `ai-generate` Edge Function — `ANTHROPIC_KEY` no longer shipped to the browser; model migrated to `claude-sonnet-5`
+- Every published assignment (teacher or parent) is guaranteed at least one completable task, even with zero steps added
+- Double-submit guards on Add Task / Publish Assignment (button disabled before first `await`)
+
+### Environment State
+- **07 Jul 2026:** Production Supabase data fully reset for a fresh round of real-user testing — all demo/test rows cleared from `profiles`, `families`, `children`, `classes`, `class_members`, `assignments`, `tasks`, `rewards`, `notifications`, `push_subscriptions`, `redemptions`, `licenses`, and all 20 test accounts deleted from `auth.users`. `waitlist` kept only its one genuine signup (Alison, id 2) — the other 17 rows were test data (`@tph.net.au` domain, joke names). Expect all tables empty except that single waitlist row until real users sign up.
 
 ### SQL needed before testing school features
 ```sql
@@ -392,12 +423,17 @@ Then build in this order:
 | classes | id, teacher_id, name, subject, year_group, invite_code, invite_code_expires_at, status, school_id, direct_student_enrol | |
 | class_members | id, class_id, child_id | |
 | assignments | id, class_id, created_by, child_id, title, due_date, description, status, parent_created | |
-| tasks | id, assignment_id, child_id, title, completed, verification_required, verification_status, proof_url, proof_submitted_at, verified_by, verified_at, star_value, xp_value, sort_order | |
+| tasks | id, assignment_id, child_id, title, completed, verification_required, verification_status, proof_url, proof_submitted_at, verified_by, verified_at, star_value, xp_value, sort_order, due_date | due_date added Session 12 — optional per-step date, cascades into assignment/class urgency colour |
 | notifications | id, recipient_id, sender_id, child_id, type, title, body, read_at, created_at | |
-| waitlist | id, email, created_at | landing page — RLS disabled |
+| waitlist | id, email, created_at, firstname, role, phone, challenge, interests, source, num_children, school_year, adhd_flag, state, school_name, school_type, year_levels, admin_role, enrolment, student_year, submitted_at | landing page (separate repo) — RLS disabled, public inserts. Emptied to 1 row (genuine signup) in the 07 Jul 2026 data reset. |
 | rewards | id, family_id, created_by, child_id, title, emoji, star_cost, is_active, created_at | |
 | redemptions | id, reward_id, child_id, family_id, status, requested_at, responded_at | |
-| licenses | id, key, tier, max_students, school_id, activated_at, expires_at, stripe_subscription_id, created_at | NOT YET CREATED — run SQL in Session 4 |
+| licenses | id, key, tier, max_students, school_id, activated_at, expires_at, stripe_subscription_id, created_at | live since Session 4; emptied in the 07 Jul 2026 data reset |
+
+**Key SECURITY DEFINER RPCs** (bypass RLS safely, scoped to the caller):
+- `find_family_by_code(code)` — used by the real linking flow; extended (Session 12) to also return the parent's name for the read-only "Add a Code" lookup
+- `get_my_family_info()` — returns the CALLER's own family + parent name via their own child row (`auth.uid()`), never a client-supplied code, so it can't leak another family's info
+- `copy_class_assignments_to_member(...)` — backfills existing active/not-yet-due class assignments to a child who joins a class after they were published
 
 ---
 
@@ -418,6 +454,11 @@ Then build in this order:
 - Logo: always `https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png`
 - **GitHub push:** always Python urllib.request, never curl for large files
 - **subscription_status check:** always read from `families` table for parent, not profiles
+- **Due-date urgency:** one shared `getDueUrgency(dueDate, isComplete)` + `getAssignmentUrgency(assignment)` in `07-shared.js` — used everywhere a tile/card needs a red/orange/green/grey colour. Never re-implement thresholds locally (there used to be 5 different inconsistent copies — see Session 12 log). Rule: overdue or ≤48h → red, ≤7d → orange, beyond/none → green, complete → grey+strikethrough. An assignment's colour is the worst of its own due date and any incomplete step's own due date.
+- `classDisplayName(class)` in `07-shared.js` — "Name - Year" formatting, use for any Parent/Student class heading
+- `extractNumberedSteps(text)` in `07-shared.js` — recovers a numbered list already in pasted text as a fallback before a single placeholder step, when AI step-breakdown JSON parsing fails
+- **Double-submit guard pattern:** disable the submit button BEFORE the first `await` (not after) and re-enable on every exit path — a guard placed after an `await` still races a fast second click
+- **Verify JWT OFF** (called from public/unauthenticated contexts — website forms, webhooks): `send-transactional`, `send-digest`, `send-warnings`, `send-push`, `stripe-webhook`, `hubspot-sync`. **Verify JWT ON** (called from a logged-in app session): `create-checkout-session`, `ai-generate`, `invite-child`. Toggle is sticky and can revert on redeploy — always re-check after deploying any Edge Function.
 
 ---
 
@@ -427,8 +468,9 @@ Then build in this order:
 - ~300 inline style attributes, duplicated patterns — extract to CSS classes when touched
 - Consider one-off human developer review (bus-factor insurance)
 - Long term: migrate domains from Crazy Domains to Cloudflare Registrar
-- `ANTHROPIC_KEY` baked into client JS in `js/01-config.js` (split across two strings to dodge GitHub secret scanning) — proxy via a Supabase Edge Function eventually so the key isn't shipped to browsers
+- ~~`ANTHROPIC_KEY` baked into client JS~~ ✅ **Done ~Session 13** — client now calls the `ai-generate` Edge Function (`AI_PROXY_URL` in `js/01-config.js`); Anthropic key lives only in the function's server-side secret. Note: the app's original model `claude-sonnet-4-20250514` was retired 2026-06-15 — `ai-generate` maps any unrecognised/retired model string to the current default (`claude-sonnet-5`) so old cached clients keep working without a redeploy.
 - `phone` column on `profiles` exists but no signup field collects it — admin CSV Mobile column stays blank until that's wired up
+- Full visible-effect button audit completed (Session 12) — no live dead buttons found; three orphaned handlers targeting already-removed elements were deleted
 
 ---
 
@@ -543,6 +585,74 @@ Then build in this order:
 ## Session Log
 
 > _Most recent at top._
+
+### 05–07 Jul 2026 (Session 13) — Import/star-inflation fixes, Parent Create Assignment, Edge Function fixes, production data reset
+
+**Bug fixes:**
+- **Teacher Import Assignment wasn't reaching students** — `saveImportedAssignment`'s teacher branch inserted one `assignments` row with `class_id` but no `child_id`, so imported assignments never appeared for any student. Now mirrors `publishAssignment`'s fan-out: one row per class member, task rows per student, notifications sent.
+- **Create-a-Task star inflation** — `parentAddTask()` was auto-breaking every task into 3-4 AI-generated steps, each carrying the FULL star value the parent picked (a 3-star task could pay out up to 12 stars). Now saves a single task worth exactly the chosen stars — Create a Task has no steps UI, so it shouldn't have been creating multiple star-bearing steps at all.
+- **Fallback task guarantee** — `publishParentAssignment()` and the teacher's `publishAssignment()` only created task rows when steps were explicitly added, so publishing with zero steps (e.g. toggling Require Proof without adding a step) left nothing for the child to tap or submit proof against. Both now fall back to a single step named after the assignment title, carrying over the master proof toggle.
+
+**New feature — Parent "Create Assignment":**
+- New screen mirroring the teacher's New Assignment builder: title, due date, instructions, manual/AI-generated multi-step checklist, require-proof toggle, file attachment
+- No Class field (parents can't create a real class) — reuses the Category field/datalist from Create a Task, always saves as a private Home Task (`class_id` null) tied to one child
+- Gives parents a real multi-step breakdown option alongside the simpler single-task "Add a Task"
+
+**Email Edge Functions — redeployed with the documented live contract:**
+- `send-warnings` — rewritten to query `assignments` directly (matches production schema), 4-bucket due-date window (overdue / due today / +1-2 days / +3-7 days) preserved rather than narrowed
+- `send-transactional` — rewritten to the exact live `{type, data}` payload contract, routing to parent/student(age-gated primary vs secondary copy)/teacher templates for all 12 event types (assignment published, home task, nudge, proof approved/rejected/submitted, reward requested/approved/rejected, child joined family, school approved, student joined class)
+- Both redeployed a second time after a mid-session MCP disconnect silently dropped the first `send-warnings` deploy — confirmed via `list_edge_functions` version numbers before retrying; don't assume a deploy landed just because the tool call was made before a disconnect
+
+**HubSpot waitlist sync — fixed, was broken since it was first built in Session 8:**
+- `hubspot-sync` had **Verify JWT ON**. The landing page waitlist form calls it from an anonymous visitor (no Supabase session, no JWT) — every call was rejected with 401 at the gateway before ever reaching the function. Zero log entries for `hubspot-sync` ever existed, vs. regular traffic on every other function — that was the tell.
+- All the other public-facing functions (`send-transactional`, `send-digest`, `send-warnings`, `send-push`, `stripe-webhook`) were already documented as needing Verify JWT OFF; `hubspot-sync` just never got that treatment when it was built.
+- Fixed: redeployed with Verify JWT OFF (same code, no logic changes).
+- Verified the fix by manually pushing Alison's (real, pre-fix) waitlist signup into HubSpot as a Contact + Deal, backfilled with her original form data — confirms the Contact/Deal/association shape is correct end-to-end.
+
+**Production data reset for real-user testing (07 Jul 2026):**
+- Full wipe of demo/test data ahead of onboarding real users: `profiles`, `families`, `children`, `classes`, `class_members`, `assignments`, `tasks`, `rewards`, `notifications`, `push_subscriptions`, `redemptions`, `licenses` truncated; all 20 `auth.users` test accounts deleted
+- `waitlist` kept only the one genuine signup (Alison, `daretodancecanberra.com.au`) — the other 17 rows were test data (`@tph.net.au` domain, joke names/content)
+- Confirmed the landing page's waitlist submission is a *separate* integration from the app itself (landing repo `stevothomo99-cpu/focably-Landing` posts to Supabase `waitlist` + `hubspot-sync` directly) — nothing in this repo calls either
+
+**Next session TODO:**
+- Watch first real signups through the reset environment — confirm `hubspot-sync` fires correctly on a live (non-manual) form submission
+- Rotate ALL exposed keys — still outstanding from Sessions 8/9/10 (Anthropic, Resend, GitHub PATs, HubSpot Service Key)
+- Delete remaining old test contacts/deals in HubSpot from before this reset (Peter, Sue, John, Kevin, Kerry test entries — see Session 8/9 TODOs)
+
+---
+
+### 05 Jul 2026 (Session 12) — Due-date urgency system, family privacy fixes, notification completeness, cleanup
+
+Landed via a systematic code-review pass (branch `claude/focablyed-3-code-review-jtd3ef`, PRs #19–#34), one fix/feature per PR.
+
+**Due-date urgency system — unified across the whole app:**
+- Five different inconsistent colour implementations (different thresholds, one with no "due soon" bucket, a stray 14-day cutoff) replaced with one shared `getDueUrgency(dueDate, isComplete)` in `07-shared.js`: overdue/≤48h → red, ≤7d → orange, beyond/none → green, complete → grey + strikethrough (strikethrough was missing on Teacher/Parent views before)
+- Added optional per-step `due_date` (migration `add_due_date_to_tasks`) — teacher step builder gets a small 📅 toggle per step; AI step generation/fallback extracts a per-step date from assignment text when one is actually mentioned
+- New `getAssignmentUrgency(assignment)` — an assignment's colour is the worst of its own due date and any incomplete step's own due date, so one overdue step turns the whole assignment (and its class tile) red even if the assignment itself isn't due for weeks
+- Parent views (Subject Progress, Manage Children, Assignment Detail) now tint the whole card background + coloured left border, not just a thin progress bar — matching Student's already-fully-tinted tiles
+- Individual step cards also tint by their own due date, not just a small badge
+- Fixed two real bugs found while unifying: `updateTileProgress()` threw on an undefined variable, silently aborting re-colouring after checking off a task; dead duplicate `getTileClass()` removed
+
+**Family privacy & self-service fixes:**
+- **Privacy leak fixed:** the "Link to Family" screen let a student type ANY 6-char code and see that family's + parent's name — nothing stopped guessing codes that weren't theirs. Replaced with "Your Family" (own family only, via new `get_my_family_info()` RPC scoped to the caller's own child row) + "Add a Code" (the existing secure linking flow, reused).
+- **Removed student self-unlink** — this was already silently failing (RLS on `children` only allows a parent to delete a child row) and showing a fake "✅ Unlinked!" toast for an action that never happened.
+- `find_family_by_code` RPC extended to also return the parent's name for the new read-only lookup path.
+
+**Other fixes/features:**
+- Require Proof toggle now actually gates the per-step 📸 checkbox (was visible regardless of the master toggle before, and didn't clear existing checks when turned off)
+- "+ Add Another Class" fixed — was toggling the wrong (inner) element, leaving the outer card hidden; traced to a stale leftover from PR #3's refactor
+- New assignments backfilled to a student who joins a class after they were published (new `copy_class_assignments_to_member` RPC)
+- Primary student home tile now shows a saved photo avatar (was only ever showing the emoji fallback, unlike the HS header which already worked)
+- AI step-breakdown failures (naive `JSON.parse`, no schema validation) now fall back to recovering a numbered list already present in pasted text (`extractNumberedSteps()`) before resorting to one placeholder step
+- Class year group now shown on Parent + Student class tiles (was Teacher-only)
+- Push + email notification triggers completed: new class assignment, new home task, reward decline push, teacher approved to join school, student joined class, teacher gets proof-submission email
+- Browser-blocked notification permission now shows device-specific unblock instructions instead of silently doing nothing
+
+**Evening cleanup pass:**
+- Full visible-effect button audit (handler resolution, missing `getElementById` targets, hidden-ancestor `show()` calls, click smoke test of all 112 static buttons) — no live dead buttons, but three functions referencing already-removed elements deleted (`loadClassProgress`, `renderClassDropdown`, `updateNotifStatus`)
+- **Double-submit fix:** rapid double-click on "+ Add Task" (Parent) created duplicate tasks — no guard existed. Same bug found in `publishAssignment` (Teacher) with worse blast radius (double-publishes to the whole class); first fix attempt still raced because the button was disabled after an `await` — moved the disable to before the first `await`.
+
+---
 
 ### 28 Jun 2026 (Session 11) — Admin Dashboard + Codebase Refactor
 
