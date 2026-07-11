@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v5-secure';
+const CACHE_NAME = 'focably-v6-invite-fix';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

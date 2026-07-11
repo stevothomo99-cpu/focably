@@ -508,6 +508,17 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
   </div>
 </div>
 
+<!-- INVITE: ACCEPT SCREEN (explicit click required — never auto-verifies on load) -->
+<div class="screen" id="screen-accept-invite" style="display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;">
+  <div class="auth-box" style="margin:auto;text-align:center;">
+    <div class="auth-logo"><img src="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png" alt="🐿️"><span><span style="white-space:nowrap;color:white;">Focably<span style="color:#A78BFA;">ED</span></span></div>
+    <div class="auth-title">You're invited! 🎉</div>
+    <div style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px;">Tap below to accept your invite and get started.</div>
+    <div id="acceptInviteError" class="auth-error"></div>
+    <button class="auth-btn" id="acceptInviteBtn" onclick="acceptInvite()">Accept Invite &amp; Continue</button>
+  </div>
+</div>
+
 <!-- FocablyED v0.3 - 20260613 -->
 <!-- ONBOARDING -->
 <div class="screen" id="screen-onboarding" style="display:none;flex-direction:column;">

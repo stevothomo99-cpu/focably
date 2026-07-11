@@ -439,6 +439,26 @@ async function loadProfile() {
   }
 }
 
+// ── INVITE: ACCEPT (explicit-click token exchange, see js/02-init.js) ──
+async function acceptInvite() {
+  const errEl = document.getElementById('acceptInviteError');
+  const btn = document.getElementById('acceptInviteBtn');
+  errEl.style.display = 'none';
+  if (!pendingInviteToken) { errEl.textContent = 'Invite link is missing its token.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  const { data, error } = await db.auth.verifyOtp({ token_hash: pendingInviteToken, type: 'invite' });
+  if (error || !data?.user) {
+    btn.disabled = false; btn.textContent = 'Accept Invite & Continue';
+    errEl.textContent = 'This invite link has expired or was already used — ask them to send you a new one.';
+    errEl.style.display = 'block';
+    return;
+  }
+  pendingInviteToken = null;
+  currentUser = data.user;
+  profileLoadInProgress = true;
+  await loadProfile();
+}
+
 // ── INVITE: SET PASSWORD (email-invite completion) ──
 function showSetPasswordScreen() {
   const name = currentProfile?.full_name || currentUser?.user_metadata?.full_name || '';

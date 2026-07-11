@@ -63,6 +63,18 @@ window.addEventListener('load', async () => {
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(e => console.log('SW failed:', e.message));
   }
+  // Invite link: our own confirm-on-click page (not Supabase's raw one-time
+  // verify link — that gets silently consumed by corporate/school email
+  // security scanners prefetching the URL before the human ever clicks it).
+  // Stash the token and stop here; acceptInvite() does the actual exchange
+  // only in response to an explicit button click.
+  const inviteToken = new URLSearchParams(window.location.search).get('invite_token');
+  if (inviteToken) {
+    pendingInviteToken = inviteToken;
+    showScreen('accept-invite');
+    return;
+  }
+
   // Detect return from Stripe Checkout
   const returningFromStripe = new URLSearchParams(window.location.search).has('checkout');
   try {
@@ -134,12 +146,12 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 function showScreen(name) {
-  ['loading','auth','confirm','onboarding','setpassword','app'].forEach(s => {
+  ['loading','auth','confirm','onboarding','setpassword','accept-invite','app'].forEach(s => {
     const el = document.getElementById('screen-' + s);
     if(el) el.style.display = 'none';
   });
   const t = document.getElementById('screen-' + name);
-  if(t) t.style.display = ['auth','onboarding','confirm','setpassword'].includes(name) ? 'flex' : 'block';
+  if(t) t.style.display = ['auth','onboarding','confirm','setpassword','accept-invite'].includes(name) ? 'flex' : 'block';
 }
 
 function showConfirmScreen(email) {
