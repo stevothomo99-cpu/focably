@@ -126,6 +126,8 @@ async function loadChildStats(childId) {
     if(!classBuckets[cid]) classBuckets[cid] = { cls: a.classes, assignments: [] };
     classBuckets[cid].assignments.push(a);
   });
+  // Soonest-due first, completed work sunk to the bottom — same order everywhere
+  Object.values(classBuckets).forEach(b => { b.assignments = sortAssignmentsForDisplay(b.assignments); });
 
   subjectEl.innerHTML = Object.entries(classBuckets).map(([classId, bucket], ci) => {
     const cls = bucket.cls;
@@ -166,12 +168,12 @@ async function loadChildStats(childId) {
         <div style="font-size:14px;color:var(--gray-300);">›</div>
       </div>`;
     };
-    // Home Tasks (no class) group by category, same as the child's view —
-    // real teacher classes stay a flat list.
+    // Home Tasks (no class) group by category into collapsible tiles, same
+    // as the child's view — real teacher classes stay a flat list.
     const rows = classId === 'noclass'
       ? groupAssignmentsByCategory(bucket.assignments).map(g => {
           const cards = g.assignments.map(renderAssignmentRow).join('');
-          return g.key === '__none__' ? cards : categoryHeaderHtml(g.label) + cards;
+          return g.key === '__none__' ? cards : renderCategoryTile(g, 'parent', cards);
         }).join('')
       : bucket.assignments.map(renderAssignmentRow).join('');
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v11-home-task-tile-parity';
+const CACHE_NAME = 'focably-v12-category-concertina-sort';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
