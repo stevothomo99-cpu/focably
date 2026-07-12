@@ -129,7 +129,7 @@ async function loadChildStats(childId) {
   // Soonest-due first, completed work sunk to the bottom — same order everywhere
   Object.values(classBuckets).forEach(b => { b.assignments = sortAssignmentsForDisplay(b.assignments); });
 
-  subjectEl.innerHTML = Object.entries(classBuckets).map(([classId, bucket], ci) => {
+  subjectEl.innerHTML = Object.entries(classBuckets).map(([classId, bucket]) => {
     const cls = bucket.cls;
     const className = classDisplayName(cls) || '📚 Home Tasks';
     const teacherName = cls?.profiles?.full_name ? cls.profiles.full_name : (classId === 'noclass' ? 'Added by you' : '');
@@ -186,7 +186,7 @@ async function loadChildStats(childId) {
         </div>
         <div class="pcls-chev" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
       </div>
-      <div style="display:${ci===0?'block':'none'};padding:0 12px 12px;">${rows}</div>
+      <div style="display:none;padding:0 12px 12px;">${rows}</div>
     </div>`;
   }).join('');
 

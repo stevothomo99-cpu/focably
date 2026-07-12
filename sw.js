@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v12-category-concertina-sort';
+const CACHE_NAME = 'focably-v13-tiles-closed-by-default';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

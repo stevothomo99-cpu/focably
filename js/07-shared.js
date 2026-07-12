@@ -481,12 +481,13 @@ function renderCategoryTile(group, idPrefix, cardsHtml) {
   const safeKey = group.key.replace(/[^a-z0-9]/gi,'') || 'none';
   const bodyId = `catbody-${idPrefix}-${safeKey}`;
   const chevId = `catchev-${idPrefix}-${safeKey}`;
+  // Closed by default on every load/login — same as every other concertina tile
   return `<div style="background:${bg};border-left:4px solid ${col};border-radius:12px;margin:8px 2px;overflow:hidden;">
     <div onclick="toggleCategoryTile('${bodyId}','${chevId}')" style="padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;">
       <div style="flex:1;font-size:11px;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;">📁 ${group.label}</div>
-      <div id="${chevId}" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
+      <div id="${chevId}" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;transform:rotate(-90deg);">▼</div>
     </div>
-    <div id="${bodyId}" style="padding:0 8px 8px;">${cardsHtml}</div>
+    <div id="${bodyId}" style="display:none;padding:0 8px 8px;">${cardsHtml}</div>
   </div>`;
 }
 
