@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v8-reset-password';
+const CACHE_NAME = 'focably-v9-name-tile-sync';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

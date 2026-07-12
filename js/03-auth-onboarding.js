@@ -211,10 +211,21 @@ async function saveProfileName() {
   }
 
   document.getElementById('settingsName').textContent = newName;
+  const firstName = newName.split(' ')[0];
   const navName = document.getElementById('navUserName');
-  if(navName) navName.textContent = newName.split(' ')[0];
+  if(navName) navName.textContent = firstName;
+  // Home-screen "welcome" tile per role — set once at app load, so it needs
+  // the same live update navUserName gets above.
   const teacherNameEl = document.getElementById('teacherName');
   if(teacherNameEl && currentProfile.role === 'teacher') teacherNameEl.textContent = newName + ' 👩‍🏫';
+  const parentNameEl = document.getElementById('parentName');
+  if(parentNameEl && currentProfile.role === 'parent') parentNameEl.textContent = `Welcome back, ${firstName}!`;
+  if(currentProfile.role === 'student') {
+    const heroNameEl = document.getElementById('heroName');
+    if(heroNameEl && currentProfile.age_group === 'primary') heroNameEl.textContent = `Welcome back, ${firstName}!`;
+    const hsNameEl = document.getElementById('hsName');
+    if(hsNameEl && currentProfile.age_group !== 'primary') hsNameEl.textContent = `Hey, ${firstName}! 👋`;
+  }
 
   btn.disabled = false; btn.textContent = 'Save';
   document.getElementById('settingsNameEditWrap').style.display = 'none';
