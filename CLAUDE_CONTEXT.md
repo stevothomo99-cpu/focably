@@ -106,6 +106,7 @@ All deployed at `mxgnrgajspprupzxaeld.supabase.co/functions/v1/<slug>`. **Verify
 - Common bug pattern: **inline onclick with JSON/quotes breaks HTML attributes**. Always use data-* attributes + handler functions.
 - **GitHub push method:** Always use Python urllib.request (NOT curl) for large file pushes — curl fails on large files.
 - **Token splitting:** Required to avoid GitHub secret scanning blocking HubSpot pat- tokens.
+- **Multiple parallel Claude Code web sessions:** Steve often runs more than one session at once, each on its own auto-named branch (e.g. `claude/focablyed-app-4-*`, `claude/facablyed-app-5-*`), merged to `main` independently. This context doc is updated per-session and can fall behind a sibling session's merges — **before starting new work, run `git log --oneline <last-documented-commit>..origin/main -- js/ index.html` to check for undocumented merges from another session**, not just trust the Session Log's most recent entry. As of Session 14, Steve is consolidating ongoing work into one session, referred to as **"FocablyED App #5"** — treat that as the primary/active session going forward.
 
 ---
 
@@ -321,7 +322,13 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - **Student self-service family lookup** — read-only "Your Family" (own family only) + "Add a Code" (real linking); self-unlink removed (was already silently failing at the RLS level and showing a fake success toast)
 - **New-joiner backfill** — a student joining a class after assignments exist gets those existing active assignments copied to them automatically
 - **Class year group** shown on Parent + Student class tiles (previously Teacher-only)
-- **Notification coverage completed** — push + email now fire for: new class assignment, new home task, reward decline (push was missing), teacher approved to join school, student joined class (direct + parent-initiated), teacher proof-submission email
+- **Notification coverage completed** — push + email now fire for: new class assignment, new home task, reward decline (push was missing), teacher approved to join school, student joined class (direct + parent-initiated), teacher proof-submission email, **parent proof-submission email** (Session 14), **student notified on parent-imported private task** (Session 14 — this path previously notified no one)
+- **Notifications actually persist as read** (Session 14) — `markNotifRead`/`markAllNotifsRead` wrote to a nonexistent `read_at` column instead of the real `read` boolean; every notification silently stayed unread forever until fixed
+- **User can edit their own display name in Settings** — syncs header, Settings card, and each role's home-tile greeting (parentName/heroName/hsName) live, plus `children.name` for students (denormalised copy used in class rosters/emails)
+- **Invite-child accept flow is email-scanner-safe** — corporate/school (M365) prefetchers like Microsoft Defender Safe Links no longer silently burn the one-time invite token before a human clicks; a dedicated Accept Invite screen only exchanges the token for a session on explicit button click
+- **Password-reset link routes to set-password screen first** — previously the recovery session silently skipped straight into the app instead of prompting for a new password
+- **Home Task tiles visually unified between Child and Parent** — Child's Home Task tile now uses the same light card styling as Parent's (previously used the dark "quest" gradient shared with real teacher classes); both roles group Home Tasks by category via a shared `groupAssignmentsByCategory()`, rendered as collapsible tiles tinted by the most urgent assignment inside
+- **Per-step star values and assignment sort order unified** — Child's inline step view now shows the same star badge Parent's assignment detail already had; assignments within every class/category bucket sort soonest-due-first with completed ones sunk to the bottom, via one shared `sortAssignmentsForDisplay()`
 - **AI calls proxied server-side** via `ai-generate` Edge Function — `ANTHROPIC_KEY` no longer shipped to the browser; model migrated to `claude-sonnet-5`
 - Every published assignment (teacher or parent) is guaranteed at least one completable task, even with zero steps added
 - Double-submit guards on Add Task / Publish Assignment (button disabled before first `await`)
@@ -343,7 +350,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_photo text;
 ```
 
 ### Known Bugs / Issues
-- (none currently open)
+- **Deferred (Session 14):** when a parent tags a private task to a real class (not a Home Task), the `className` var can arrive undefined in the notification/email payload for that path. Steve deferred the point-fix, wanting a broader change instead ("There is a more broad change we want") — not yet scoped. Don't fix piecemeal until that's clarified.
+- Otherwise none currently open
 
 ### Supabase constraints added
 - `children_profile_id_unique` UNIQUE constraint on `children.profile_id` — prevents duplicate child rows at DB level
@@ -585,6 +593,42 @@ Then build in this order:
 ## Session Log
 
 > _Most recent at top._
+
+### 12 Jul 2026 (Session 14) — Notification completeness, `send-transactional` full restore, name-edit sync, invite/password-reset fixes, Home Task UI unification
+
+Two Claude Code web sessions ran in parallel this session and both landed work on `main`: **"App #4"** (branch `claude/focablyed-app-4-pqes9n`, PR #42) and **"App #5"** (branch `claude/facablyed-app-5-ujuz6p`, PRs #37–#41). Going forward, work consolidates into the App #5 session — see the new note under Working Method.
+
+**Notification audit (App #4) — static trace of every push/email/in-app trigger in the codebase, two gaps found and fixed:**
+- `notifyProofSubmitted()` fired push + in-app to the parent but never called `sendTransactionalEmail` — parent got no email when a child submitted proof. Fixed: now also sends `proof_submitted` with `parentId`.
+- Parent's "Import Assignment" (private/Home Task branch of `saveImportedAssignment`) never notified the student at all — no push, no in-app row, no email. Fixed: now sends all three, mirroring `parentAddTask()`/`publishParentAssignment()`.
+- Also fixed in passing: an escaped `\${cls.name}` was printing literally instead of interpolating in the join-class success toast.
+- A third gap was found (`className` can be undefined when a parent tags a task to a real class rather than Home Tasks) but **deliberately deferred** — Steve wants a broader change here, not a point-fix; see Known Bugs / Issues.
+
+**`send-transactional` Edge Function — full restore (App #4):**
+- The function had drifted into a partially-broken production state from an earlier session's incremental redeploys: `tpl-parent.ts` and `tpl-teacher.ts` had been left as empty stubs (`{}`), meaning every parent- and teacher-facing transactional email was silently 500ing with "Template not found" — the router (`index.ts`) and student templates were fine, only two of the four template files were empty.
+- Root cause of the drift: testing payload-size limits by deploying placeholder `index.ts` content (to isolate whether the tool call itself was the bottleneck) actually deployed non-functional code to production each time, because Deno's bundler never traverses `import` statements an entrypoint doesn't reference — so a "successful" deploy call doesn't guarantee the real templates shipped.
+- Fixed with one complete, verified 6-file deploy (`index.ts`, `templates.ts`, `tpl-parent.ts`, `tpl-teacher.ts`, `tpl-student1.ts`, `tpl-student2.ts`) restoring all 22 templates (5 parent + 3 teacher + 14 student across primary/secondary), including the new `parent__05_proof_submitted` template and preserving the Outlook `bgcolor` attribute fixes on every gradient background.
+- Confirmed post-deploy (v14) by pulling the live function source back and regex-scanning for all 22 expected template keys with no empty `Record<string,string> = {}` stubs remaining.
+- **Lesson for future large Edge Function deploys:** don't test size limits with placeholder/non-real file content — a bundler-success response only proves the files you sent are internally consistent, not that they contain what you meant to ship. If probing payload limits, use a disposable test function slug, never the live one.
+
+**App #5 — five separate fixes/features landed via PRs #37–#41:**
+- **Password-reset link fix** — Supabase's recovery-link click established a session that `onAuthStateChange`/`window.load` treated as a normal sign-in, routing straight into the app instead of prompting for a new password. Now `PASSWORD_RECOVERY` routes to the set-password screen first; `loadProfile()` only runs after the password is actually updated.
+- **Editable display name in Settings** — new edit affordance on the existing "My Profile" card (kept separate from the billing-only Upgrade drawer item). Syncs `children.name` for students (a denormalised copy read by teachers/parents in rosters and emails).
+- **Name-edit sync to home-tile greeting** — `saveProfileName()` updated the header and Settings card but not each role's "Welcome back" home tile (`parentName`/`heroName`/`hsName`), since those were only set once at app load. Now kept in sync live.
+- **Notifications never actually marked as read — fixed.** `markNotifRead`/`markAllNotifsRead` wrote to a `read_at` column that doesn't exist on `notifications` (the real column is a `read` boolean); the unread check also read the nonexistent column. Every "mark as read" silently no-opped — confirmed live, all 9 rows in the table were `read=false` before the fix.
+- **Home Task tile UI unified + shared category grouping** — Child's Home Task tile used to share the dark "quest" gradient styling with real teacher classes; now uses the same light card structure as Parent's (teacher classes untouched). Both roles now group Home Tasks by category (`assignments.subject`) via a shared `groupAssignmentsByCategory()`, rendered as collapsible tiles.
+- **Per-step stars + assignment sort order unified** — Child's inline step view now shows the same star badge Parent's assignment detail view already had. All assignment lists (class or category buckets) now sort soonest-due-first with completed ones sunk to the bottom via one shared `sortAssignmentsForDisplay()`.
+- **`invite-child` accept flow made email-scanner-safe** (landed earlier in App #4, documented here since undocumented until now) — the function used to send Supabase's raw one-time `/verify` link directly; any GET to that URL — including Microsoft Defender Safe Links and similar prefetchers common on the M365 school email systems FocablyED's actual market uses — silently burned the token before a human ever clicked it. The function now sends the app's own URL carrying the raw `hashed_token`; a new Accept Invite screen only exchanges it for a session (`auth.verifyOtp`) on an explicit button click, so a scanner prefetch just loads an inert page.
+
+**Facebook Pixel added to the landing page** (separate repo, `stevothomo99-cpu/focably-Landing`) — pixel ID `2345775142620009`, fires a `Lead` event on successful waitlist form submission. Pushed directly to `main` (no PR workflow on that repo; Vercel deploys straight from it).
+
+**Next session TODO:**
+- Deliver the consolidated "list every notification trigger + its push/email/in-app destinations" table Steve asked for — audited but not yet written up as a standalone reference (Session 14's fixes are captured above; a clean table format is still pending)
+- Scope the "broader change" Steve wants for the deferred `className`-undefined gap (parent tags a task to a real class) before touching that code path again
+- Manual smoke test of Import Assignment (parent → student notify) and proof-submission (student → parent email) in the live app — not yet done post-deploy
+- Consider a lightweight cross-session check-in step (see new Working Method note) so parallel sessions don't leave the context doc out of date again
+
+---
 
 ### 05–07 Jul 2026 (Session 13) — Import/star-inflation fixes, Parent Create Assignment, Edge Function fixes, production data reset
 
