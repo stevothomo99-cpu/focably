@@ -180,6 +180,8 @@ function renderClassTiles(assignments, child, containerId, isHS) {
     if(!classBuckets[cid]) classBuckets[cid] = { cls: a.classes, assignments: [] };
     classBuckets[cid].assignments.push(a);
   });
+  // Soonest-due first, completed work sunk to the bottom — same order everywhere
+  Object.values(classBuckets).forEach(b => { b.assignments = sortAssignmentsForDisplay(b.assignments); });
 
   container.innerHTML = '<div class="class-tiles">' + Object.entries(classBuckets).map(([classId, bucket], i) => {
     const cls = bucket.cls;
@@ -292,6 +294,7 @@ function renderClassTiles(assignments, child, containerId, isHS) {
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
             <div class="step-circle" ${circleOverride}>${gem}</div>
             <div style="flex:1;"><div class="step-title" ${titleOverride}>${task.title}${stepDueBadge}</div>${rejectionMsg}${pendingMsg}</div>
+            ${task.star_value?`<span style="font-size:11px;font-weight:700;color:var(--amber);white-space:nowrap;">⭐ ${task.star_value}</span>`:''}
             ${task.verification_required?`<span class="step-badge" ${badgeOverride}>📸</span>`:''}
           </div>
           ${proofSection}
@@ -321,14 +324,14 @@ function renderClassTiles(assignments, child, containerId, isHS) {
         </div>`;
     };
 
-    // Home Tasks (private, parent-created) get sub-grouped by category so
-    // parents and the child both see the same organisation — real teacher
-    // classes always render as flat lists, unaffected.
+    // Home Tasks (private, parent-created) get sub-grouped by category into
+    // collapsible tiles so parents and the child both see the same
+    // organisation — real teacher classes always render as flat lists, unaffected.
     let assignmentTiles;
     if(isHomeTasks) {
       assignmentTiles = groupAssignmentsByCategory(bucket.assignments).map(g => {
         const cards = g.assignments.map(renderAssignmentCard).join('');
-        return g.key === '__none__' ? cards : categoryHeaderHtml(g.label) + cards;
+        return g.key === '__none__' ? cards : renderCategoryTile(g, 'student', cards);
       }).join('');
     } else {
       assignmentTiles = bucket.assignments.map(renderAssignmentCard).join('');

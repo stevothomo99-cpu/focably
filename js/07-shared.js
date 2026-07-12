@@ -444,8 +444,59 @@ function groupAssignmentsByCategory(assignments) {
   return order.map(key => ({ key, label: labels[key], assignments: groups[key] }));
 }
 
-function categoryHeaderHtml(label) {
-  return `<div style="margin:10px 2px 4px;font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;">📁 ${label}</div>`;
+// Worst (most urgent) state across a set of assignments — same red>orange>
+// green>done priority every other multi-assignment tile rolls up to one colour.
+function worstUrgency(assignments) {
+  let worst = 'done';
+  assignments.forEach(a => {
+    const u = getAssignmentUrgency(a);
+    if(URGENCY_RANK[u] < URGENCY_RANK[worst]) worst = u;
+  });
+  return worst;
+}
+
+// Sort order used everywhere assignments are listed: completed work sinks to
+// the bottom, everything else is soonest-due-first (no due date sorts last
+// among the still-open ones, but still ahead of anything completed).
+function sortAssignmentsForDisplay(assignments) {
+  return assignments.slice().sort((a, b) => {
+    const aDone = getAssignmentUrgency(a) === 'done';
+    const bDone = getAssignmentUrgency(b) === 'done';
+    if(aDone !== bDone) return aDone ? 1 : -1;
+    if(!a.due_date && !b.due_date) return 0;
+    if(!a.due_date) return 1;
+    if(!b.due_date) return -1;
+    return a.due_date.localeCompare(b.due_date);
+  });
+}
+
+// Collapsible "concertina" category tile for Home Task categories — tinted
+// by the worst (most urgent) state among its assignments so a collapsed
+// category still shows why it matters. Shared by Parent and Child so
+// categories behave identically everywhere they render.
+function renderCategoryTile(group, idPrefix, cardsHtml) {
+  const catState = worstUrgency(group.assignments);
+  const bg = DUE_URGENCY_BG[catState];
+  const col = DUE_URGENCY_VAR[catState];
+  const safeKey = group.key.replace(/[^a-z0-9]/gi,'') || 'none';
+  const bodyId = `catbody-${idPrefix}-${safeKey}`;
+  const chevId = `catchev-${idPrefix}-${safeKey}`;
+  return `<div style="background:${bg};border-left:4px solid ${col};border-radius:12px;margin:8px 2px;overflow:hidden;">
+    <div onclick="toggleCategoryTile('${bodyId}','${chevId}')" style="padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;font-size:11px;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;">📁 ${group.label}</div>
+      <div id="${chevId}" style="font-size:12px;color:var(--gray-500);transition:transform 0.25s;">▼</div>
+    </div>
+    <div id="${bodyId}" style="padding:0 8px 8px;">${cardsHtml}</div>
+  </div>`;
+}
+
+function toggleCategoryTile(bodyId, chevId) {
+  const el = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  if(!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  if(chev) chev.style.transform = isOpen ? 'rotate(-90deg)' : '';
 }
 
 // Escapes HTML and preserves line breaks so multi-line instructions render as
