@@ -146,7 +146,7 @@ async function loadChildStats(childId) {
     const classBg = DUE_URGENCY_BG[classUrgency];
 
     // Assignment rows inside
-    const rows = bucket.assignments.map(a => {
+    const renderAssignmentRow = (a) => {
       const tasks = a.tasks||[];
       const done = tasks.filter(t=>t.completed).length;
       const pct = tasks.length?Math.round((done/tasks.length)*100):0;
@@ -165,7 +165,15 @@ async function loadChildStats(childId) {
         <div style="font-size:12px;font-weight:800;color:${col};min-width:34px;text-align:right;">${pct}%</div>
         <div style="font-size:14px;color:var(--gray-300);">›</div>
       </div>`;
-    }).join('');
+    };
+    // Home Tasks (no class) group by category, same as the child's view —
+    // real teacher classes stay a flat list.
+    const rows = classId === 'noclass'
+      ? groupAssignmentsByCategory(bucket.assignments).map(g => {
+          const cards = g.assignments.map(renderAssignmentRow).join('');
+          return g.key === '__none__' ? cards : categoryHeaderHtml(g.label) + cards;
+        }).join('')
+      : bucket.assignments.map(renderAssignmentRow).join('');
 
     return `<div style="background:${classBg};border-radius:14px;margin-bottom:10px;overflow:hidden;border-left:4px solid ${classColor};">
       <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.pcls-chev').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)'" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;">

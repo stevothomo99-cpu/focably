@@ -191,6 +191,11 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       return tasks.length === 0 || done < tasks.length;
     }).length;
 
+    // Home Tasks (parent-created, no real teacher class) use the same light
+    // card structure + colour scheme as the Parent's home tile instead of the
+    // gamified gradient quest tiles — teacher classes keep the gradient look.
+    const isHomeTasks = classId === 'noclass';
+
     // Class tile state
     const aStates = bucket.assignments.map(a => getTileState(a));
     const stateOrder = ['red','orange','green','done'];
@@ -207,26 +212,61 @@ function renderClassTiles(assignments, child, containerId, isHS) {
       console.log('Assignment:', a.title, 'state:', aState, 'due:', a.due_date, 'tasks:', (a.tasks||[]).length, 'done:', (a.tasks||[]).filter(t=>t.completed).length);
       const aCfg = stateColors[aState];
       const aDue = a.due_date ? new Date(a.due_date).toLocaleDateString('en-AU',{weekday:'short',month:'short',day:'numeric'}) : 'No due date';
-      const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.2);color:white;font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
-      const descHtml = a.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:3px;line-height:1.5;">${formatDescription(a.description)}</div>` : '';
+
+      // Colour tokens — light (matches Parent) for Home Tasks, dark/gradient
+      // (gamified quest look) for real teacher classes
+      const cardBg = isHomeTasks ? DUE_URGENCY_BG[aState] : aRowBg[aState];
+      const cardBorder = isHomeTasks ? `border-left:4px solid ${DUE_URGENCY_VAR[aState]};` : `border:1.5px solid rgba(255,255,255,0.15);`;
+      const titleColor = isHomeTasks ? 'var(--indigo)' : 'white';
+      const pillBg = isHomeTasks ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
+      const pillColor = isHomeTasks ? 'var(--indigo)' : 'white';
+      const descColor = isHomeTasks ? 'var(--gray-600)' : 'rgba(255,255,255,0.75)';
+      const chevronColor = isHomeTasks ? 'var(--gray-400)' : 'rgba(255,255,255,0.6)';
+      const stepsBg = isHomeTasks ? 'rgba(0,0,0,0.03)' : '';
+
+      const fileLink = a.file_url ? `<a href="${a.file_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;background:${pillBg};color:${pillColor};font-size:11px;font-weight:700;text-decoration:none;margin-top:5px;">📎 Attachment</a>` : '';
+      const descHtml = a.description ? `<div style="font-size:12px;color:${descColor};margin-top:3px;line-height:1.5;">${formatDescription(a.description)}</div>` : '';
 
       // Steps inside assignment
       const stepsHtml = aTotal ? tasks.map(task => {
         const isPending = task.verification_status==='pending';
         const isDone = task.completed && (task.verification_status==='approved'||!task.verification_required);
         const isRejected = task.verification_status==='rejected';
-        const sCls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
         const gem = isDone?'✓':isPending?'⏳':isRejected?'✗':'';
         const clickFn = !task.verification_required&&!isDone ? `onclick="tileToggleTask('${task.id}',this)"` : '';
         const needsProof = task.verification_required && !isDone && !isPending;
 
+        // class-tile-step / step-circle / step-title / step-badge must stay
+        // on every step regardless of theme — tileToggleTask/celebrateStep/
+        // updateStepToPending/withdrawProof all find these elements by class.
+        // Home Tasks only get inline style overrides layered on top (inline
+        // always wins over the class's dark-theme rules) to relight them.
+        const sCls = isDone?'done':isPending?'pending':isRejected?'rejected':'';
+
+        // Step colour tokens — light overrides for Home Tasks, none (fall
+        // back to the existing dark/gradient CSS classes) for real classes
+        const stepRowBg = isHomeTasks ? (isDone?'var(--gray-100)':isPending?'var(--amber-bg)':isRejected?'var(--rose-bg)':'white') : '';
+        const stepRowBorder = isHomeTasks ? 'border-top:1px solid var(--gray-100);' : '';
+        const circleOverride = isHomeTasks
+          ? `style="border-color:${isDone?'transparent':isPending?'var(--amber)':'var(--gray-300)'};color:${isDone?'white':'var(--amber)'};background:${isDone?'var(--mint)':isPending?'rgba(245,158,11,0.15)':'white'};"`
+          : '';
+        const titleOverride = isHomeTasks ? `style="color:var(--indigo);"` : '';
+        const badgeOverride = isHomeTasks ? `style="background:var(--gray-100);color:var(--gray-500);"` : '';
+
+        const proofTextColor = isHomeTasks ? 'var(--gray-600)' : 'rgba(255,255,255,0.75)';
+        const proofBorderColor = isHomeTasks ? 'var(--gray-200)' : 'rgba(255,255,255,0.15)';
+        const proofFileBg = isHomeTasks ? 'var(--gray-100)' : 'rgba(255,255,255,0.1)';
+        const chooseBtnStyle = isHomeTasks
+          ? `border:1.5px solid var(--gray-300);background:white;color:var(--indigo);`
+          : `border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;`;
+
         const proofSection = needsProof ? `
-          <div id="proofSection-${task.id}" style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;">
-            <div style="font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;">📸 Upload proof to complete this step</div>
+          <div id="proofSection-${task.id}" style="margin-top:8px;border-top:1px solid ${proofBorderColor};padding-top:8px;">
+            <div style="font-size:11px;color:${proofTextColor};margin-bottom:6px;">📸 Upload proof to complete this step</div>
             <div id="proofPreview-${task.id}" style="display:none;margin-bottom:6px;border-radius:8px;overflow:hidden;max-height:120px;"><img id="proofImg-${task.id}" src="" style="width:100%;object-fit:cover;"></div>
-            <div id="proofFileName-${task.id}" style="display:none;font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:6px;padding:4px 8px;background:rgba(255,255,255,0.1);border-radius:8px;"></div>
+            <div id="proofFileName-${task.id}" style="display:none;font-size:11px;color:${proofTextColor};margin-bottom:6px;padding:4px 8px;background:${proofFileBg};border-radius:8px;"></div>
             <div style="display:flex;gap:6px;">
-              <button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:12px;font-weight:600;cursor:pointer;" id="proofUploadBtn-${task.id}">📎 Choose File</button>
+              <button onclick="event.stopPropagation();triggerProofUpload('${task.id}')" style="flex:1;padding:7px;border-radius:10px;${chooseBtnStyle}font-size:12px;font-weight:600;cursor:pointer;" id="proofUploadBtn-${task.id}">📎 Choose File</button>
               <button onclick="event.stopPropagation();submitProof('${task.id}')" style="flex:1;padding:7px;border-radius:10px;border:none;background:var(--mint);color:white;font-size:12px;font-weight:700;cursor:pointer;display:none;" id="proofSubmitBtn-${task.id}">✓ Submit</button>
             </div>
           </div>` : '';
@@ -235,87 +275,87 @@ function renderClassTiles(assignments, child, containerId, isHS) {
         // tint the WHOLE step (not just a badge) so it's clear why the
         // assignment/class tile might be red, same rule as every other level.
         const stepUrgency = (task.due_date && !task.completed) ? getDueUrgency(task.due_date, false) : null;
-        const stepBg = stepUrgency ? DUE_URGENCY_TILE[stepUrgency].bg : '';
+        const stepBg = stepUrgency ? (isHomeTasks ? DUE_URGENCY_BG[stepUrgency] : DUE_URGENCY_TILE[stepUrgency].bg) : '';
         const stepDueBadge = stepUrgency ? (() => {
           const badgeBg = stepUrgency==='red' ? 'rgba(220,38,38,0.4)' : stepUrgency==='orange' ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.35)';
           const dueLabel = new Date(task.due_date+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});
           return `<span style="background:${badgeBg};padding:1px 7px;border-radius:20px;font-size:10px;color:white;font-weight:700;margin-left:6px;white-space:nowrap;">📅 ${dueLabel}</span>`;
         })() : '';
-        const rejectionMsg = isRejected ? `<div style="font-size:11px;color:#FCA5A5;margin-top:4px;">❌ ${task.rejection_reason||'Proof rejected — try again'}</div>` : '';
+        const rejectionMsg = isRejected ? `<div style="font-size:11px;color:${isHomeTasks?'var(--rose)':'#FCA5A5'};margin-top:4px;">❌ ${task.rejection_reason||'Proof rejected — try again'}</div>` : '';
         const pendingMsg = isPending ? `
-          <div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;">
-            <div style="font-size:11px;color:rgba(245,158,11,0.9);margin-bottom:6px;">⏳ Waiting for approval...</div>
-            <button onclick="event.stopPropagation();withdrawProof('${task.id}')" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:white;font-size:11px;font-weight:600;cursor:pointer;">↩️ Replace File</button>
+          <div style="margin-top:8px;border-top:1px solid ${proofBorderColor};padding-top:8px;">
+            <div style="font-size:11px;color:${isHomeTasks?'var(--amber)':'rgba(245,158,11,0.9)'};margin-bottom:6px;">⏳ Waiting for approval...</div>
+            <button onclick="event.stopPropagation();withdrawProof('${task.id}')" style="padding:5px 12px;border-radius:20px;${chooseBtnStyle}font-size:11px;font-weight:600;cursor:pointer;">↩️ Replace File</button>
           </div>` : '';
 
-        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}${stepBg?'background:'+stepBg+';':''}">
+        return `<div class="class-tile-step ${sCls}" id="tilestep-${task.id}" ${clickFn} style="${needsProof?'cursor:default;display:block;':''}${stepRowBg?'background:'+stepRowBg+';':''}${stepRowBorder}${stepBg?'background:'+stepBg+';':''}">
           <div style="display:flex;align-items:center;gap:10px;width:100%;">
-            <div class="step-circle">${gem}</div>
-            <div style="flex:1;"><div class="step-title">${task.title}${stepDueBadge}</div>${rejectionMsg}${pendingMsg}</div>
-            ${task.verification_required?'<span class="step-badge">📸</span>':''}
+            <div class="step-circle" ${circleOverride}>${gem}</div>
+            <div style="flex:1;"><div class="step-title" ${titleOverride}>${task.title}${stepDueBadge}</div>${rejectionMsg}${pendingMsg}</div>
+            ${task.verification_required?`<span class="step-badge" ${badgeOverride}>📸</span>`:''}
           </div>
           ${proofSection}
         </div>`;
-      }).join('') : '<div style="padding:10px 16px;font-size:13px;color:rgba(255,255,255,0.6);">No steps yet</div>';
+      }).join('') : `<div style="padding:10px 16px;font-size:13px;color:${isHomeTasks?'var(--gray-500)':'rgba(255,255,255,0.6)'};">No steps yet</div>`;
 
       return `
-        <div style="margin:0 8px 8px;border-radius:12px;overflow:hidden;background:${aRowBg[aState]};border:1.5px solid rgba(255,255,255,0.15);opacity:${aRowOpacity[aState]};">
+        <div style="margin:0 8px 8px;border-radius:12px;overflow:hidden;background:${cardBg};${cardBorder}opacity:${aRowOpacity[aState]};">
           <div style="padding:12px 14px;cursor:pointer;" onclick="toggleTile('${a.id}')">
             <div style="display:flex;align-items:center;gap:8px;">
               <div style="flex:1;">
-                <div style="font-size:14px;font-weight:900;color:white;font-family:'Nunito',sans-serif;${aState==='done'?'text-decoration:line-through;opacity:0.7;':''}">${aState==='done'?'✓ ':''} ${a.title}</div>
+                <div style="font-size:14px;font-weight:900;color:${titleColor};font-family:'Nunito',sans-serif;${aState==='done'?'text-decoration:line-through;opacity:0.7;':''}">${aState==='done'?'✓ ':''} ${a.title}</div>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
-                  <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;">📅 ${aDue}</span>
-                  <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;" id="acount-${a.id}">${aDone}/${aTotal} steps</span>
-                  <span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:20px;font-size:11px;color:white;font-weight:600;">${aCfg.label}</span>
+                  <span style="background:${pillBg};padding:2px 8px;border-radius:20px;font-size:11px;color:${pillColor};font-weight:600;">📅 ${aDue}</span>
+                  <span style="background:${pillBg};padding:2px 8px;border-radius:20px;font-size:11px;color:${pillColor};font-weight:600;" id="acount-${a.id}">${aDone}/${aTotal} steps</span>
+                  <span style="background:${pillBg};padding:2px 8px;border-radius:20px;font-size:11px;color:${pillColor};font-weight:600;">${aCfg.label}</span>
                 </div>
                 ${descHtml}
                 ${fileLink}
               </div>
-              <div style="color:rgba(255,255,255,0.6);font-size:16px;flex-shrink:0;" id="chevron-${a.id}">▼</div>
+              <div style="color:${chevronColor};font-size:16px;flex-shrink:0;" id="chevron-${a.id}">▼</div>
             </div>
           </div>
-          <div class="class-tile-steps" id="tilesteps-${a.id}">
+          <div class="class-tile-steps" id="tilesteps-${a.id}" style="${stepsBg?'background:'+stepsBg+';':''}${isHomeTasks?'padding:0 14px;':''}">
             ${stepsHtml}
           </div>
         </div>`;
     };
 
-    // Home Tasks (private, parent-created) get sub-grouped by subject so parents
-    // can organise them without those groups becoming their own class-like tiles —
-    // real teacher classes always render as flat lists, unaffected.
+    // Home Tasks (private, parent-created) get sub-grouped by category so
+    // parents and the child both see the same organisation — real teacher
+    // classes always render as flat lists, unaffected.
     let assignmentTiles;
-    if(classId === 'noclass') {
-      // Group case-insensitively so "Chores" and "chores" don't split into two
-      // headers, but keep the first-typed casing for display
-      const subjectGroups = {}, subjectOrder = [], subjectLabels = {};
-      bucket.assignments.forEach(a => {
-        const raw = (a.subject||'').trim();
-        const key = raw ? raw.toLowerCase() : '__none__';
-        if(!subjectGroups[key]) { subjectGroups[key] = []; subjectOrder.push(key); subjectLabels[key] = raw; }
-        subjectGroups[key].push(a);
-      });
-      assignmentTiles = subjectOrder.map(key => {
-        const cards = subjectGroups[key].map(renderAssignmentCard).join('');
-        if(key === '__none__') return cards;
-        return `<div style="margin:10px 8px 4px;font-size:11px;font-weight:800;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.5px;">📁 ${subjectLabels[key]}</div>${cards}`;
+    if(isHomeTasks) {
+      assignmentTiles = groupAssignmentsByCategory(bucket.assignments).map(g => {
+        const cards = g.assignments.map(renderAssignmentCard).join('');
+        return g.key === '__none__' ? cards : categoryHeaderHtml(g.label) + cards;
       }).join('');
     } else {
       assignmentTiles = bucket.assignments.map(renderAssignmentCard).join('');
     }
 
+    // Home Tasks tile uses the same light card structure/colours as Parent's
+    // home tile; real teacher classes keep the gradient "quest" look.
+    const tileBg = isHomeTasks ? DUE_URGENCY_BG[classState] : classCfg.tile;
+    const tileAnim = isHomeTasks ? 'none' : classCfg.anim;
+    const tileBorder = isHomeTasks ? `border-left:4px solid ${DUE_URGENCY_VAR[classState]};` : '';
+    const nameColor = isHomeTasks ? 'var(--indigo)' : 'white';
+    const teacherColor = isHomeTasks ? 'var(--gray-500)' : 'rgba(255,255,255,0.75)';
+    const dueColor = isHomeTasks ? 'var(--gray-500)' : 'rgba(255,255,255,0.9)';
+    const outerChevronColor = isHomeTasks ? 'var(--gray-400)' : 'rgba(255,255,255,0.7)';
+
     return `
-      <div class="class-tile" id="tile-${classId}" style="background:${classCfg.tile};animation:${classCfg.anim};">
+      <div class="class-tile" id="tile-${classId}" style="background:${tileBg};animation:${tileAnim};${tileBorder}">
         <div class="class-tile-header" onclick="toggleTile('classtile-${classId}')">
-          <div class="class-tile-icon">${icons[i%icons.length]}</div>
+          ${isHomeTasks ? '' : `<div class="class-tile-icon">${icons[i%icons.length]}</div>`}
           <div class="class-tile-info">
-            <div class="class-tile-name">${className}</div>
-            <div class="class-tile-teacher">${teacherName}</div>
-            <div class="class-tile-due" id="classprog-${classId}">${openAssignments} open assignment${openAssignments!==1?'s':''}</div>
+            <div class="class-tile-name" style="color:${nameColor};">${className}</div>
+            <div class="class-tile-teacher" style="color:${teacherColor};">${teacherName}</div>
+            <div class="class-tile-due" id="classprog-${classId}" style="color:${dueColor};">${openAssignments} open assignment${openAssignments!==1?'s':''}</div>
           </div>
-          <div style="color:rgba(255,255,255,0.7);font-size:18px;" id="chevron-classtile-${classId}">▼</div>
+          <div style="color:${outerChevronColor};font-size:18px;" id="chevron-classtile-${classId}">▼</div>
         </div>
-        <div class="class-tile-steps" id="tilesteps-classtile-${classId}">
+        <div class="class-tile-steps" id="tilesteps-classtile-${classId}" style="${isHomeTasks?'background:transparent;padding:0 2px 8px;':''}">
           ${assignmentTiles}
         </div>
       </div>`;
