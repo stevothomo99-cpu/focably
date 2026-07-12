@@ -495,7 +495,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
   </div>
 </div>
 
-<!-- INVITE: SET PASSWORD SCREEN -->
+<!-- SET PASSWORD SCREEN (invite completion or password reset) -->
 <div class="screen" id="screen-setpassword" style="display:none;background:linear-gradient(160deg,var(--indigo) 0%,#2D1B69 100%);min-height:100vh;align-items:center;justify-content:center;padding:30px 20px;flex-direction:column;">
   <div class="auth-box" style="margin:auto;">
     <div class="auth-logo"><img src="https://raw.githubusercontent.com/stevothomo99-cpu/focably/main/squirrel.png" alt="🐿️"><span><span style="white-space:nowrap;color:white;">Focably<span style="color:#A78BFA;">ED</span></span></div>
@@ -504,7 +504,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
     <div id="setPasswordError" class="auth-error"></div>
     <input class="auth-input" type="password" id="spPassword" placeholder="Choose a password (min 6 chars)">
     <input class="auth-input" type="password" id="spPasswordConfirm" placeholder="Confirm password">
-    <button class="auth-btn" id="spBtn" onclick="submitInvitePassword()">Set Password &amp; Continue</button>
+    <button class="auth-btn" id="spBtn" onclick="submitSetPassword()">Set Password &amp; Continue</button>
   </div>
 </div>
 

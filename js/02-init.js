@@ -101,6 +101,10 @@ window.addEventListener('load', async () => {
       }
     }
     console.log('Session:', session ? 'logged in as ' + session.user.email : 'none');
+    if (passwordResetMode) {
+      // PASSWORD_RECOVERY handler already routed us to the reset-password screen
+      return;
+    }
     if (session) {
       currentUser = session.user;
       profileLoadInProgress = true;
@@ -134,9 +138,16 @@ db.auth.onAuthStateChange(async (event, session) => {
     }
     return;
   }
-  if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
+  if (event === 'PASSWORD_RECOVERY' && session) {
+    // Supabase already logged us in via the recovery link's token — don't let
+    // that session fall through to the normal sign-in flow and skip straight
+    // into the app. Prompt for a new password first.
+    passwordResetMode = true;
+    currentUser = session.user;
+    showPasswordResetScreen();
+  } else if ((event === 'SIGNED_IN' || event === 'EMAIL_CONFIRMED') && session) {
     // Skip if window.load already kicked off a profile load
-    if (profileLoadInProgress || currentUser) return;
+    if (profileLoadInProgress || currentUser || passwordResetMode) return;
     currentUser = session.user;
     await loadProfile();
   } else if (event === 'SIGNED_OUT') {
