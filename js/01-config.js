@@ -39,6 +39,7 @@ let selectedAge = null, selectedTheme = null, selectedRole = 'parent';
 let currentProofFile = null, currentProofTaskId = null;
 let appReady = false; // True once app is fully loaded — blocks auth interrupts
 let pendingInviteToken = null; // set when the URL carries our own ?invite_token= (see acceptInvite())
+let passwordResetMode = false; // true while handling a Supabase PASSWORD_RECOVERY link
 
 const themes = {
   fantasy:   { grad:'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji:'🧙', name:'The Apprentice Wizard', title:'Keeper of Knowledge', streak:'⚔️ Warrior', realm1Grad:'linear-gradient(135deg,#4C1D95,#6D28D9)', realm2Grad:'linear-gradient(135deg,#F59E0B,#B45309)', chest:'🏰', aiTitle:'🧙 Quest Wizard', aiSub:'Tell the wizard your quest!', aiBtnText:'Get My Quest Steps', aiStyle:'fantasy quest steps' },

@@ -521,7 +521,14 @@ function showSetPasswordScreen() {
   showScreen('setpassword');
 }
 
-async function submitInvitePassword() {
+// ── PASSWORD RESET (Supabase "Reset Password" email link completion) ──
+function showPasswordResetScreen() {
+  document.getElementById('setPasswordTitle').textContent = 'Reset Your Password';
+  document.getElementById('setPasswordSubtitle').textContent = 'Enter a new password for your account.';
+  showScreen('setpassword');
+}
+
+async function submitSetPassword() {
   const pw = document.getElementById('spPassword').value;
   const pw2 = document.getElementById('spPasswordConfirm').value;
   const errEl = document.getElementById('setPasswordError');
@@ -530,13 +537,18 @@ async function submitInvitePassword() {
   if(pw !== pw2) { errEl.textContent = "Passwords don't match"; errEl.style.display = 'block'; return; }
   const btn = document.getElementById('spBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
-  const {data, error} = await db.auth.updateUser({
-    password: pw,
-    data: { pending_family_id: null, pending_family_name: null, pending_family_subscription_status: null }
-  });
+  const updates = passwordResetMode
+    ? { password: pw }
+    : { password: pw, data: { pending_family_id: null, pending_family_name: null, pending_family_subscription_status: null } };
+  const {data, error} = await db.auth.updateUser(updates);
   btn.disabled = false; btn.textContent = 'Set Password & Continue';
   if(error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
   if(data?.user) currentUser = data.user;
+  if(passwordResetMode) {
+    passwordResetMode = false;
+    await loadProfile();
+    return;
+  }
   if(!currentProfile.age_group) { showScreen('onboarding'); } else { await loadStudentApp(); }
 }
 
