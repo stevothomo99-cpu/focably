@@ -1983,6 +1983,22 @@ async function saveImportedAssignment() {
         await dbQuery(db.from('tasks').insert(stepRows), 8000, null);
       }
 
+      // Notify the student — this path (parent pastes/imports a private
+      // task for their child) previously skipped notifying anyone at all,
+      // unlike parentAddTask()/publishParentAssignment() which both do.
+      if(role === 'parent') {
+        const childRecord = currentChildren.find(c=>c.id===childId);
+        if(childRecord?.profile_id) {
+          const sTitle = '📚 New task added!';
+          const sBody = `"${title}" was added for you${due?' — due '+new Date(due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'}):''}`;
+          dbQuery(db.from('notifications').insert({
+            recipient_id: childRecord.profile_id, sender_id: currentUser.id, child_id: childId,
+            type: 'task_assigned', title: sTitle, body: sBody
+          })).then(() => sendPushToUser(childRecord.profile_id, sTitle, sBody)).catch(()=>{});
+          sendTransactionalEmail('task_assigned', { studentId: childRecord.profile_id, assignmentTitle: title, className: 'Home Tasks', dueDate: due||null });
+        }
+      }
+
       showToast('✅ Assignment imported!');
       // Refresh student/parent view
       if(role === 'parent') loadParentAssignments().catch(()=>{});

@@ -1547,6 +1547,7 @@ async function notifyProofSubmitted(taskId, childId) {
         title: notifTitle, body: notifBody
       }));
       await sendPushToUser(parentId, notifTitle, notifBody);
+      sendTransactionalEmail('proof_submitted', { parentId, studentName: childName, taskTitle: task.title, assignmentTitle: aTitle, className: cls });
     }
   } catch(e) { console.log('notifyProofSubmitted error:', e.message); }
 }
