@@ -424,7 +424,7 @@ Then build in this order:
 | class_members | id, class_id, child_id | |
 | assignments | id, class_id, created_by, child_id, title, due_date, description, status, parent_created | |
 | tasks | id, assignment_id, child_id, title, completed, verification_required, verification_status, proof_url, proof_submitted_at, verified_by, verified_at, star_value, xp_value, sort_order, due_date | due_date added Session 12 — optional per-step date, cascades into assignment/class urgency colour |
-| notifications | id, recipient_id, sender_id, child_id, type, title, body, read_at, created_at | |
+| notifications | id, recipient_id, sender_id, child_id, type, title, body, read, created_at | `read` is boolean, not a timestamp — app code was fixed Session 14 after it wrote a nonexistent `read_at` column and every notification stayed unread forever |
 | waitlist | id, email, created_at, firstname, role, phone, challenge, interests, source, num_children, school_year, adhd_flag, state, school_name, school_type, year_levels, admin_role, enrolment, student_year, submitted_at | landing page (separate repo) — RLS disabled, public inserts. Emptied to 1 row (genuine signup) in the 07 Jul 2026 data reset. |
 | rewards | id, family_id, created_by, child_id, title, emoji, star_cost, is_active, created_at | |
 | redemptions | id, reward_id, child_id, family_id, status, requested_at, responded_at | |
