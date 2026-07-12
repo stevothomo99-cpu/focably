@@ -2151,7 +2151,7 @@ async function joinClass() {
     // need an explicit copy. Best-effort: a failure here shouldn't block the join.
     await db.rpc('copy_class_assignments_to_member', { p_class_id: cls.id, p_child_id: childRecord.id }).catch(()=>{});
     notifyTeacherStudentJoined(cls.id, cls.name, currentProfile.full_name || 'A student').catch(()=>{});
-    showToast(`✅ Joined \${cls.name}!`);
+    showToast(`✅ Joined ${cls.name}!`);
     document.getElementById('classCodeInput').value = '';
     await loadStudentApp();
     return;
