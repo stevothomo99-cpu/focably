@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v6-invite-fix';
+const CACHE_NAME = 'focably-v7-edit-name';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

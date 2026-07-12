@@ -1509,11 +1509,22 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
     <!-- Profile card -->
     <div class="card" id="settingsProfileCard">
       <div class="card-title">👤 My Profile</div>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <div id="settingsNameDisplayRow" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
         <div id="settingsAvatar" style="font-size:42px;line-height:1;">🎓</div>
-        <div>
-          <div id="settingsName" style="font-size:16px;font-weight:700;color:var(--indigo);">Loading...</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div id="settingsName" style="font-size:16px;font-weight:700;color:var(--indigo);">Loading...</div>
+            <span onclick="editProfileName()" title="Edit name" style="cursor:pointer;font-size:13px;color:var(--violet);">✏️</span>
+          </div>
           <div id="settingsRole" style="font-size:12px;color:var(--gray-500);margin-top:2px;text-transform:capitalize;"></div>
+        </div>
+      </div>
+      <div id="settingsNameEditWrap" style="display:none;margin-bottom:14px;">
+        <input class="form-input" id="settingsNameInput" type="text" placeholder="Your name" style="margin-bottom:8px;">
+        <div id="settingsNameError" style="display:none;color:var(--rose);font-size:12px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveProfileName()" id="settingsNameSaveBtn" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--violet);color:white;font-size:13px;font-weight:700;cursor:pointer;">Save</button>
+          <button onclick="cancelEditProfileName()" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
         </div>
       </div>
       <div id="settingsChangeAvatarWrap" style="display:none;">

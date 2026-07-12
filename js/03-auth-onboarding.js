@@ -169,6 +169,59 @@ function footerNav(tab) {
   }
 }
 
+// ── SETTINGS: EDIT OWN NAME ──
+function editProfileName() {
+  const input = document.getElementById('settingsNameInput');
+  input.value = currentProfile?.full_name || '';
+  document.getElementById('settingsNameError').style.display = 'none';
+  document.getElementById('settingsNameDisplayRow').style.display = 'none';
+  document.getElementById('settingsNameEditWrap').style.display = 'block';
+  input.focus();
+}
+
+function cancelEditProfileName() {
+  document.getElementById('settingsNameEditWrap').style.display = 'none';
+  document.getElementById('settingsNameDisplayRow').style.display = 'flex';
+}
+
+async function saveProfileName() {
+  const input = document.getElementById('settingsNameInput');
+  const errEl = document.getElementById('settingsNameError');
+  const btn = document.getElementById('settingsNameSaveBtn');
+  const newName = input.value.trim();
+  errEl.style.display = 'none';
+  if(!newName) { errEl.textContent = 'Name cannot be empty'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const {error} = await dbQuery(db.from('profiles').update({full_name: newName}).eq('id', currentUser.id));
+  if(error) {
+    btn.disabled = false; btn.textContent = 'Save';
+    errEl.textContent = 'Could not save — please try again.';
+    errEl.style.display = 'block';
+    return;
+  }
+  currentProfile.full_name = newName;
+
+  // children.name is a denormalised copy shown to teachers/parents (class
+  // rosters, emails) — keep it in sync so a student's name change is
+  // actually visible to anyone but themselves.
+  if(currentProfile.role === 'student' && currentChildRecord) {
+    await dbQuery(db.from('children').update({name: newName}).eq('id', currentChildRecord.id));
+    currentChildRecord.name = newName;
+  }
+
+  document.getElementById('settingsName').textContent = newName;
+  const navName = document.getElementById('navUserName');
+  if(navName) navName.textContent = newName.split(' ')[0];
+  const teacherNameEl = document.getElementById('teacherName');
+  if(teacherNameEl && currentProfile.role === 'teacher') teacherNameEl.textContent = newName + ' 👩‍🏫';
+
+  btn.disabled = false; btn.textContent = 'Save';
+  document.getElementById('settingsNameEditWrap').style.display = 'none';
+  document.getElementById('settingsNameDisplayRow').style.display = 'flex';
+  showToast('✅ Name updated');
+}
+
 async function confirmDeleteAccount() {
   const confirmed = confirm('⚠️ Delete your account?\n\nThis will permanently delete all your data including tasks, XP, trust scores, and family connections.\n\nThis cannot be undone.');
   if(!confirmed) return;
