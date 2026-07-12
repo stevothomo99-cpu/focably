@@ -1307,7 +1307,7 @@ function renderNotifications(notifs) {
   const markAllBtn = document.getElementById('markAllBtn');
   if(!list) return;
 
-  unreadCount = notifs.filter(n => !n.read_at).length;
+  unreadCount = notifs.filter(n => !n.read).length;
 
   // Update badge
   if(unreadCount > 0) {
@@ -1336,7 +1336,7 @@ function renderNotifications(notifs) {
   list.innerHTML = notifs.map(n => {
     const cfg = typeConfig[n.type] || typeConfig.default;
     const timeAgo = formatTimeAgo(n.created_at);
-    const isUnread = !n.read_at;
+    const isUnread = !n.read;
     const actionHtml = cfg.action
       ? `<div class="notif-action" onclick="handleNotifAction('${n.type}','${n.id}')">→ ${cfg.action}</div>`
       : '';
@@ -1362,7 +1362,7 @@ function formatTimeAgo(isoStr) {
 }
 
 async function markNotifRead(notifId) {
-  await dbQuery(db.from('notifications').update({read_at: new Date().toISOString()}).eq('id', notifId));
+  await dbQuery(db.from('notifications').update({read: true}).eq('id', notifId));
   const el = document.getElementById('notif-'+notifId);
   if(el) { el.classList.remove('unread'); el.querySelector('.notif-dot')?.classList.add('read'); }
   unreadCount = Math.max(0, unreadCount - 1);
@@ -1373,7 +1373,7 @@ async function markNotifRead(notifId) {
 }
 
 async function markAllNotifsRead() {
-  await dbQuery(db.from('notifications').update({read_at: new Date().toISOString()}).eq('recipient_id', currentUser.id).is('read_at', null));
+  await dbQuery(db.from('notifications').update({read: true}).eq('recipient_id', currentUser.id).or('read.is.null,read.eq.false'));
   document.querySelectorAll('.notif-item.unread').forEach(el => {
     el.classList.remove('unread');
     el.querySelector('.notif-dot')?.classList.add('read');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v9-name-tile-sync';
+const CACHE_NAME = 'focably-v10-notif-read-fix';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
