@@ -428,6 +428,26 @@ const DUE_URGENCY_VAR = { red: 'var(--rose)', orange: 'var(--amber)', green: 'va
 // the gradient-tile Student views.
 const DUE_URGENCY_BG = { red: 'var(--rose-bg)', orange: 'var(--amber-bg)', green: 'var(--mint-bg)', done: 'var(--gray-100)' };
 
+// Groups Home Task assignments (the parent-created, no-class bucket) by their
+// "category" (stored in assignments.subject) — case-insensitive so "Chores"
+// and "chores" share a header, keeping the first-typed casing for display.
+// Shared by Parent and Child so the same categories show up consistently
+// everywhere a Home Task list renders.
+function groupAssignmentsByCategory(assignments) {
+  const groups = {}, order = [], labels = {};
+  assignments.forEach(a => {
+    const raw = (a.subject||'').trim();
+    const key = raw ? raw.toLowerCase() : '__none__';
+    if(!groups[key]) { groups[key] = []; order.push(key); labels[key] = raw; }
+    groups[key].push(a);
+  });
+  return order.map(key => ({ key, label: labels[key], assignments: groups[key] }));
+}
+
+function categoryHeaderHtml(label) {
+  return `<div style="margin:10px 2px 4px;font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;">📁 ${label}</div>`;
+}
+
 // Escapes HTML and preserves line breaks so multi-line instructions render as
 // readable, ADHD-friendly text instead of a collapsed wall. Numbered/bulleted
 // points that were pasted on one line get pushed onto their own line too.

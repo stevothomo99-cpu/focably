@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v10-notif-read-fix';
+const CACHE_NAME = 'focably-v11-home-task-tile-parity';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
