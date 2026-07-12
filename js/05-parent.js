@@ -1128,6 +1128,123 @@ async function populateTaskCategoryList(childSelectContainerId = 'parentTaskChil
   list.innerHTML = options.map(s => `<option value="${s.replace(/"/g,'')}">`).join('');
 }
 
+// ── ADD TASK: OPTIONAL STEP BUILDER (manual or AI) ──
+// Steps are optional — with none, this stays exactly the original simple
+// single-task-worth-N-stars flow. Once a step breakdown exists, each step is
+// worth 1 star flatly (same rule as Create Assignment) so the reward doesn't
+// inflate with however many steps the task happens to have.
+let parentTaskSteps = [];
+let aiGeneratedParentTaskSteps = [];
+
+function addParentTaskStep(title='') {
+  const id = 'ptstep_' + Date.now() + Math.random().toString(36).substr(2,5);
+  parentTaskSteps.push({id, title, verification_required: false, due_date: null});
+  renderParentTaskSteps();
+}
+
+function removeParentTaskStep(id) {
+  parentTaskSteps = parentTaskSteps.filter(s => s.id !== id);
+  renderParentTaskSteps();
+}
+
+function toggleParentTaskStepDueDate(i) {
+  const s = parentTaskSteps[i];
+  if(!s) return;
+  s.due_date = s.due_date ? null : new Date().toISOString().split('T')[0];
+  renderParentTaskSteps();
+}
+
+function renderParentTaskSteps() {
+  const container = document.getElementById('ptStepsList');
+  if(!container) return;
+  const starsWrap = document.getElementById('parentTaskStarsWrap');
+  const starsNote = document.getElementById('parentTaskStepsStarNote');
+  if(starsWrap) starsWrap.style.display = parentTaskSteps.length ? 'none' : 'block';
+  if(starsNote) starsNote.style.display = parentTaskSteps.length ? 'block' : 'none';
+
+  if(!parentTaskSteps.length) {
+    container.innerHTML = '';
+    return;
+  }
+  const proofEnabled = document.getElementById('ptRequireProofToggle')?.checked;
+  const header = `
+    <div style="display:flex;gap:8px;align-items:center;padding:0 0 4px;">
+      <div style="width:20px;flex-shrink:0;"></div>
+      <div style="flex:1;"></div>
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Proof</div>` : ''}
+      <div style="width:26px;flex-shrink:0;text-align:center;font-size:9px;font-weight:800;color:var(--gray-500);text-transform:uppercase;">Due</div>
+      <div style="width:22px;flex-shrink:0;"></div>
+    </div>`;
+  container.innerHTML = header + parentTaskSteps.map((s,i) => `
+    <div class="step-row-input">
+      <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+      <input type="text" value="${s.title}" placeholder="Step ${i+1} description..."
+        oninput="parentTaskSteps[${i}].title=this.value"
+        style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+      ${proofEnabled ? `<div style="width:26px;flex-shrink:0;display:flex;justify-content:center;" title="Require a photo/file for this step before it can be marked complete">
+        <input type="checkbox" ${s.verification_required?'checked':''} onchange="parentTaskSteps[${i}].verification_required=this.checked">
+      </div>` : ''}
+      <button type="button" class="step-date-btn${s.due_date?' active':''}" onclick="toggleParentTaskStepDueDate(${i})" title="${s.due_date?'Remove the due date on this step':'Give this step its own due date (optional)'}">📅</button>
+      <button class="step-remove-btn" onclick="removeParentTaskStep('${s.id}')">×</button>
+    </div>
+    ${s.due_date ? `<div class="step-date-row">
+      📅 <input type="date" value="${s.due_date}" onchange="parentTaskSteps[${i}].due_date=this.value">
+      <span style="font-size:11px;color:var(--gray-500);">step due date (separate from the task due date)</span>
+    </div>` : ''}`).join('');
+}
+
+function onParentTaskProofToggleChange(enabled) {
+  if(!enabled) parentTaskSteps.forEach(s => s.verification_required = false);
+  renderParentTaskSteps();
+}
+
+async function generateParentTaskSteps() {
+  const title = document.getElementById('parentTaskTitle').value.trim();
+  const desc = document.getElementById('parentTaskDesc').value.trim();
+  const taskDue = document.getElementById('parentTaskDue')?.value || '';
+  if(!title) { showToast('Add a title first'); return; }
+  const btn = document.getElementById('ptAiStepsBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating...';
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await fetch(AI_PROXY_URL, {
+      method:'POST', headers:(await aiHeaders()),
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:`You help parents create step-by-step tasks for a child with ADHD. Today's date is ${today}. Break the task into however many clear, achievable steps the information actually calls for — do not pad or trim to hit any particular count; a simple task might genuinely need only 1-2 steps, a bigger one more. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall task due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
+        messages:[{role:'user',content:`Task: "${title}"${taskDue?' (overall due '+taskDue+')':''}. ${desc?'Instructions: '+desc:''}`}]
+      })
+    });
+    const data = await res.json();
+    aiGeneratedParentTaskSteps = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+    const preview = document.getElementById('ptAiStepsPreviewList');
+    preview.innerHTML = aiGeneratedParentTaskSteps.map((s,i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-100);font-size:13px;">
+        <div style="width:20px;height:20px;border-radius:50%;background:var(--violet);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;">${s.title}</div>
+        ${s.verification_required?'<span style="font-size:10px;background:var(--amber-light);padding:2px 6px;border-radius:10px;">📸 Proof</span>':''}
+        ${s.due_date?`<span style="font-size:10px;background:var(--gray-100);color:var(--violet);padding:2px 6px;border-radius:10px;">📅 ${s.due_date}</span>`:''}
+      </div>`).join('');
+    document.getElementById('ptAiStepsPreview').style.display = 'block';
+  } catch(e) {
+    showToast('❌ AI error — add steps manually');
+  }
+  btn.disabled = false; btn.textContent = '✨ AI Generate';
+}
+
+function acceptParentTaskAISteps() {
+  const proofEnabled = document.getElementById('ptRequireProofToggle')?.checked;
+  parentTaskSteps = aiGeneratedParentTaskSteps.map(s => ({
+    id: 'ptstep_'+Date.now()+Math.random().toString(36).substr(2,5),
+    title: s.title,
+    verification_required: proofEnabled && (s.verification_required||false),
+    due_date: s.due_date || null
+  }));
+  document.getElementById('ptAiStepsPreview').style.display = 'none';
+  renderParentTaskSteps();
+  showToast('✅ AI steps added!' + (parentTaskSteps.some(s=>s.due_date) ? ' Some steps got their own due date — check them before adding.' : ''));
+}
+
 async function parentAddTask() {
   const btn = document.getElementById('parentAddTaskBtn');
   if(btn?.disabled) return; // already submitting — ignore a rapid second click
@@ -1171,19 +1288,35 @@ async function parentAddTask() {
     return;
   }
 
-  // A generic Home Task is one action, one reward — no AI step breakdown
-  // here (that inflated the reward: a 3-star task was getting split into
-  // 3-4 AI steps that were EACH worth 3 stars). Use "Create Assignment"
-  // for a multi-step breakdown instead.
+  // A step breakdown is optional. With none, this stays the original simple
+  // single-task-worth-N-stars flow. With steps, each is worth 1 star flatly
+  // (matches Create Assignment) so the reward doesn't inflate with however
+  // many steps the task happens to have — that inflation (every step paying
+  // the FULL chosen value) was the original bug this screen was stripped
+  // down to avoid.
   if(assignment) {
-    await dbQuery(db.from('tasks').insert({
-      assignment_id: assignment.id,
-      child_id: childId,
-      title,
-      xp_value: 15, star_value: selectedTaskStars,
-      sort_order: 1,
-      verification_required: false
-    }));
+    const proofOn = document.getElementById('ptRequireProofToggle')?.checked || false;
+    const tasks = parentTaskSteps.length
+      ? parentTaskSteps.map((s,i) => ({
+          assignment_id: assignment.id,
+          child_id: childId,
+          title: s.title,
+          xp_value: 15, star_value: 1,
+          sort_order: i+1,
+          verification_required: s.verification_required||false,
+          verification_type: 'either',
+          due_date: s.due_date || null
+        }))
+      : [{
+          assignment_id: assignment.id,
+          child_id: childId,
+          title,
+          xp_value: 15, star_value: selectedTaskStars,
+          sort_order: 1,
+          verification_required: proofOn,
+          verification_type: 'either'
+        }];
+    await dbQuery(db.from('tasks').insert(tasks));
   }
 
   const childRecord = currentChildren.find(c=>c.id===childId);
@@ -1205,6 +1338,10 @@ async function parentAddTask() {
   setTaskVisibility('private');
   const picker = document.getElementById('taskClassPicker');
   if(picker) picker.value = '';
+  const ptProofToggle = document.getElementById('ptRequireProofToggle');
+  if(ptProofToggle) ptProofToggle.checked = false;
+  parentTaskSteps = [];
+  renderParentTaskSteps();
   if(btn) { btn.disabled = false; btn.textContent = '+ Add Task'; }
   // Refresh stats and return to main parent view
   await loadChildStats(childId);
@@ -1291,7 +1428,7 @@ async function generateParentAssignmentSteps() {
       method:'POST', headers:(await aiHeaders()),
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
-        system:`You help parents create step-by-step tasks for a child with ADHD. Today's date is ${today}. Break the assignment into 3-5 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
+        system:`You help parents create step-by-step tasks for a child with ADHD. Today's date is ${today}. Break the assignment into however many clear, achievable steps the information actually calls for — do not pad or trim to hit any particular count; a simple task might genuinely need only 1-2 steps, a bigger one more. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
         messages:[{role:'user',content:`Task: "${title}"${assignmentDue?' (overall due '+assignmentDue+')':''}. ${desc?'Instructions: '+desc:''}`}]
       })
     });

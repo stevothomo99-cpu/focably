@@ -1081,6 +1081,12 @@ function openDrawerScreen(screen) {
     populateTaskCategoryList();
     selectedTaskStars = 1;
     selectTaskStars(1);
+    const ptProofToggle = document.getElementById('ptRequireProofToggle');
+    if(ptProofToggle) ptProofToggle.checked = false;
+    const ptAiPreview = document.getElementById('ptAiStepsPreview');
+    if(ptAiPreview) ptAiPreview.style.display = 'none';
+    parentTaskSteps = [];
+    renderParentTaskSteps();
   }
 
   // Create Assignment: reset the multi-step builder to a clean form each time

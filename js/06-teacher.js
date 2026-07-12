@@ -378,7 +378,7 @@ async function generateTeacherSteps() {
       method:'POST', headers:(await aiHeaders()),
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
-        system:`You help teachers create step-by-step tasks for students with ADHD. Today's date is ${today}. Break the assignment into 4-6 clear, achievable steps. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
+        system:`You help teachers create step-by-step tasks for students with ADHD. Today's date is ${today}. Break the assignment into however many clear, achievable steps the information actually calls for — do not pad or trim to hit any particular count; a simple task might genuinely need only 1-2 steps, a bigger one more. Return ONLY a raw JSON array. Each object: "title" (clear action, max 10 words), "verification_required" (true only for the final submission step), and "due_date" (YYYY-MM-DD, ONLY if the instructions mention a specific date/deadline for that particular step that's different from the overall assignment due date — otherwise omit it or use null; do not invent dates). No markdown, no backticks.`,
         messages:[{role:'user',content:`Assignment: "${title}"${assignmentDue?' (overall due '+assignmentDue+')':''}. ${desc?'Instructions: '+desc:''}`}]
       })
     });
