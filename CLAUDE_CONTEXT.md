@@ -607,7 +607,7 @@ Continuing on `claude/facablyed-app-5-ujuz6p`, on top of Session 14's PRs #37–
 - Confirmed the Session 14 deferred bug (parent tags a private task to a real class → `className` can arrive `undefined` in the notification/email payload) is untouched by this work — still deferred per Steve's request for a broader fix, not a point-fix.
 
 **Next session TODO:**
-- Get sign-off on the Add Task step builder + tiles-closed-by-default changes (pushed, previewed, not yet merged to `main` as of this entry) and merge if approved
+- Get sign-off on the Add Task step builder + tiles-closed-by-default changes and merge if approved
 - Revisit the deferred `className`-undefined gap once Steve scopes the "broader change" he wants there
 
 ---
