@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v12-category-concertina-sort';
+const CACHE_NAME = 'focably-v14-add-task-steps-ai';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

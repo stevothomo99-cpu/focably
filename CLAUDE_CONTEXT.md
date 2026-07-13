@@ -318,7 +318,9 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - **Modular codebase** — 7138-line `index.html` split into `index.html` (1522 lines) + 7 `js/*.js` files (see Architecture Summary).
 - **Unified due-date urgency system** — one shared red/orange/green/grey rule across every tile (Student/Parent/Teacher), cascading from step → assignment → class; whole card/background tinted, not just an accent (see Conventions & Patterns)
 - **Optional per-step due dates** — teacher step builder, cascades into assignment/class colour; AI extraction picks one up from assignment text when mentioned
-- **Parent "Create Assignment"** — full multi-step builder (mirrors teacher's New Assignment: manual/AI steps, require-proof toggle, attachment) for private Home Tasks that need a real breakdown, separate from the simpler single-task "Add a Task"
+- **Parent "Create Assignment"** — full multi-step builder (mirrors teacher's New Assignment: manual/AI steps, require-proof toggle, attachment) for private Home Tasks that need a real breakdown, plus a file attachment option "Add Task for Child" doesn't have
+- **Parent "Add Task for Child" got the same step builder** (Session 15) — manual/AI steps + require-proof toggle, reviewable/editable before and after AI generation. Reward math stays safe: zero steps = unchanged single-task-worth-N-stars flow; any steps = each worth 1 star flatly (matches Create Assignment), so the reward can't inflate with step count like the original bug that got this screen stripped down in the first place
+- **AI step generation no longer forces a step count** (Session 15) — Parent's Create Assignment and Teacher's New Assignment both hardcoded a range ("3-5" / "4-6" steps); now both generate exactly as many steps as the content calls for
 - **Student self-service family lookup** — read-only "Your Family" (own family only) + "Add a Code" (real linking); self-unlink removed (was already silently failing at the RLS level and showing a fake success toast)
 - **New-joiner backfill** — a student joining a class after assignments exist gets those existing active assignments copied to them automatically
 - **Class year group** shown on Parent + Student class tiles (previously Teacher-only)
@@ -329,6 +331,7 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - **Password-reset link routes to set-password screen first** — previously the recovery session silently skipped straight into the app instead of prompting for a new password
 - **Home Task tiles visually unified between Child and Parent** — Child's Home Task tile now uses the same light card styling as Parent's (previously used the dark "quest" gradient shared with real teacher classes); both roles group Home Tasks by category via a shared `groupAssignmentsByCategory()`, rendered as collapsible tiles tinted by the most urgent assignment inside
 - **Per-step star values and assignment sort order unified** — Child's inline step view now shows the same star badge Parent's assignment detail already had; assignments within every class/category bucket sort soonest-due-first with completed ones sunk to the bottom, via one shared `sortAssignmentsForDisplay()`
+- **All concertina tiles default to closed on load/login** (Session 15) — Parent's per-class card used to auto-open the first class in the list (`ci===0`) while every other class/category stayed closed; now every tile (class, category, Home Task) starts closed everywhere, for every role
 - **AI calls proxied server-side** via `ai-generate` Edge Function — `ANTHROPIC_KEY` no longer shipped to the browser; model migrated to `claude-sonnet-5`
 - Every published assignment (teacher or parent) is guaranteed at least one completable task, even with zero steps added
 - Double-submit guards on Add Task / Publish Assignment (button disabled before first `await`)
@@ -593,6 +596,21 @@ Then build in this order:
 ## Session Log
 
 > _Most recent at top._
+
+### 13 Jul 2026 (Session 15, App #5 continued) — Concertina tiles closed by default, Add Task step builder, AI step-count fix
+
+Continuing on `claude/facablyed-app-5-ujuz6p`, on top of Session 14's PRs #37–#41.
+
+- **All concertina tiles now default to closed on load/login** — Parent's per-class card auto-opened the first class in the list (`ci===0`); every other tile (class, category, Home Task, across all roles) already defaulted closed. Now all start closed everywhere.
+- **Parent "Add Task for Child" got the same optional step builder as Create Assignment** — manual "+ Add Step" or "✨ AI Generate", both reviewable/editable before and after generation, plus a Require Proof toggle. This screen had been deliberately stripped of step creation after a past bug (AI always generated a fixed step count, each paying the FULL chosen star value). The new design keeps that safe: zero steps = unchanged single-task-worth-N-stars flow; any steps = each worth 1 star flatly (matches Create Assignment), so the reward can't inflate with step count.
+- **AI step-count prompts fixed in both Parent's Create Assignment and Teacher's New Assignment** — both hardcoded a step-count range ("3-5" / "4-6"); now both generate exactly as many steps as the content actually calls for, no padding or trimming to hit a target count.
+- Confirmed the Session 14 deferred bug (parent tags a private task to a real class → `className` can arrive `undefined` in the notification/email payload) is untouched by this work — still deferred per Steve's request for a broader fix, not a point-fix.
+
+**Next session TODO:**
+- Get sign-off on the Add Task step builder + tiles-closed-by-default changes and merge if approved
+- Revisit the deferred `className`-undefined gap once Steve scopes the "broader change" he wants there
+
+---
 
 ### 12 Jul 2026 (Session 14) — Notification completeness, `send-transactional` full restore, name-edit sync, invite/password-reset fixes, Home Task UI unification
 

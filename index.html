@@ -932,8 +932,32 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
       </div>
       <div class="form-grp"><label class="form-lbl">Notes (optional)</label><textarea class="form-input" rows="2" id="parentTaskDesc" placeholder="Any extra details..."></textarea></div>
 
-      <!-- Star Value -->
-      <div class="form-grp">
+      <!-- Steps (optional) — manual or AI, mirrors Create Assignment -->
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 Steps (optional)</div>
+        <div id="ptStepsList"></div>
+        <div class="step-add-row">
+          <button class="step-add-btn" onclick="addParentTaskStep()">+ Add Step</button>
+          <button class="ai-steps-btn" id="ptAiStepsBtn" onclick="generateParentTaskSteps()">✨ AI Generate</button>
+        </div>
+        <div id="ptAiStepsPreview" style="display:none;margin-top:10px;background:white;border-radius:10px;padding:10px;border:1.5px solid var(--violet-light);">
+          <div style="font-size:12px;font-weight:700;color:var(--violet);margin-bottom:8px;">✨ AI Suggested Steps</div>
+          <div id="ptAiStepsPreviewList"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button onclick="acceptParentTaskAISteps()" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--mint);color:white;font-weight:700;font-size:13px;cursor:pointer;">✓ Use These</button>
+            <button onclick="document.getElementById('ptAiStepsPreview').style.display='none'" style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;font-weight:700;font-size:13px;cursor:pointer;">✗ Dismiss</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--gray-50);border-radius:12px;padding:12px;margin-bottom:12px;">
+        <div class="toggle-row">
+          <div><div class="toggle-lbl">📸 Require Proof</div><div class="toggle-sub">Turn on to choose which steps need a photo/file before they can be marked complete</div></div>
+          <label class="toggle"><input type="checkbox" id="ptRequireProofToggle" onchange="onParentTaskProofToggleChange(this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Star Value — only applies while there's no step breakdown; each step is worth 1⭐ instead -->
+      <div class="form-grp" id="parentTaskStarsWrap">
         <label class="form-lbl">⭐ Stars for completing</label>
         <div style="display:flex;gap:8px;">
           <button type="button" class="star-val-btn" data-val="1" onclick="selectTaskStars(1)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">1⭐</button>
@@ -943,6 +967,7 @@ html{overscroll-behavior-y:none;touch-action:pan-x pan-y;}
           <button type="button" class="star-val-btn" data-val="5" onclick="selectTaskStars(5)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-500);font-size:13px;font-weight:700;cursor:pointer;">5⭐</button>
         </div>
       </div>
+      <div id="parentTaskStepsStarNote" style="display:none;font-size:11px;color:var(--gray-500);margin:-6px 0 12px;">⭐ Each step above is worth 1 star when using a step checklist.</div>
       <div class="form-grp">
         <label class="form-lbl">Visibility</label>
         <div style="display:flex;gap:8px;">
