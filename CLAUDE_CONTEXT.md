@@ -76,7 +76,7 @@ All deployed at `mxgnrgajspprupzxaeld.supabase.co/functions/v1/<slug>`. **Verify
 | `send-digest` | Weekly Sunday 6pm AEST parent summary (tasks done, stars, XP, streaks) | OFF |
 | `send-warnings` | Daily 7am AEST due-date alert — overdue / due today / due soon (+1-2d) / due this week (+3-7d) buckets, queries `assignments` directly | OFF |
 | `send-push` | Web push notifications (VAPID) | OFF |
-| `stripe-webhook` | Verifies Stripe signature, handles `checkout.session.completed` / `customer.subscription.deleted` → updates `families.subscription_status` + all linked children's `profiles.subscription_status` | OFF |
+| `stripe-webhook` | Verifies Stripe signature, handles `checkout.session.completed` / `customer.subscription.deleted` → updates `families.subscription_status` + all linked children's `profiles.subscription_status`. Session 15: also stamps `families.first_paid_at` on first conversion, and logs a `churn_events` row (`subscription_canceled`, `was_ever_paid=true`) on cancellation, carrying Stripe's `cancellation_details` in `metadata` when present | OFF |
 | `create-checkout-session` | Creates a Stripe Checkout session server-side, returns hosted URL (client-only `redirectToCheckout` is deprecated by Stripe) | ON (called by logged-in parent) |
 | `hubspot-sync` | Landing page waitlist form → HubSpot Contact + Deal. **Fixed 07 Jul 2026** — was stuck at Verify JWT ON since it was first built, silently 401'ing every call from the anonymous landing page before it ever reached the function (zero log entries ever, unlike every other function). Now OFF. | OFF |
 | `ai-generate` | Server-side Claude API proxy — holds `ANTHROPIC_API_KEY` secret, never exposed to the browser. Maps any request model to `claude-sonnet-5` (original `claude-sonnet-4-20250514` was retired 2026-06-15). `thinking` disabled to preserve the short JSON-output behaviour the app expects. Capped at 2000 max_tokens. | ON (called by logged-in user) |
@@ -332,6 +332,7 @@ ALTER TABLE families ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 - **Home Task tiles visually unified between Child and Parent** — Child's Home Task tile now uses the same light card styling as Parent's (previously used the dark "quest" gradient shared with real teacher classes); both roles group Home Tasks by category via a shared `groupAssignmentsByCategory()`, rendered as collapsible tiles tinted by the most urgent assignment inside
 - **Per-step star values and assignment sort order unified** — Child's inline step view now shows the same star badge Parent's assignment detail already had; assignments within every class/category bucket sort soonest-due-first with completed ones sunk to the bottom, via one shared `sortAssignmentsForDisplay()`
 - **All concertina tiles default to closed on load/login** (Session 15) — Parent's per-class card used to auto-open the first class in the list (`ci===0`) while every other class/category stayed closed; now every tile (class, category, Home Task) starts closed everywhere, for every role
+- **Paid vs unpaid churn tracking added** (Session 15) — new `churn_events` table + `families.first_paid_at`; DB-only for now, Steve's building a separate reporting dashboard against it (see Session Log for full detail)
 - **AI calls proxied server-side** via `ai-generate` Edge Function — `ANTHROPIC_KEY` no longer shipped to the browser; model migrated to `claude-sonnet-5`
 - Every published assignment (teacher or parent) is guaranteed at least one completable task, even with zero steps added
 - Double-submit guards on Add Task / Publish Assignment (button disabled before first `await`)
@@ -429,7 +430,7 @@ Then build in this order:
 |-------|-------------|-------|
 | profiles | id, role, full_name, age_group, theme, avatar, school_id, school_role | school_role = null/pending/member/admin |
 | schools | id, name, invite_code, invite_code_expires_at, subscription_status, max_students | |
-| families | id, parent_id, invite_code, invite_code_expires_at, family_name, subscription_status, school_id, stripe_customer_id, stripe_subscription_id | subscription_status = free/pro/school_attached |
+| families | id, parent_id, invite_code, invite_code_expires_at, family_name, subscription_status, school_id, stripe_customer_id, stripe_subscription_id, first_paid_at | subscription_status = free/pro/school_attached. `first_paid_at` (Session 15) is set once on first Stripe conversion and never cleared — even after a later cancellation resets subscription_status back to 'free' — so churn tracking can tell a lapsed payer from a family that was always free |
 | children | id, profile_id, name, family_id | |
 | classes | id, teacher_id, name, subject, year_group, invite_code, invite_code_expires_at, status, school_id, direct_student_enrol | |
 | class_members | id, class_id, child_id | |
@@ -440,6 +441,7 @@ Then build in this order:
 | rewards | id, family_id, created_by, child_id, title, emoji, star_cost, is_active, created_at | |
 | redemptions | id, reward_id, child_id, family_id, status, requested_at, responded_at | |
 | licenses | id, key, tier, max_students, school_id, activated_at, expires_at, stripe_subscription_id, created_at | live since Session 4; emptied in the 07 Jul 2026 data reset |
+| churn_events | id, event_type, was_ever_paid, family_id, user_id, role, email, account_created_at, stripe_customer_id, stripe_subscription_id, metadata, created_at | added Session 15 for churn tracking. `event_type` = `subscription_canceled` (logged by `stripe-webhook` on `customer.subscription.deleted`, always `was_ever_paid=true`) or `account_deleted` (logged by `confirmDeleteAccount()` right before the hard delete, `was_ever_paid` = whether the family/linked family ever had `first_paid_at` set). "Paid churn" = `was_ever_paid=true` rows, "unpaid churn" = `was_ever_paid=false`. RLS: only an `INSERT ... WITH CHECK (auth.uid() = user_id)` policy — no SELECT for anon/authenticated, only `service_role` can read it (Steve's separate reporting dashboard) |
 
 **Key SECURITY DEFINER RPCs** (bypass RLS safely, scoped to the caller):
 - `find_family_by_code(code)` — used by the real linking flow; extended (Session 12) to also return the parent's name for the read-only "Add a Code" lookup
@@ -597,18 +599,24 @@ Then build in this order:
 
 > _Most recent at top._
 
-### 13 Jul 2026 (Session 15, App #5 continued) — Concertina tiles closed by default, Add Task step builder, AI step-count fix
+### 13 Jul 2026 (Session 15, App #5 continued) — Concertina tiles closed by default, Add Task step builder, AI step-count fix, churn tracking
 
-Continuing on `claude/facablyed-app-5-ujuz6p`, on top of Session 14's PRs #37–#41.
+Continuing on `claude/facablyed-app-5-ujuz6p`, on top of Session 14's PRs #37–#41. The tiles/step-builder/AI-step-count work landed via PR #44.
 
 - **All concertina tiles now default to closed on load/login** — Parent's per-class card auto-opened the first class in the list (`ci===0`); every other tile (class, category, Home Task, across all roles) already defaulted closed. Now all start closed everywhere.
 - **Parent "Add Task for Child" got the same optional step builder as Create Assignment** — manual "+ Add Step" or "✨ AI Generate", both reviewable/editable before and after generation, plus a Require Proof toggle. This screen had been deliberately stripped of step creation after a past bug (AI always generated a fixed step count, each paying the FULL chosen star value). The new design keeps that safe: zero steps = unchanged single-task-worth-N-stars flow; any steps = each worth 1 star flatly (matches Create Assignment), so the reward can't inflate with step count.
 - **AI step-count prompts fixed in both Parent's Create Assignment and Teacher's New Assignment** — both hardcoded a step-count range ("3-5" / "4-6"); now both generate exactly as many steps as the content actually calls for, no padding or trimming to hit a target count.
 - Confirmed the Session 14 deferred bug (parent tags a private task to a real class → `className` can arrive `undefined` in the notification/email payload) is untouched by this work — still deferred per Steve's request for a broader fix, not a point-fix.
 
+**Paid vs unpaid churn tracking added** — Steve is building a separate central reporting dashboard and needed the underlying data captured, DB-only (no in-app UI):
+- `families.first_paid_at` — stamped once by `stripe-webhook` on the family's first `checkout.session.completed`, never cleared by a later cancellation. This is the durable "was this family ever a paying customer" signal that `subscription_status` alone can't give once it resets to `'free'`.
+- New `churn_events` table — one row per churn moment. `event_type` is `subscription_canceled` (logged by `stripe-webhook` on `customer.subscription.deleted`, carries Stripe's `cancellation_details` in `metadata` when Stripe provides them) or `account_deleted` (logged by `confirmDeleteAccount()` right before the hard delete). `was_ever_paid` is always `true` for a cancellation event, and for an account deletion reflects whether the account's family (a parent's own, or a student's linked family) had `first_paid_at` set. Paid churn = `was_ever_paid=true` rows; unpaid churn = `was_ever_paid=false`.
+- RLS on `churn_events`: only `INSERT ... WITH CHECK (auth.uid() = user_id)` — a user can log their own deletion event, nothing else. No SELECT policy for anon/authenticated at all; only `service_role` (Steve's dashboard) can read it.
+- `stripe-webhook` redeployed (v10) with both changes; **Verify JWT confirmed OFF** post-deploy (this function's toggle is sticky per the note below — always re-check after any redeploy).
+
 **Next session TODO:**
-- Get sign-off on the Add Task step builder + tiles-closed-by-default changes and merge if approved
 - Revisit the deferred `className`-undefined gap once Steve scopes the "broader change" he wants there
+- Once Steve's separate reporting dashboard is live, sanity-check its churn queries against a real cancellation/deletion in a test environment
 
 ---
 

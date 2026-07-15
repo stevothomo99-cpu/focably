@@ -1,4 +1,4 @@
-const CACHE_NAME = 'focably-v14-add-task-steps-ai';
+const CACHE_NAME = 'focably-v15-churn-tracking';
 const OFFLINE_URLS = [
   '/',
   '/index.html',

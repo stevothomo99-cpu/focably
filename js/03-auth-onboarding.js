@@ -241,6 +241,35 @@ async function confirmDeleteAccount() {
   showToast('⏳ Deleting your account...');
   try {
     const uid = currentUser.id;
+
+    // Look up the family behind this account (if any) before anything gets
+    // deleted, so churn tracking can tell "paid churn" (family.first_paid_at
+    // was ever set) from "unpaid churn" (never converted) — a parent has
+    // their own family, a student is linked to one via children.family_id.
+    let churnFamily = null;
+    if(currentProfile?.role === 'parent') {
+      const {data:fam} = await db.from('families').select('id, first_paid_at, stripe_customer_id, stripe_subscription_id').eq('parent_id', uid).maybeSingle();
+      churnFamily = fam;
+    } else if(currentProfile?.role === 'student') {
+      const {data:child} = await db.from('children').select('family_id').eq('profile_id', uid).maybeSingle();
+      if(child?.family_id) {
+        const {data:fam} = await db.from('families').select('id, first_paid_at, stripe_customer_id, stripe_subscription_id').eq('id', child.family_id).maybeSingle();
+        churnFamily = fam;
+      }
+    }
+    // Best-effort — a logging failure should never block the account deletion itself
+    db.from('churn_events').insert({
+      event_type: 'account_deleted',
+      was_ever_paid: !!churnFamily?.first_paid_at,
+      family_id: churnFamily?.id || null,
+      user_id: uid,
+      role: currentProfile?.role || null,
+      email: currentUser.email,
+      account_created_at: currentProfile?.created_at || null,
+      stripe_customer_id: churnFamily?.stripe_customer_id || null,
+      stripe_subscription_id: churnFamily?.stripe_subscription_id || null
+    }).then(()=>{}, ()=>{});
+
     // Delete in order: push_subscriptions, tasks (via children), children, profiles auth user
     await db.from('push_subscriptions').delete().eq('user_id', uid);
     await db.from('class_enrollments').delete().eq('student_id', uid);
