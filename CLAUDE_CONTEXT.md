@@ -477,6 +477,7 @@ Then build in this order:
 
 ## Tech Debt
 
+- **Security audit pending.** yfd-dashboard went through a security review for its Xero API questionnaire (encrypted tokens/cached data at rest, closed a hardcoded-login-bypass, added real auth checks on admin API routes, dependency scanning). None of that has been checked here yet. Full checklist + what to look for lives in `yfd-dashboard`'s `SECURITY.md` (same author's other repo) — run through it against this app (and its landing page repo) when there's time. Known items likely to apply directly: check for a hardcoded credential bypass, confirm API routes actually enforce auth (not just client-side redirects) especially anything admin-only, check whether cached/stored subscriber or student/parent PII is encrypted at rest beyond whatever Supabase/Vercel provide by default, MFA/SSO status (likely also absent), and Supabase region (same `ap-southeast-1` Singapore region as yfd-dashboard).
 - ~~index.html ~4,800+ lines~~ ✅ **Done in Session 11** — split into `index.html` (1522 lines) + 7 `js/*.js` files
 - ~300 inline style attributes, duplicated patterns — extract to CSS classes when touched
 - Consider one-off human developer review (bus-factor insurance)
